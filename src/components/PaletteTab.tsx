@@ -85,15 +85,15 @@ export function PaletteTab({ palette }: PaletteTabProps) {
           return (
             <div
               key={color.role}
-              className={`flex-1 flex flex-col sm:flex-row justify-between border-b border-[#1A1A1A] ${i === 0 ? 'border-t' : ''}`}
+              className={`group flex-1 flex flex-col sm:flex-row justify-between border-b border-[#1A1A1A] transition-all duration-500 ease-out hover:z-10 hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] hover:-translate-y-1 origin-center relative ${i === 0 ? 'border-t' : ''}`}
               style={{ backgroundColor: color.hex }}
             >
               <div className={`p-6 flex flex-col justify-between ${textColorClass} w-full sm:w-1/3 min-h-[140px] border-r border-transparent sm:border-[#1A1A1A]/20`}>
                 <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] font-bold uppercase tracking-widest">{color.role}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest transition-transform duration-500 group-hover:translate-x-1">{color.role}</span>
                   <button
                     onClick={() => copyToClipboard(color.hex, color.hex)}
-                    className="p-1.5 border border-current hover:bg-[#1A1A1A]/10 transition-colors flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold"
+                    className="p-1.5 border border-current hover:bg-black/10 transition-all duration-300 opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold translate-y-2 group-hover:translate-y-0"
                   >
                     {copiedHex === color.hex ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span className="font-mono">{color.hex}</span>
@@ -105,7 +105,7 @@ export function PaletteTab({ palette }: PaletteTabProps) {
                 </div>
               </div>
 
-              <div className={`p-6 flex flex-col justify-center space-y-3 ${textColorClass} w-full sm:w-2/3`}>
+              <div className={`p-6 flex flex-col justify-center space-y-3 ${textColorClass} w-full sm:w-2/3 transition-transform duration-500 group-hover:translate-x-2`}>
                 <p className="font-sans font-light text-sm leading-relaxed opacity-90">{color.usage}</p>
                 <div className="pt-3 border-t border-current/20 flex items-start gap-2">
                   <Info className="w-4 h-4 shrink-0 mt-0.5" />

@@ -12,11 +12,24 @@ export function TypographyTab({ typography, brandName }: TypographyTabProps) {
     `${brandName} crafts extraordinary experiences through modern design & engineering.`
   );
   const [copiedCss, setCopiedCss] = useState(false);
+  const [copiedHeading, setCopiedHeading] = useState(false);
+  const [copiedBody, setCopiedBody] = useState(false);
 
   const copyCss = () => {
     navigator.clipboard.writeText(typography.cssSnippet);
     setCopiedCss(true);
     setTimeout(() => setCopiedCss(false), 2000);
+  };
+
+  const copyFontName = (name: string, type: 'heading' | 'body') => {
+    navigator.clipboard.writeText(name);
+    if (type === 'heading') {
+      setCopiedHeading(true);
+      setTimeout(() => setCopiedHeading(false), 2000);
+    } else {
+      setCopiedBody(true);
+      setTimeout(() => setCopiedBody(false), 2000);
+    }
   };
 
   return (
@@ -65,14 +78,21 @@ export function TypographyTab({ typography, brandName }: TypographyTabProps) {
 
       <div className="space-y-6">
         {/* Header Font Specimen Card */}
-        <div className="bg-white border border-[#1A1A1A] p-8 rounded-none space-y-6">
-          <div className="flex flex-col border-b border-dashed border-[#1A1A1A]/30 pb-4">
-            <span className="text-[10px] uppercase tracking-widest font-bold opacity-50 mb-2">
+        <div className="group relative bg-white border border-[#1A1A1A] p-8 rounded-none space-y-6 transition-all duration-500 ease-out hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:z-10">
+          <div className="flex flex-col border-b border-dashed border-[#1A1A1A]/30 pb-4 relative overflow-hidden">
+            <span className="text-[10px] uppercase tracking-widest font-bold opacity-50 mb-2 transition-transform duration-500 group-hover:translate-x-1">
               Header: {typography.headingFont} ({typography.headingFontCategory})
             </span>
-            <span className="text-[9px] uppercase tracking-widest font-bold opacity-40">
+            <span className="text-[9px] uppercase tracking-widest font-bold opacity-40 transition-transform duration-500 group-hover:translate-x-1 delay-75">
               Weights: {typography.headingWeights.join(', ')}
             </span>
+            <button
+              onClick={() => copyFontName(typography.headingFont, 'heading')}
+              className="absolute right-0 top-0 p-1.5 border border-[#1A1A1A] hover:bg-[#1A1A1A]/5 transition-all duration-300 opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold translate-y-2 group-hover:translate-y-0"
+            >
+              {copiedHeading ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>Copy Name</span>
+            </button>
           </div>
 
           <div className="py-6 space-y-8 overflow-x-auto">
@@ -92,14 +112,21 @@ export function TypographyTab({ typography, brandName }: TypographyTabProps) {
         </div>
 
         {/* Body Font Specimen Card */}
-        <div className="bg-white border border-[#1A1A1A] p-8 rounded-none space-y-6">
-          <div className="flex flex-col border-b border-dashed border-[#1A1A1A]/30 pb-4">
-            <span className="text-[10px] uppercase tracking-widest font-bold opacity-50 mb-2">
+        <div className="group relative bg-white border border-[#1A1A1A] p-8 rounded-none space-y-6 transition-all duration-500 ease-out hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:z-10">
+          <div className="flex flex-col border-b border-dashed border-[#1A1A1A]/30 pb-4 relative overflow-hidden">
+            <span className="text-[10px] uppercase tracking-widest font-bold opacity-50 mb-2 transition-transform duration-500 group-hover:translate-x-1">
               Body: {typography.bodyFont} ({typography.bodyFontCategory})
             </span>
-            <span className="text-[9px] uppercase tracking-widest font-bold opacity-40">
+            <span className="text-[9px] uppercase tracking-widest font-bold opacity-40 transition-transform duration-500 group-hover:translate-x-1 delay-75">
               Weights: {typography.bodyWeights.join(', ')}
             </span>
+            <button
+              onClick={() => copyFontName(typography.bodyFont, 'body')}
+              className="absolute right-0 top-0 p-1.5 border border-[#1A1A1A] hover:bg-[#1A1A1A]/5 transition-all duration-300 opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold translate-y-2 group-hover:translate-y-0"
+            >
+              {copiedBody ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>Copy Name</span>
+            </button>
           </div>
 
           <div className="py-6 space-y-6">
