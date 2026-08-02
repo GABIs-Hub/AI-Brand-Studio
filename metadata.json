@@ -1,0 +1,6 @@
+{
+  "name": "Brand Identity Generator",
+  "description": "Generate a complete Brand Bible dashboard with primary logos, secondary marks, color palettes, Google Font pairings, tone of voice guidelines, live mockups, and AI brand strategist assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
