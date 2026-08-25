@@ -9,6 +9,7 @@ interface AiBrandAssistantProps {
 }
 
 export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantProps) {
+  const [selectedModel, setSelectedModel] = useState<'gemini-3.5-flash' | 'gemini-3.1-pro-preview' | 'gemini-3.1-flash-lite'>('gemini-3.5-flash');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'init-1',
@@ -56,8 +57,20 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ sender: m.sender, text: m.text })),
           brandContext: brand,
+          model: selectedModel,
         }),
       });
+
+      if (!response.ok) {
+        let errText = 'Failed to receive chat response.';
+        try {
+          const errData = await response.json();
+          if (errData?.error) errText = errData.error;
+        } catch {
+          // ignore fallback
+        }
+        throw new Error(errText);
+      }
 
       const data = await response.json();
       if (data.error) throw new Error(data.error);
@@ -89,9 +102,9 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white border-l border-[#1A1A1A] flex flex-col shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white dark:bg-[#181816] border-l border-[#1A1A1A] dark:border-[#F9F7F2]/20 flex flex-col shadow-2xl transition-colors duration-300">
       {/* Drawer Header */}
-      <div className="p-6 bg-[#1A1A1A] text-white flex items-center justify-between border-b border-[#1A1A1A]">
+      <div className="p-6 bg-[#1A1A1A] dark:bg-[#111110] text-white flex items-center justify-between border-b border-[#1A1A1A]">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 border border-white/20 flex items-center justify-center text-white">
             <Bot className="w-5 h-5" />
@@ -99,8 +112,8 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
           <div>
             <h3 className="font-bold text-[11px] uppercase tracking-[0.3em] text-white flex items-center gap-2">
               <span>Brand Director</span>
-              <span className="text-[8px] font-mono px-1.5 py-0.5 border border-white/30 text-white/50">
-                gemini-3.5-flash
+              <span className="text-[7px] font-mono px-1.5 py-0.5 border border-white/30 text-white/70 bg-white/5">
+                {selectedModel}
               </span>
             </h3>
             <p className="text-[9px] uppercase tracking-widest text-white/50 mt-1">
@@ -110,31 +123,76 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
         </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-white/10 text-white/50 hover:text-white transition-colors border border-transparent hover:border-white/20"
+          className="p-2 hover:bg-white/10 text-white/50 hover:text-white transition-colors border border-transparent hover:border-white/20 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
+      {/* Model Selection Bar */}
+      <div className="bg-[#F9F7F2] dark:bg-[#20201E] border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-4 flex flex-col gap-2">
+        <span className="text-[8px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] opacity-60">
+          Director Mode / Gemini Model:
+        </span>
+        <div className="grid grid-cols-3 gap-1.5">
+          <button
+            type="button"
+            onClick={() => setSelectedModel('gemini-3.5-flash')}
+            className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-none cursor-pointer ${
+              selectedModel === 'gemini-3.5-flash'
+                ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
+                : 'bg-white text-[#1A1A1A] border-gray-300 dark:bg-[#181816] dark:text-zinc-400 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900'
+            }`}
+            title="General brand strategy, brainstorms, and Q&A"
+          >
+            General
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedModel('gemini-3.1-pro-preview')}
+            className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-none cursor-pointer ${
+              selectedModel === 'gemini-3.1-pro-preview'
+                ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
+                : 'bg-white text-[#1A1A1A] border-gray-300 dark:bg-[#181816] dark:text-zinc-400 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900'
+            }`}
+            title="Deep strategic analysis & complex creative critique"
+          >
+            Complex
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedModel('gemini-3.1-flash-lite')}
+            className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-none cursor-pointer ${
+              selectedModel === 'gemini-3.1-flash-lite'
+                ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
+                : 'bg-white text-[#1A1A1A] border-gray-300 dark:bg-[#181816] dark:text-zinc-400 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900'
+            }`}
+            title="Hyper-speed copy, captions, and short lookups"
+          >
+            Fast / Lite
+          </button>
+        </div>
+      </div>
+
       {/* Suggested Quick Prompts */}
       {brand && (
-        <div className="bg-[#F9F7F2] p-4 border-b border-[#1A1A1A] flex items-center gap-3 overflow-x-auto text-[9px] uppercase tracking-widest font-bold scrollbar-none">
-          <span className="text-[#1A1A1A] shrink-0 opacity-50">Ask AI:</span>
+        <div className="bg-[#F9F7F2] dark:bg-[#1C1C1A] p-4 border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 flex items-center gap-3 overflow-x-auto text-[9px] uppercase tracking-widest font-bold scrollbar-none shrink-0">
+          <span className="text-[#1A1A1A] dark:text-[#F9F7F2] shrink-0 opacity-50">Ask AI:</span>
           <button
             onClick={() => handleQuickPrompt('Suggest 5 alternative taglines for our brand mission.')}
-            className="px-3 py-1.5 border border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white shrink-0 transition-colors"
+            className="px-3 py-1.5 border border-[#1A1A1A] dark:border-[#F9F7F2]/30 text-[#1A1A1A] dark:text-[#F9F7F2] hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-[#F9F7F2] dark:hover:text-[#1A1A1A] shrink-0 transition-colors cursor-pointer"
           >
             5 New Taglines
           </button>
           <button
             onClick={() => handleQuickPrompt('Write a 150-word product launch Instagram caption in our brand voice.')}
-            className="px-3 py-1.5 border border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white shrink-0 transition-colors"
+            className="px-3 py-1.5 border border-[#1A1A1A] dark:border-[#F9F7F2]/30 text-[#1A1A1A] dark:text-[#F9F7F2] hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-[#F9F7F2] dark:hover:text-[#1A1A1A] shrink-0 transition-colors cursor-pointer"
           >
             Launch Caption
           </button>
           <button
             onClick={() => handleQuickPrompt('How should we apply our color palette to a dark mode app interface?')}
-            className="px-3 py-1.5 border border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white shrink-0 transition-colors"
+            className="px-3 py-1.5 border border-[#1A1A1A] dark:border-[#F9F7F2]/30 text-[#1A1A1A] dark:text-[#F9F7F2] hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-[#F9F7F2] dark:hover:text-[#1A1A1A] shrink-0 transition-colors cursor-pointer"
           >
             Dark Mode Palette
           </button>
@@ -142,7 +200,7 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
       )}
 
       {/* Messages Thread */}
-      <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-white">
+      <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-white dark:bg-[#181816]">
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -151,8 +209,8 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
             <div
               className={`w-8 h-8 flex items-center justify-center shrink-0 border ${
                 msg.sender === 'user'
-                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-                  : 'bg-[#F9F7F2] text-[#1A1A1A] border-[#1A1A1A]'
+                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
+                  : 'bg-[#F9F7F2] text-[#1A1A1A] border-[#1A1A1A] dark:bg-[#20201E] dark:text-[#F9F7F2] dark:border-[#F9F7F2]/20'
               }`}
             >
               {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
@@ -161,14 +219,14 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
             <div
               className={`max-w-[80%] p-4 space-y-2 border ${
                 msg.sender === 'user'
-                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
-                  : 'bg-white text-[#1A1A1A] border-[#1A1A1A] border-dashed'
+                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#20201E] dark:text-[#F9F7F2] dark:border-zinc-800'
+                  : 'bg-white text-[#1A1A1A] border-[#1A1A1A] border-dashed dark:bg-[#181816] dark:text-[#F9F7F2] dark:border-zinc-700'
               }`}
             >
               <p className="whitespace-pre-wrap leading-relaxed font-serif italic text-sm">{msg.text}</p>
               <span
                 className={`text-[9px] uppercase tracking-widest font-bold block text-right opacity-50 ${
-                  msg.sender === 'user' ? 'text-white' : 'text-[#1A1A1A]'
+                  msg.sender === 'user' ? 'text-white' : 'text-[#1A1A1A] dark:text-[#F9F7F2]'
                 }`}
               >
                 {msg.timestamp}
@@ -178,7 +236,7 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
         ))}
 
         {isLoading && (
-          <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A] bg-[#F9F7F2] p-4 border border-[#1A1A1A] w-fit">
+          <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A] bg-[#F9F7F2] p-4 border border-[#1A1A1A] dark:bg-[#20201E] dark:text-[#F9F7F2] dark:border-zinc-700 w-fit">
             <RefreshCw className="w-4 h-4 animate-spin" />
             <span>Director is typing...</span>
           </div>
@@ -188,18 +246,18 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
       </div>
 
       {/* Input Form */}
-      <form onSubmit={handleSend} className="p-4 bg-white border-t border-[#1A1A1A] flex items-center gap-3">
+      <form onSubmit={handleSend} className="p-4 bg-white dark:bg-[#111110] border-t border-[#1A1A1A] dark:border-zinc-800 flex items-center gap-3">
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Ask brand strategist AI..."
-          className="flex-1 bg-transparent border-b border-dashed border-[#1A1A1A] px-2 py-3 font-serif italic text-sm focus:outline-hidden focus:border-solid transition-all"
+          className="flex-1 bg-transparent border-b border-dashed border-[#1A1A1A] dark:border-zinc-700 px-2 py-3 font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-solid transition-all"
         />
         <button
           type="submit"
           disabled={isLoading || !inputText.trim()}
-          className="p-3 border border-[#1A1A1A] bg-[#1A1A1A] text-white hover:bg-[#2C3333] transition-colors disabled:opacity-50"
+          className="p-3 border border-[#1A1A1A] bg-[#1A1A1A] text-white hover:bg-[#2C3333] transition-colors disabled:opacity-50 cursor-pointer dark:border-[#F9F7F2]/20 dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:hover:bg-white"
         >
           <Send className="w-4 h-4" />
         </button>

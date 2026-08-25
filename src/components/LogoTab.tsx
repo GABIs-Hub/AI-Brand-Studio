@@ -1,29 +1,69 @@
 import { useState } from 'react';
-import { LogoSpec, SecondaryMark } from '../types';
-import { Download, Sparkles, Wand2, RefreshCw, Check, Image as ImageIcon, Maximize2, Layers } from 'lucide-react';
+import { BrandBible, LogoSpec, SecondaryMark } from '../types';
+import { FaviconGenerator } from './FaviconGenerator';
+import { LogoArchetypeStudio } from './LogoArchetypeStudio';
+import { CoTPromptRefinementStudio } from './CoTPromptRefinementStudio';
+import {
+  Download,
+  Sparkles,
+  Wand2,
+  RefreshCw,
+  Check,
+  Image as ImageIcon,
+  Maximize2,
+  Layers,
+  Globe,
+  Compass,
+  AlertTriangle,
+  LayoutGrid,
+  Brain,
+  ChevronDown,
+  ChevronUp,
+  Sun,
+  Moon,
+  Palette,
+  SlidersHorizontal,
+} from 'lucide-react';
 
 interface LogoTabProps {
+  brand: BrandBible;
   logo: LogoSpec;
   secondaryMarks: SecondaryMark[];
   brandName: string;
   onGenerateLogoImage: (prompt: string, resolution: string) => Promise<string | void>;
+  onUpdatePrimaryLogo?: (svg: string, concept: string, symbolism: string, geometry: string) => void;
   generatedImageUrl?: string;
   generatedImageResolution?: string;
   isGeneratingImage: boolean;
+  isProMode?: boolean;
 }
 
+const STUDIO_LIGHTING_PRESETS = [
+  { id: 'matte_foil', label: 'Gold Foil Stamp', prompt: 'Embossed metallic gold foil on luxury black heavy cardstock, studio chiaroscuro lighting, 8k render' },
+  { id: 'titanium', label: 'Brushed Titanium', prompt: 'Precision brushed titanium and frosted optical glass emblem, dramatic architectural ray-traced shadows' },
+  { id: 'neon_noir', label: 'Neon Glow Sign', prompt: 'Backlit cyberpunk neon acrylic sign on rainy dark slate wall, cinematic atmospheric depth' },
+  { id: 'linen_stamp', label: 'Letterpress Stamp', prompt: 'Debossed blind letterpress ink stamp on textured warm ivory artisanal linen paper' },
+];
+
 export function LogoTab({
+  brand,
   logo,
   secondaryMarks,
   brandName,
   onGenerateLogoImage,
+  onUpdatePrimaryLogo,
   generatedImageUrl,
   generatedImageResolution,
   isGeneratingImage,
+  isProMode = false,
 }: LogoTabProps) {
+  const [activeTabMode, setActiveTabMode] = useState<'main' | 'styles' | 'favicons' | 'secondary'>('main');
+  const [bgMode, setBgMode] = useState<'light' | 'dark' | 'brand'>('light');
   const [selectedResolution, setSelectedResolution] = useState<'1K' | '2K' | '4K'>('2K');
   const [customPrompt, setCustomPrompt] = useState(logo.aiImagePrompt || '');
   const [copiedSvg, setCopiedSvg] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [showAdvancedTools, setShowAdvancedTools] = useState(isProMode);
 
   const downloadSvg = (svgContent: string, filename: string) => {
     const blob = new Blob([svgContent], { type: 'image/svg+xml' });
@@ -37,210 +77,481 @@ export function LogoTab({
     URL.revokeObjectURL(url);
   };
 
+  const downloadPng = (svgContent: string, filename: string, size = 1024) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Optional background fill for visibility
+    if (bgMode === 'light') {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, size, size);
+    } else if (bgMode === 'dark') {
+      ctx.fillStyle = '#1A1A1A';
+      ctx.fillRect(0, 0, size, size);
+    } else if (bgMode === 'brand' && brand.palette[0]) {
+      ctx.fillStyle = brand.palette[0].hex;
+      ctx.fillRect(0, 0, size, size);
+    }
+
+    const img = new Image();
+    const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      // Draw centered with padding
+      const padding = size * 0.15;
+      const drawSize = size - padding * 2;
+      ctx.drawImage(img, padding, padding, drawSize, drawSize);
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = pngUrl;
+      link.download = `${filename}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  };
+
   const copySvgText = (svgContent: string, key: string) => {
     navigator.clipboard.writeText(svgContent);
     setCopiedSvg(key);
     setTimeout(() => setCopiedSvg(null), 2000);
   };
 
-  const handleGenerateImageClick = async () => {
-    await onGenerateLogoImage(customPrompt, selectedResolution);
+  const handleGenerateImageClick = async (presetPrompt?: string) => {
+    setImageError(null);
+    try {
+      const promptToUse = presetPrompt || customPrompt;
+      await onGenerateLogoImage(promptToUse, selectedResolution);
+    } catch (err: any) {
+      setImageError(err.message || 'Image rendering was not completed.');
+    }
   };
 
+  const primaryColorHex = brand.palette[0]?.hex || '#1A1A1A';
+
   return (
-    <div className="space-y-10">
-      {/* Primary Logo Showcase Card */}
-      <div className="flex flex-col">
-        <h2 className="text-[11px] uppercase tracking-[0.3em] font-black text-[#1A1A1A] mb-6">Visual Marks</h2>
-        
-        <div className="relative flex-grow bg-white border border-[#1A1A1A] flex flex-col items-center justify-center overflow-hidden rounded-none p-12 min-h-[300px]">
-          <div className="absolute top-6 left-6 text-[10px] uppercase tracking-widest opacity-50 font-bold">Primary Logomark</div>
-          <div className="absolute top-6 right-6 flex items-center gap-4 text-[9px] uppercase tracking-widest font-bold">
-            <button
-              onClick={() => copySvgText(logo.primaryLogoSvg, 'primary')}
-              className="flex items-center gap-2 hover:opacity-70 transition-opacity"
-            >
-              {copiedSvg === 'primary' ? <Check className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
-              <span>Copy SVG</span>
-            </button>
-            <button
-              onClick={() => downloadSvg(logo.primaryLogoSvg, `${brandName.toLowerCase()}-primary-logo`)}
-              className="flex items-center gap-2 hover:opacity-70 transition-opacity"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download</span>
-            </button>
-          </div>
-          <div
-            className="w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center mt-8"
-            dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
-          />
+    <div className="space-y-8 animate-fadeIn">
+      {/* Sub-Header & Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-zinc-800 pb-4">
+        <div>
+          <h2 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
+            Logo &amp; Brand Marks
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic mt-0.5">
+            Vector logos, alternate styles, web favicons, and high-resolution exports.
+          </p>
         </div>
 
-        {/* Concept & Symbolism Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-[#1A1A1A] border-t-0 bg-white rounded-none">
-          <div className="p-6 border-b md:border-b-0 md:border-r border-[#1A1A1A] space-y-4">
-            <span className="text-[10px] uppercase tracking-widest font-bold opacity-50 block">Design Concept</span>
-            <p className="font-serif italic text-sm leading-relaxed">{logo.concept}</p>
-          </div>
-          <div className="p-6 border-b md:border-b-0 md:border-r border-[#1A1A1A] space-y-4">
-            <span className="text-[10px] uppercase tracking-widest font-bold opacity-50 block">Visual Symbolism</span>
-            <p className="font-serif italic text-sm leading-relaxed">{logo.symbolism}</p>
-          </div>
-          <div className="p-6 space-y-4">
-            <span className="text-[10px] uppercase tracking-widest font-bold opacity-50 block">Geometry & Grid</span>
-            <p className="font-serif italic text-sm leading-relaxed">{logo.geometryDetails}</p>
-          </div>
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-900 p-1">
+          {[
+            { id: 'main', label: 'Active Logo', icon: LayoutGrid },
+            { id: 'styles', label: 'Explore Styles', icon: Sparkles },
+            { id: 'favicons', label: 'Favicons', icon: Globe },
+            { id: 'secondary', label: 'Sub-Marks', icon: Layers },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTabMode === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTabMode(tab.id as any)}
+                className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                    : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Secondary Marks & Icons Suite */}
-      <div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {secondaryMarks.map((mark) => (
-            <div
-              key={mark.id}
-              className="bg-white border border-[#1A1A1A] flex flex-col justify-between rounded-none"
-            >
-              <div className="border-b border-[#1A1A1A] p-4 flex items-center justify-between bg-[#1A1A1A] text-white">
-                <span className="text-[9px] uppercase tracking-widest font-bold">
-                  {mark.title}
+      {/* 1. Main Active Logo View */}
+      {activeTabMode === 'main' && (
+        <div className="space-y-6">
+          {/* Main Logo Display Canvas */}
+          <div className="border border-[#1A1A1A] dark:border-[#F9F7F2]/20 overflow-hidden">
+            {/* Canvas Header Toolbar */}
+            <div className="bg-gray-50 dark:bg-[#151514] border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+              {/* Background Color Switcher */}
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500">
+                  Preview Canvas:
                 </span>
-                <div className="flex gap-3">
+                <div className="inline-flex p-0.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700">
                   <button
-                    onClick={() => copySvgText(mark.svg, mark.id)}
-                    className="hover:opacity-70 transition-opacity"
-                    title="Copy SVG"
+                    type="button"
+                    onClick={() => setBgMode('light')}
+                    className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold flex items-center gap-1 cursor-pointer ${
+                      bgMode === 'light' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-zinc-400'
+                    }`}
                   >
-                    {copiedSvg === mark.id ? <Check className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
+                    <Sun className="w-3 h-3" />
+                    <span>White</span>
                   </button>
                   <button
-                    onClick={() => downloadSvg(mark.svg, `${brandName.toLowerCase()}-${mark.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`)}
-                    className="hover:opacity-70 transition-opacity"
-                    title="Download SVG"
+                    type="button"
+                    onClick={() => setBgMode('dark')}
+                    className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold flex items-center gap-1 cursor-pointer ${
+                      bgMode === 'dark' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-zinc-400'
+                    }`}
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Moon className="w-3 h-3" />
+                    <span>Dark</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBgMode('brand')}
+                    className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold flex items-center gap-1 cursor-pointer ${
+                      bgMode === 'brand' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-zinc-400'
+                    }`}
+                  >
+                    <Palette className="w-3 h-3" />
+                    <span>Brand Color</span>
                   </button>
                 </div>
               </div>
 
-              <div className="p-8 flex items-center justify-center min-h-[160px]">
-                <div
-                  className="w-24 h-24 flex items-center justify-center"
-                  dangerouslySetInnerHTML={{ __html: mark.svg }}
-                />
-              </div>
+              {/* 1-Click Export Actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => copySvgText(logo.primaryLogoSvg, 'primary')}
+                  className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  {copiedSvg === 'primary' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>Copy SVG</span>
+                    </>
+                  )}
+                </button>
 
-              <div className="border-t border-dashed border-[#1A1A1A]/30 p-4">
-                <p className="font-sans font-light text-[11px] leading-relaxed opacity-80">{mark.description}</p>
+                <button
+                  type="button"
+                  onClick={() => downloadSvg(logo.primaryLogoSvg, `${brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-logo`)}
+                  className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download SVG</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => downloadPng(logo.primaryLogoSvg, `${brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-logo-hires`)}
+                  className="px-3.5 py-1.5 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border border-black dark:border-white text-[9px] uppercase tracking-widest font-black flex items-center gap-1.5 cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PNG</span>
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* AI High-Resolution Image Logo Generation Card */}
-      <div className="bg-[#1A1A1A] p-8 sm:p-12 text-[#F9F7F2] border border-[#1A1A1A] rounded-none space-y-8 relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-dashed border-white/30 pb-6">
-          <div className="flex items-center gap-4">
-            <ImageIcon className="w-6 h-6 opacity-70" />
-            <div>
-              <h3 className="text-xl font-serif italic tracking-tighter flex items-center gap-4">
-                <span>AI Rendering Studio</span>
-                <span className="text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-1 border border-white/30 text-white/70">
-                  gemini-3.1-flash-image
+            {/* Logo Rendering Stage */}
+            <div
+              className={`p-16 flex items-center justify-center min-h-[320px] transition-colors duration-300 ${
+                bgMode === 'light'
+                  ? 'bg-white'
+                  : bgMode === 'dark'
+                  ? 'bg-[#121212]'
+                  : ''
+              }`}
+              style={bgMode === 'brand' ? { backgroundColor: primaryColorHex } : {}}
+            >
+              <div
+                className={`w-full max-w-[360px] h-32 flex items-center justify-center transition-transform hover:scale-105 duration-300 ${
+                  bgMode === 'dark' ? 'drop-shadow-[0_4px_20px_rgba(255,255,255,0.05)]' : ''
+                }`}
+                dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+              />
+            </div>
+
+            {/* Concept & Symbolism Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 border-t border-[#1A1A1A] dark:border-[#F9F7F2]/20 bg-white dark:bg-[#1C1C1A]">
+              <div className="p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-zinc-800 space-y-2">
+                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 block">
+                  Core Concept
                 </span>
-              </h3>
-              <p className="text-xs font-sans font-light opacity-60 mt-2">
-                Generate photo-realistic 3D metallic, glass, or studio emblem renderings.
-              </p>
+                <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
+                  {logo.concept}
+                </p>
+              </div>
+
+              <div className="p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-zinc-800 space-y-2">
+                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 block">
+                  Symbolism
+                </span>
+                <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
+                  {logo.symbolism}
+                </p>
+              </div>
+
+              <div className="p-6 space-y-2">
+                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 block">
+                  Geometry
+                </span>
+                <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
+                  {logo.geometryDetails}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Resolution Selector Affordance (1K, 2K, 4K) */}
-          <div className="flex items-center gap-3 bg-transparent border border-white/30 p-1">
-            <span className="text-[9px] uppercase tracking-widest font-bold px-3 flex items-center gap-2 opacity-50">
-              <Maximize2 className="w-3 h-3" />
-              <span>Output Res:</span>
+          {/* Quick Style Switcher Callout Banner */}
+          <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="text-xs uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
+                Want to try another logo style?
+              </h4>
+              <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic mt-0.5">
+                Explore Minimalist, Negative Space, Monogram, Crest, and Seal variations with 1-click instant preview.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTabMode('styles')}
+              className="px-4 py-2 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[9px] uppercase tracking-widest font-black hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+            >
+              Browse Logo Styles &rarr;
+            </button>
+          </div>
+
+          {/* Collapsible Advanced 3D & AI Prompt Studio */}
+          <div className="border border-gray-200 dark:border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setShowAdvancedTools(!showAdvancedTools)}
+              className="w-full bg-gray-50 dark:bg-[#151514] px-6 py-4 flex items-center justify-between text-left cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-gray-500" />
+                <span className="text-[10px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
+                  Advanced Studio Tools: 3D Renders &amp; AI Prompt Lab
+                </span>
+              </div>
+              {showAdvancedTools ? (
+                <ChevronUp className="w-4 h-4 text-gray-500" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              )}
+            </button>
+
+            {showAdvancedTools && (
+              <div className="p-6 space-y-8 bg-white dark:bg-[#1C1C1A] border-t border-gray-200 dark:border-zinc-800">
+                {/* 3D Render Studio */}
+                <div className="bg-[#1A1A1A] dark:bg-[#111110] p-6 text-white space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
+                    <div>
+                      <h4 className="text-sm font-serif italic">3D Photorealistic Render</h4>
+                      <p className="text-xs opacity-60">Generate metallic, neon, or letterpress 3D textures.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] uppercase tracking-widest font-bold opacity-60">Resolution:</span>
+                      {(['1K', '2K', '4K'] as const).map((res) => (
+                        <button
+                          key={res}
+                          type="button"
+                          onClick={() => setSelectedResolution(res)}
+                          className={`px-3 py-1 text-[9px] uppercase font-bold cursor-pointer ${
+                            selectedResolution === res ? 'bg-white text-black' : 'border border-white/30 text-white'
+                          }`}
+                        >
+                          {res}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Preset Buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    {STUDIO_LIGHTING_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setCustomPrompt(preset.prompt);
+                          handleGenerateImageClick(preset.prompt);
+                        }}
+                        className="px-3 py-1.5 text-[9px] uppercase tracking-widest font-bold border border-white/30 hover:bg-white hover:text-black transition-all cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Prompt Box */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Describe custom lighting or material..."
+                      className="flex-1 bg-transparent border-b border-white/40 px-2 py-2 text-sm text-white focus:outline-hidden focus:border-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleGenerateImageClick()}
+                      disabled={isGeneratingImage || !customPrompt.trim()}
+                      className="px-6 py-2 bg-white text-black text-[9px] uppercase tracking-widest font-black hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                    >
+                      {isGeneratingImage ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                      <span>Generate 3D Render</span>
+                    </button>
+                  </div>
+
+                  {imageError && (
+                    <div className="p-3 bg-amber-900/50 border border-amber-500/50 text-xs text-amber-200">
+                      {imageError}
+                    </div>
+                  )}
+
+                  {generatedImageUrl && (
+                    <div className="pt-4 border-t border-white/20 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs opacity-75">Rendered Asset:</span>
+                        <a
+                          href={generatedImageUrl}
+                          download={`${brandName.toLowerCase()}-3d-logo.png`}
+                          className="text-xs uppercase font-bold underline cursor-pointer"
+                        >
+                          Download 3D PNG &rarr;
+                        </a>
+                      </div>
+                      <img
+                        src={generatedImageUrl}
+                        alt="3D Logo"
+                        className="max-h-[300px] mx-auto object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* CoT Prompt Refinement Lab */}
+                <div className="pt-6 border-t border-gray-200 dark:border-zinc-800">
+                  <CoTPromptRefinementStudio
+                    brand={brand}
+                    onUpdatePrimaryLogo={(svg, concept, symbolism, geometry) => {
+                      if (onUpdatePrimaryLogo) {
+                        onUpdatePrimaryLogo(svg, concept, symbolism, geometry);
+                      }
+                    }}
+                    onSendTo3DRender={(refinedPrompt) => {
+                      setCustomPrompt(refinedPrompt);
+                      handleGenerateImageClick(refinedPrompt);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 2. Explore Logo Styles */}
+      {activeTabMode === 'styles' && (
+        <div className="space-y-6">
+          <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 flex items-center justify-between">
+            <span className="text-xs font-serif italic text-gray-600 dark:text-zinc-400">
+              Click any style to preview and apply it as your primary logomark.
             </span>
-            {(['1K', '2K', '4K'] as const).map((res) => (
-              <button
-                key={res}
-                type="button"
-                onClick={() => setSelectedResolution(res)}
-                className={`px-4 py-1.5 text-[9px] uppercase tracking-widest font-bold transition-all ${
-                  selectedResolution === res
-                    ? 'bg-white text-[#1A1A1A]'
-                    : 'text-white hover:bg-white/10'
-                }`}
+            <button
+              type="button"
+              onClick={() => setActiveTabMode('main')}
+              className="text-[9px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2] underline cursor-pointer"
+            >
+              &larr; Back to Active Logo
+            </button>
+          </div>
+
+          <LogoArchetypeStudio
+            brand={brand}
+            onUpdatePrimaryLogo={(svg, concept, symbolism, geometry) => {
+              if (onUpdatePrimaryLogo) {
+                onUpdatePrimaryLogo(svg, concept, symbolism, geometry);
+                setActiveTabMode('main');
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* 3. Favicon & Web Icon Suite */}
+      {activeTabMode === 'favicons' && (
+        <div className="space-y-6">
+          <FaviconGenerator brand={brand} />
+        </div>
+      )}
+
+      {/* 4. Secondary Marks */}
+      {activeTabMode === 'secondary' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+            <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
+              Secondary Marks &amp; Badges ({secondaryMarks.length})
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {secondaryMarks.map((mark) => (
+              <div
+                key={mark.id}
+                className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 flex flex-col justify-between"
               >
-                {res}
-              </button>
+                <div className="border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-3 flex items-center justify-between bg-gray-50 dark:bg-zinc-900">
+                  <span className="text-[9px] uppercase tracking-widest font-bold text-gray-800 dark:text-zinc-200">
+                    {mark.title}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => copySvgText(mark.svg, mark.id)}
+                      className="p-1 hover:opacity-70 transition-opacity cursor-pointer"
+                      title="Copy SVG"
+                    >
+                      {copiedSvg === mark.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Layers className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => downloadSvg(mark.svg, `${brandName.toLowerCase()}-${mark.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`)}
+                      className="p-1 hover:opacity-70 transition-opacity cursor-pointer"
+                      title="Download SVG"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-8 flex items-center justify-center min-h-[160px] bg-white dark:bg-zinc-900/40">
+                  <div
+                    className="w-24 h-24 flex items-center justify-center"
+                    dangerouslySetInnerHTML={{ __html: mark.svg }}
+                  />
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-zinc-800 p-3">
+                  <p className="text-[11px] font-serif italic text-gray-600 dark:text-zinc-400">
+                    {mark.description}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
-
-        {/* Prompt Input & Action */}
-        <div className="space-y-4">
-          <label className="block text-[10px] uppercase tracking-[0.3em] font-black opacity-70">
-            Render Prompt Directive
-          </label>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <input
-              type="text"
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              placeholder="Describe the rendering style..."
-              className="flex-1 bg-transparent border-b border-dashed border-white/50 px-0 py-3 text-lg font-serif italic text-white placeholder-white/30 focus:outline-hidden focus:border-white transition-all"
-            />
-            <button
-              onClick={handleGenerateImageClick}
-              disabled={isGeneratingImage || !customPrompt.trim()}
-              className="px-8 py-3 bg-white text-[#1A1A1A] text-[10px] uppercase tracking-widest font-bold hover:bg-[#F9F7F2] transition-all disabled:opacity-50 flex items-center justify-center gap-3 shrink-0 rounded-none border-none"
-            >
-              {isGeneratingImage ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-4 h-4" />
-                  <span>Execute Render</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Generated Image Result Showcase */}
-        {generatedImageUrl && (
-          <div className="pt-8 border-t border-dashed border-white/30 space-y-6">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold opacity-70">
-              <span className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-white" />
-                <span>Rendered at {generatedImageResolution || selectedResolution}</span>
-              </span>
-              <a
-                href={generatedImageUrl}
-                download={`${brandName.toLowerCase()}-ai-logo-${generatedImageResolution || selectedResolution}.png`}
-                className="flex items-center gap-2 hover:opacity-100 transition-opacity"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Asset</span>
-              </a>
-            </div>
-            <div className="border border-white/20 bg-[#0F0F0F] p-4 flex items-center justify-center max-w-2xl mx-auto rounded-none shadow-2xl">
-              <img
-                src={generatedImageUrl}
-                alt={`${brandName} Rendered Logo`}
-                referrerPolicy="no-referrer"
-                className="w-full h-auto object-contain max-h-[500px]"
-              />
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

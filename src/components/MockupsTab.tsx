@@ -25,10 +25,10 @@ export function MockupsTab({ brand }: MockupsTabProps) {
   return (
     <div className="space-y-10">
       {/* Header & Filter Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#1A1A1A] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 pb-4 transition-colors">
         <div>
-          <h2 className="text-[11px] uppercase tracking-[0.3em] font-black text-[#1A1A1A]">Live Brand Application Mockups</h2>
-          <p className="font-serif italic text-lg opacity-80 mt-2">
+          <h2 className="text-[11px] uppercase tracking-[0.3em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">Live Brand Application Mockups</h2>
+          <p className="font-serif italic text-lg opacity-80 mt-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
             Real-time interactive application of generated colors, typography, logos, and messaging across touchpoints.
           </p>
         </div>
@@ -37,10 +37,10 @@ export function MockupsTab({ brand }: MockupsTabProps) {
             <button
               key={tab}
               onClick={() => setActiveMockup(tab)}
-              className={`px-4 py-2 text-[10px] uppercase tracking-widest font-bold transition-all border border-[#1A1A1A] rounded-none ${
+              className={`px-4 py-2 text-[10px] uppercase tracking-widest font-bold transition-all border border-[#1A1A1A] dark:border-[#F9F7F2]/30 rounded-none cursor-pointer ${
                 activeMockup === tab
-                  ? 'bg-[#1A1A1A] text-white'
-                  : 'bg-transparent text-[#1A1A1A] hover:bg-gray-100'
+                  ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                  : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] hover:bg-gray-100 dark:hover:bg-zinc-800'
               }`}
             >
               {tab === 'card' ? 'Business Cards' : tab === 'website' ? 'Web Landing Hero' : tab === 'social' ? 'Social Graphic' : 'All Touchpoints'}
@@ -53,16 +53,16 @@ export function MockupsTab({ brand }: MockupsTabProps) {
       {(activeMockup === 'all' || activeMockup === 'website') && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] uppercase tracking-[0.3em] font-black flex items-center gap-3">
+            <h3 className="text-[11px] uppercase tracking-[0.3em] font-black flex items-center gap-3 text-[#1A1A1A] dark:text-[#F9F7F2]">
               <Monitor className="w-4 h-4" />
               <span>Digital Touchpoint: Web Header & Hero Section</span>
             </h3>
-            <span className="text-[9px] uppercase tracking-widest font-bold opacity-50">Responsive Preview</span>
+            <span className="text-[9px] uppercase tracking-widest font-bold opacity-50 text-[#1A1A1A] dark:text-[#F9F7F2]">Responsive Preview</span>
           </div>
 
-          <div className="border border-[#1A1A1A] overflow-hidden bg-white rounded-none">
+          <div className="border border-[#1A1A1A] dark:border-[#F9F7F2]/20 overflow-hidden bg-white rounded-none">
             {/* Mock Browser Top Bar */}
-            <div className="bg-[#1A1A1A] px-4 py-3 flex items-center justify-between text-[#F9F7F2]">
+            <div className="bg-[#1A1A1A] dark:bg-[#111110] px-4 py-3 flex items-center justify-between text-[#F9F7F2]">
               <div className="flex items-center gap-4">
                 <div className="flex gap-2">
                   <div className="w-2 h-2 bg-[#F9F7F2]/50" />
@@ -102,7 +102,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 </div>
                 <button
                   style={{ backgroundColor: primaryColor, color: '#ffffff' }}
-                  className="px-6 py-2 text-[9px] uppercase tracking-widest font-bold hover:opacity-90 transition-opacity border-none rounded-none"
+                  className="px-6 py-2 text-[9px] uppercase tracking-widest font-bold hover:opacity-90 transition-opacity border-none rounded-none cursor-pointer"
                 >
                   Get Started
                 </button>
@@ -131,14 +131,14 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
                   <button
                     style={{ backgroundColor: primaryColor, color: '#ffffff' }}
-                    className="px-8 py-4 font-bold text-[10px] uppercase tracking-widest flex items-center gap-3 hover:opacity-95 rounded-none border-none"
+                    className="px-8 py-4 font-bold text-[10px] uppercase tracking-widest flex items-center gap-3 hover:opacity-95 rounded-none border-none cursor-pointer"
                   >
                     <span>Explore Platform</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                   <button
                     style={{ borderColor: darkColor, color: darkColor }}
-                    className="px-8 py-4 font-bold text-[10px] uppercase tracking-widest border bg-transparent hover:bg-black/5 rounded-none"
+                    className="px-8 py-4 font-bold text-[10px] uppercase tracking-widest border bg-transparent hover:bg-black/5 rounded-none cursor-pointer"
                   >
                     Read Whitepaper
                   </button>
@@ -153,18 +153,42 @@ export function MockupsTab({ brand }: MockupsTabProps) {
       {(activeMockup === 'all' || activeMockup === 'card') && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] uppercase tracking-[0.3em] font-black flex items-center gap-3">
+            <h3 className="text-[11px] uppercase tracking-[0.3em] font-black flex items-center gap-3 text-[#1A1A1A] dark:text-[#F9F7F2]">
               <CreditCard className="w-4 h-4" />
               <span>Physical Touchpoint: Premium Business Cards</span>
             </h3>
-            <span className="text-[9px] uppercase tracking-widest font-bold opacity-50">Front & Back Design</span>
+            <span className="text-[9px] uppercase tracking-widest font-bold opacity-50 text-[#1A1A1A] dark:text-[#F9F7F2]">Front & Back Design</span>
+          </div>
+
+          {/* Interactive Business Card Settings */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-4 rounded-none transition-colors">
+            <div>
+              <label className="block text-[9px] uppercase tracking-widest font-bold mb-2 text-[#1A1A1A] dark:text-[#F9F7F2]">Card Holder Name</label>
+              <input
+                type="text"
+                value={cardName}
+                onChange={(e) => setCardName(e.target.value)}
+                placeholder="Elena Vance"
+                className="w-full bg-transparent border-b border-[#1A1A1A] dark:border-[#F9F7F2]/30 px-0 py-2 text-sm text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] uppercase tracking-widest font-bold mb-2 text-[#1A1A1A] dark:text-[#F9F7F2]">Card Holder Title</label>
+              <input
+                type="text"
+                value={cardTitle}
+                onChange={(e) => setCardTitle(e.target.value)}
+                placeholder="Founder & Creative Director"
+                className="w-full bg-transparent border-b border-[#1A1A1A] dark:border-[#F9F7F2]/30 px-0 py-2 text-sm text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Front Card */}
             <div
               style={{ backgroundColor: darkColor, color: '#ffffff' }}
-              className="p-8 aspect-[1.75/1] border-2 border-white flex flex-col justify-between relative overflow-hidden group shadow-2xl rounded-none"
+              className="p-8 aspect-[1.75/1] border-2 border-white dark:border-zinc-800 flex flex-col justify-between relative overflow-hidden group shadow-2xl rounded-none"
             >
               <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
                  <div className="w-[120%] h-px bg-white rotate-45 transform" />
@@ -187,7 +211,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
             {/* Back Card */}
             <div
               style={{ backgroundColor: lightColor, color: darkColor, fontFamily: bodyFont }}
-              className="p-8 aspect-[1.75/1] border border-[#1A1A1A] flex flex-col justify-between relative group rounded-none"
+              className="p-8 aspect-[1.75/1] border border-[#1A1A1A] dark:border-[#F9F7F2]/10 flex flex-col justify-between relative group rounded-none"
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -202,7 +226,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 />
               </div>
 
-              <div className="space-y-2 text-[10px] uppercase tracking-widest font-bold border-t border-dashed border-[#1A1A1A]/30 pt-4">
+              <div className="space-y-2 text-[10px] uppercase tracking-widest font-bold border-t border-dashed border-[#1A1A1A]/30 dark:border-white/10 pt-4">
                 <p>{cardEmail}</p>
                 <p>+1 (555) 839-2041</p>
                 <p className="text-[9px] opacity-50 mt-1">San Francisco • Tokyo • London</p>
@@ -216,11 +240,11 @@ export function MockupsTab({ brand }: MockupsTabProps) {
       {(activeMockup === 'all' || activeMockup === 'social') && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] uppercase tracking-[0.3em] font-black flex items-center gap-3">
+            <h3 className="text-[11px] uppercase tracking-[0.3em] font-black flex items-center gap-3 text-[#1A1A1A] dark:text-[#F9F7F2]">
               <Share2 className="w-4 h-4" />
               <span>Social Media Touchpoint: Brand Campaign Card (1:1)</span>
             </h3>
-            <span className="text-[9px] uppercase tracking-widest font-bold opacity-50">Instagram / LinkedIn</span>
+            <span className="text-[9px] uppercase tracking-widest font-bold opacity-50 text-[#1A1A1A] dark:text-[#F9F7F2]">Instagram / LinkedIn</span>
           </div>
 
           <div className="max-w-md mx-auto">
@@ -229,7 +253,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 backgroundColor: darkColor,
                 color: '#ffffff',
               }}
-              className="p-10 aspect-square border-4 border-[#F9F7F2] flex flex-col justify-between relative overflow-hidden rounded-none shadow-2xl"
+              className="p-10 aspect-square border-4 border-[#F9F7F2] dark:border-zinc-800 flex flex-col justify-between relative overflow-hidden rounded-none shadow-2xl"
             >
               <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
               <div className="flex items-center justify-between relative z-10">
@@ -246,7 +270,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 <div className="w-12 h-px bg-white/30" />
                 <p
                   style={{ fontFamily: headingFont }}
-                  className="text-3xl font-light italic leading-snug"
+                  className="text-2xl sm:text-3xl font-light italic leading-snug"
                 >
                   "{brand.mission}"
                 </p>

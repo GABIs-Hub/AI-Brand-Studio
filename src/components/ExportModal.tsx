@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { BrandBible } from '../types';
-import { X, Download, Copy, Check, FileJson, FileCode, FileText } from 'lucide-react';
+import { X, Download, Copy, Check, FileJson, FileCode, FileText, FileUp, Share2 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import { shareBrandBible, formatBrandSummarySnippet } from '../lib/share';
 
 interface ExportModalProps {
   brand: BrandBible | null;
@@ -8,12 +10,54 @@ interface ExportModalProps {
   onClose: () => void;
 }
 
+// Convert Hex string to RGB numbers for jsPDF fill styling
+const hexToRgb = (hex: string) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 26, g: 26, b: 26 };
+};
+
+// Convert SVG Logo string directly to a PNG Data URI on-the-fly using browser Canvas
+const svgToPngDataUrl = (svgString: string): Promise<string> => {
+  return new Promise((resolve) => {
+    try {
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 400;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, 400, 400);
+          ctx.drawImage(img, 50, 50, 300, 300);
+        }
+        const dataUrl = canvas.toDataURL('image/png');
+        URL.revokeObjectURL(url);
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve('');
+      img.src = url;
+    } catch {
+      resolve('');
+    }
+  });
+};
+
 export function ExportModal({ brand, isOpen, onClose }: ExportModalProps) {
   const [copiedType, setCopiedType] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   if (!isOpen || !brand) return null;
 
   const jsonString = JSON.stringify(brand, null, 2);
+  const summarySnippet = formatBrandSummarySnippet(brand);
 
   const cssString = `:root {\n` +
     `  /* Brand Bible: ${brand.brandName} Palette */\n` +
@@ -58,47 +102,374 @@ export function ExportModal({ brand, isOpen, onClose }: ExportModalProps) {
     setTimeout(() => setCopiedType(null), 2000);
   };
 
+  const handleShare = async () => {
+    if (!brand) return;
+    const res = await shareBrandBible(brand);
+    if (res.success) {
+      setShareFeedback(res.method === 'native-share' ? 'Shared via Web Share API' : 'Summary Copied to Clipboard');
+      setTimeout(() => setShareFeedback(null), 3000);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!brand) return;
+    setIsGeneratingPdf(true);
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4'
+      });
+
+      // ==========================================
+      // PAGE 1: Brand Header & Cover
+      // ==========================================
+      doc.setFillColor(249, 247, 242); // Warm off-white #F9F7F2
+      doc.rect(0, 0, 595.28, 841.89, 'F');
+
+      // Elegant inner border
+      doc.setDrawColor(26, 26, 26); // Charcoal #1A1A1A
+      doc.setLineWidth(1.5);
+      doc.rect(40, 40, 515.28, 761.89);
+
+      doc.setLineWidth(0.5);
+      doc.line(50, 50, 545.28, 50);
+
+      // Title
+      doc.setTextColor(26, 26, 26);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(32);
+      doc.text(brand.brandName.toUpperCase(), 297.64, 130, { align: 'center' });
+
+      // Subtitle
+      doc.setFont('helvetica', 'oblique');
+      doc.setFontSize(14);
+      doc.text(`"${brand.tagline}"`, 297.64, 165, { align: 'center' });
+
+      // Details Block
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`INDUSTRY: ${brand.industry.toUpperCase()}`, 297.64, 195, { align: 'center' });
+      doc.text(`GENERATED ON: ${new Date().toLocaleDateString()}`, 297.64, 210, { align: 'center' });
+
+      // Logo Frame
+      doc.setDrawColor(26, 26, 26);
+      doc.setLineWidth(1);
+      doc.rect(197.64, 240, 200, 200);
+
+      // Render vector logo to frame
+      const logoPng = await svgToPngDataUrl(brand.logo.primaryLogoSvg);
+      if (logoPng) {
+        doc.addImage(logoPng, 'PNG', 198.64, 241, 198, 198);
+      } else {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text("PRIMARY LOGO MARK", 297.64, 345, { align: 'center' });
+      }
+
+      // Mission & Vision Section
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text("MISSION STATEMENT", 60, 490);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      const splitMission = doc.splitTextToSize(brand.mission, 475);
+      doc.text(splitMission, 60, 510);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text("LONG-TERM VISION", 60, 600);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      const splitVision = doc.splitTextToSize(brand.vision, 475);
+      doc.text(splitVision, 60, 620);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text("POSITIONING STATEMENT", 60, 710);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      const splitPositioning = doc.splitTextToSize(brand.positioningStatement, 475);
+      doc.text(splitPositioning, 60, 730);
+
+      // ==========================================
+      // PAGE 2: Color Palette Details
+      // ==========================================
+      doc.addPage();
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, 595.28, 841.89, 'F');
+      doc.rect(40, 40, 515.28, 761.89);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(26, 26, 26);
+      doc.text("BRAND PALETTE SPECS", 60, 90);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text("A carefully calibrated five-color scheme defining roles, contrast, and usage metrics.", 60, 110);
+
+      let yOffset = 145;
+      brand.palette.forEach((color) => {
+        const rgb = hexToRgb(color.hex);
+        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+        doc.rect(60, yOffset, 65, 65, 'FD');
+
+        doc.setTextColor(26, 26, 26);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11.5);
+        doc.text(`${color.role.toUpperCase()}: ${color.name}`, 140, yOffset + 15);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.text(`HEX: ${color.hex}   |   RGB: ${color.rgb}`, 140, yOffset + 30);
+
+        const splitUsage = doc.splitTextToSize(`Usage Guideline: ${color.usage}`, 380);
+        doc.text(splitUsage, 140, yOffset + 43);
+
+        yOffset += 112;
+      });
+
+      // ==========================================
+      // PAGE 3: Typography & Values
+      // ==========================================
+      doc.addPage();
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, 595.28, 841.89, 'F');
+      doc.rect(40, 40, 515.28, 761.89);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text("TYPOGRAPHY & VALUES", 60, 90);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text("HEADING TYPOGRAPHY", 60, 135);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      doc.text(`Primary Font: ${brand.typography.headingFont} (${brand.typography.headingFontCategory})`, 60, 155);
+      doc.text(`Supported Weights: ${brand.typography.headingWeights.join(', ')}`, 60, 170);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text("BODY TYPOGRAPHY", 60, 210);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      doc.text(`System Font: ${brand.typography.bodyFont} (${brand.typography.bodyFontCategory})`, 60, 230);
+      doc.text(`Supported Weights: ${brand.typography.bodyWeights.join(', ')}`, 60, 245);
+
+      doc.setFont('helvetica', 'oblique');
+      doc.setFontSize(9.5);
+      const splitRationale = doc.splitTextToSize(`Type Rationalization: ${brand.typography.rationale}`, 470);
+      doc.text(splitRationale, 60, 275);
+
+      // Core Values
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text("CORE BRAND VALUES", 60, 375);
+
+      let valY = 410;
+      brand.values.forEach((val) => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(val.title.toUpperCase(), 60, valY);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        const splitValDesc = doc.splitTextToSize(val.description, 470);
+        doc.text(splitValDesc, 60, valY + 14);
+
+        valY += 58;
+      });
+
+      // ==========================================
+      // PAGE 4: Asset Usage Guide (Do's & Don'ts)
+      // ==========================================
+      doc.addPage();
+      doc.setFillColor(249, 247, 242);
+      doc.rect(0, 0, 595.28, 841.89, 'F');
+
+      doc.setDrawColor(26, 26, 26);
+      doc.setLineWidth(1.5);
+      doc.rect(40, 40, 515.28, 761.89);
+
+      doc.setLineWidth(0.5);
+      doc.line(50, 50, 545.28, 50);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text("ASSET USAGE & GOVERNANCE", 60, 90);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(16, 122, 68); // Dark Emerald
+      doc.text("APPROVED PRACTICES (DO'S)", 60, 135);
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const dosList = [
+        "• Always scale logomarks proportionally with locked 1:1 aspect ratio.",
+        "• Maintain mandatory 1X clearspace exclusion perimeter around visual marks.",
+        "• Use dedicated secondary submarks for micro UI targets under 40px.",
+        `• Pair ${brand.typography.headingFont} for headlines with ${brand.typography.bodyFont} for body copy.`,
+        "• Ensure high contrast against background surfaces meeting WCAG AA standards."
+      ];
+      let doY = 160;
+      dosList.forEach(item => {
+        doc.text(item, 60, doY);
+        doY += 22;
+      });
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(190, 24, 24); // Dark Crimson
+      doc.text("PROHIBITED PRACTICES (DON'TS)", 60, 295);
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const dontsList = [
+        "• Never stretch, condense, skew, or distort the vector logomarks.",
+        "• Never apply artificial drop shadows, glows, bevels, or unapproved filter effects.",
+        "• Never rotate or angle visual marks on diagonal baselines.",
+        "• Never recolor with non-system gradients or unauthorized tint variations.",
+        "• Never center-align multi-sentence paragraphs longer than 2 lines."
+      ];
+      let dontY = 320;
+      dontsList.forEach(item => {
+        doc.text(item, 60, dontY);
+        dontY += 22;
+      });
+
+      // Spatial & Sizing Specifications
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(26, 26, 26);
+      doc.text("MINIMUM SIZE SPECIFICATIONS", 60, 460);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text("• Primary Digital Lockup: Minimum 96px width", 60, 485);
+      doc.text("• Secondary Submark (Favicons/Avatars): Minimum 24px x 24px", 60, 507);
+      doc.text("• Print Minimum Resolution: 20mm (0.78 in) at 300 DPI vector", 60, 529);
+
+      doc.save(`${brand.brandName.toLowerCase()}-brand-bible.pdf`);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative border border-gray-200">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" id="export-modal">
+      <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative border border-gray-200 dark:border-[#F9F7F2]/20">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+          className="absolute top-5 right-5 p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+          id="close-export-btn"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Export Brand Bible</h2>
-          <p className="text-xs text-gray-500 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-[#F9F7F2]" id="export-modal-title">Export Brand Bible</h2>
+          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
             Download or copy complete design system specifications for {brand.brandName}.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* JSON Export */}
-          <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3 flex flex-col justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Web Share & Quick Snippet */}
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between sm:col-span-2" id="share-snippet-card">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Web Share & Text Snippet</h3>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mt-0.5">
+                    Share a clean text summary via native device share sheet (iOS/Android/Desktop) or copy snippet.
+                  </p>
+                </div>
+              </div>
+              {shareFeedback && (
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-md border border-emerald-200 dark:border-emerald-800 shrink-0">
+                  ✓ {shareFeedback}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                onClick={handleShare}
+                className="flex-1 min-w-[140px] py-2 px-3 text-xs font-bold rounded-lg bg-[#1A1A1A] hover:bg-black dark:bg-[#F9F7F2] dark:hover:bg-white text-white dark:text-[#1A1A1A] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                id="native-share-btn"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share via Web Share API</span>
+              </button>
+              <button
+                onClick={() => handleCopy(summarySnippet, 'snippet')}
+                className="py-2 px-3 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                id="copy-snippet-btn"
+              >
+                {copiedType === 'snippet' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>Copy Text Snippet</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Structured Brand PDF */}
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="pdf-export-card">
             <div>
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-2">
+              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 flex items-center justify-center mb-2">
+                <FileText className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Structured PDF</h3>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mt-0.5">
+                Download a beautifully formatted multi-page printable Brand manual.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={handleDownloadPdf}
+                disabled={isGeneratingPdf}
+                className="w-full py-1.5 px-3 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
+                id="download-pdf-btn"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* JSON Export */}
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="json-export-card">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center mb-2">
                 <FileJson className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-sm text-gray-900">Full JSON Kit</h3>
-              <p className="text-[11px] text-gray-500 leading-normal mt-0.5">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Full JSON Kit</h3>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mt-0.5">
                 Complete structured Brand Bible data schema.
               </p>
             </div>
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(jsonString, 'json')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                id="copy-json-btn"
               >
                 {copiedType === 'json' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>Copy</span>
               </button>
               <button
                 onClick={() => handleDownload(jsonString, `${brand.brandName.toLowerCase()}-brand-bible.json`, 'application/json')}
-                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center"
+                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
                 title="Download JSON"
+                id="download-json-btn"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
@@ -106,28 +477,30 @@ export function ExportModal({ brand, isOpen, onClose }: ExportModalProps) {
           </div>
 
           {/* CSS Variables Export */}
-          <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3 flex flex-col justify-between">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="css-export-card">
             <div>
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center mb-2">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 flex items-center justify-center mb-2">
                 <FileCode className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-sm text-gray-900">CSS Stylesheet</h3>
-              <p className="text-[11px] text-gray-500 leading-normal mt-0.5">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">CSS Stylesheet</h3>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mt-0.5">
                 CSS custom properties for colors & typography.
               </p>
             </div>
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(cssString, 'css')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                id="copy-css-btn"
               >
                 {copiedType === 'css' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>Copy</span>
               </button>
               <button
                 onClick={() => handleDownload(cssString, `${brand.brandName.toLowerCase()}-brand-tokens.css`, 'text/css')}
-                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center"
+                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
                 title="Download CSS"
+                id="download-css-btn"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
@@ -135,28 +508,30 @@ export function ExportModal({ brand, isOpen, onClose }: ExportModalProps) {
           </div>
 
           {/* Markdown Summary Export */}
-          <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3 flex flex-col justify-between">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="markdown-export-card">
             <div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2">
-                <FileText className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mb-2">
+                <FileUp className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-sm text-gray-900">Markdown Guide</h3>
-              <p className="text-[11px] text-gray-500 leading-normal mt-0.5">
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Markdown Guide</h3>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mt-0.5">
                 Formatted documentation markdown file.
               </p>
             </div>
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(markdownString, 'md')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 flex items-center justify-center gap-1"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                id="copy-md-btn"
               >
                 {copiedType === 'md' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>Copy</span>
               </button>
               <button
                 onClick={() => handleDownload(markdownString, `${brand.brandName.toLowerCase()}-brand-bible.md`, 'text/markdown')}
-                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center"
+                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
                 title="Download MD"
+                id="download-md-btn"
               >
                 <Download className="w-3.5 h-3.5" />
               </button>
@@ -167,3 +542,4 @@ export function ExportModal({ brand, isOpen, onClose }: ExportModalProps) {
     </div>
   );
 }
+
