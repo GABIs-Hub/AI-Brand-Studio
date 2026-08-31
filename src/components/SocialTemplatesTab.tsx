@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { BrandBible, SocialPostData, SocialPlatform, SocialPostType, SocialPostLayout, SocialThemePreset } from '../types';
+import {
+  BrandBible,
+  SocialPostData,
+  SocialPlatform,
+  SocialPostType,
+  SocialPostLayout,
+  SocialThemePreset,
+} from '../types';
 import {
   Sparkles,
   Download,
@@ -21,30 +28,56 @@ import {
   Info,
   CheckCircle2,
   Flame,
+  Video,
+  PhoneCall,
+  Radio,
+  Lightbulb,
+  Rocket,
+  ShieldCheck,
+  Quote,
+  Zap,
+  TrendingUp,
+  Target,
+  Music,
+  Play,
+  Clock,
+  Smartphone,
 } from 'lucide-react';
-import { toPng, toSvg } from 'html-to-image';
+import { toPng } from 'html-to-image';
 
 interface SocialTemplatesTabProps {
   brand: BrandBible;
   initialTopicHeadline?: string;
 }
 
-const POST_TYPES: { type: SocialPostType; label: string; icon: string; promptHint: string }[] = [
-  { type: 'thought_leadership', label: 'Thought Leadership', icon: '💡', promptHint: 'Our perspective on redefining the future of industry standards.' },
-  { type: 'announcement', label: 'Major Announcement', icon: '🚀', promptHint: 'Announcing our revolutionary new product experience.' },
-  { type: 'value_pillar', label: 'Brand Manifesto & Values', icon: '🏛️', promptHint: 'Why radical precision and craftsmanship drive everything we create.' },
-  { type: 'quote', label: 'Founder / Visionary Quote', icon: '💬', promptHint: 'A bold statement about solving the hardest problems in modern workflows.' },
-  { type: 'feature_spotlight', label: 'Feature Spotlight', icon: '⚡', promptHint: 'Highlighting our breakthrough capabilities and distinct advantages.' },
-  { type: 'social_proof', label: 'Impact & Social Proof', icon: '📈', promptHint: 'How we empowered industry leaders to move 10x faster.' },
-  { type: 'hiring', label: 'Careers & Culture', icon: '🎯', promptHint: 'Join our world-class engineering and design guild.' },
-  { type: 'event', label: 'Keynote & Event', icon: '🎙️', promptHint: 'Join our upcoming live architectural keynote and masterclass.' },
+const POST_TYPES: { type: SocialPostType; label: string; icon: typeof Lightbulb; promptHint: string }[] = [
+  { type: 'thought_leadership', label: 'Thought Leadership', icon: Lightbulb, promptHint: 'Our perspective on redefining the future of industry standards.' },
+  { type: 'announcement', label: 'Major Announcement', icon: Rocket, promptHint: 'Announcing our revolutionary new product experience.' },
+  { type: 'value_pillar', label: 'Brand Manifesto & Values', icon: ShieldCheck, promptHint: 'Why radical precision and craftsmanship drive everything we create.' },
+  { type: 'quote', label: 'Founder / Visionary Quote', icon: Quote, promptHint: 'A bold statement about solving the hardest problems in modern workflows.' },
+  { type: 'feature_spotlight', label: 'Feature Spotlight', icon: Zap, promptHint: 'Highlighting our breakthrough capabilities and distinct advantages.' },
+  { type: 'social_proof', label: 'Impact & Social Proof', icon: TrendingUp, promptHint: 'How we empowered industry leaders to move 10x faster.' },
+  { type: 'hiring', label: 'Careers & Culture', icon: Target, promptHint: 'Join our world-class engineering and design guild.' },
+  { type: 'event', label: 'Keynote & Event', icon: Radio, promptHint: 'Join our upcoming live architectural keynote and masterclass.' },
 ];
 
-const PLATFORMS: { id: SocialPlatform; label: string; aspect: string; aspectClass: string; icon: typeof Instagram; width: number; height: number }[] = [
-  { id: 'instagram_square', label: 'Instagram Feed (1:1)', aspect: '1:1', aspectClass: 'aspect-square max-w-[480px]', icon: Instagram, width: 1080, height: 1080 },
-  { id: 'instagram_story', label: 'Instagram Story (9:16)', aspect: '9:16', aspectClass: 'aspect-[9/16] max-w-[340px]', icon: Instagram, width: 1080, height: 1920 },
-  { id: 'linkedin_feed', label: 'LinkedIn Post (4:5)', aspect: '4:5', aspectClass: 'aspect-[4/5] max-w-[440px]', icon: Linkedin, width: 1080, height: 1350 },
-  { id: 'linkedin_carousel', label: 'LinkedIn Slide (4:5)', aspect: '4:5 (Slide)', aspectClass: 'aspect-[4/5] max-w-[440px]', icon: Linkedin, width: 1080, height: 1350 },
+const PLATFORMS: {
+  id: SocialPlatform;
+  label: string;
+  badge: string;
+  aspect: string;
+  aspectClass: string;
+  icon: typeof Instagram;
+  width: number;
+  height: number;
+}[] = [
+  { id: 'instagram_square', label: 'Instagram Feed', badge: '1:1', aspect: '1:1', aspectClass: 'aspect-square max-w-[480px]', icon: Instagram, width: 1080, height: 1080 },
+  { id: 'instagram_story', label: 'Instagram Story', badge: '9:16', aspect: '9:16', aspectClass: 'aspect-[9/16] max-w-[340px]', icon: Instagram, width: 1080, height: 1920 },
+  { id: 'linkedin_feed', label: 'LinkedIn Post', badge: '4:5', aspect: '4:5', aspectClass: 'aspect-[4/5] max-w-[440px]', icon: Linkedin, width: 1080, height: 1350 },
+  { id: 'linkedin_carousel', label: 'LinkedIn Slide', badge: '4:5 Slide', aspect: '4:5 (Slide)', aspectClass: 'aspect-[4/5] max-w-[440px]', icon: Linkedin, width: 1080, height: 1350 },
+  { id: 'tiktok_video', label: 'TikTok Video & Script', badge: '9:16 Video', aspect: '9:16', aspectClass: 'aspect-[9/16] max-w-[340px]', icon: Video, width: 1080, height: 1920 },
+  { id: 'whatsapp_status', label: 'WhatsApp Status', badge: '9:16 Status', aspect: '9:16', aspectClass: 'aspect-[9/16] max-w-[340px]', icon: Smartphone, width: 1080, height: 1920 },
+  { id: 'whatsapp_broadcast', label: 'WhatsApp Broadcast', badge: 'Community', aspect: '4:5', aspectClass: 'aspect-[4/5] max-w-[440px]', icon: PhoneCall, width: 1080, height: 1350 },
 ];
 
 const LAYOUTS: { id: SocialPostLayout; label: string; desc: string }[] = [
@@ -84,10 +117,12 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingVisual, setIsGeneratingVisual] = useState(false);
   const [copiedCaption, setCopiedCaption] = useState(false);
+  const [copiedBroadcast, setCopiedBroadcast] = useState(false);
+  const [copiedScript, setCopiedScript] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // Template Post Data State initialized with brand-aligned defaults
+  // Template Post Data State initialized with brand-aligned defaults (Zero emojis)
   const [postData, setPostData] = useState<SocialPostData>({
     id: 'initial-post',
     platform: 'instagram_square',
@@ -110,8 +145,43 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
       'Innovation',
       'Excellence',
     ],
-    fullCaption: `✨ Setting a new benchmark in ${brand.industry}.\n\n"${brand.mission}"\n\nAt ${brand.brandName}, we believe every touchpoint is a promise kept. Explore what we're building.\n\n🔗 Link in bio.\n\n#${brand.brandName.replace(/\s+/g, '')} #${brand.industry.replace(/\s+/g, '')} #BrandDesign #Innovation`,
+    fullCaption: `Setting a new benchmark in ${brand.industry}.\n\n"${brand.mission}"\n\nAt ${brand.brandName}, we believe every touchpoint is a promise kept. Explore our design system.\n\nLink in bio.\n\n#${brand.brandName.replace(/\s+/g, '')} #${brand.industry.replace(/\s+/g, '')} #BrandDesign #Innovation`,
     aiImagePrompt: `Minimalist modern architectural composition with elegant light shadows, representing ${brand.brandName} in ${brand.industry}`,
+    videoHookScript: `Most teams in ${brand.industry} settle for ordinary solutions. Here is how ${brand.brandName} rebuilt the entire standard from first principles.`,
+    viralAudioSuggestion: 'Deep atmospheric lo-fi beats with ambient vinyl texture (120 BPM)',
+    videoScenes: [
+      {
+        step: 1,
+        title: 'The Hook (0-3s)',
+        action: `Macro pan across the ${brand.brandName} logomark with bold on-screen kinetic typography.`,
+        narration: `Category standards were built for yesterday. We engineered for what comes next.`,
+        duration: '3s',
+      },
+      {
+        step: 2,
+        title: 'The Core Proof (3-12s)',
+        action: 'Fast visual montage showing the tactile design system, contrast ratios, and product details.',
+        narration: `"${brand.mission.slice(0, 100)}..."`,
+        duration: '9s',
+      },
+      {
+        step: 3,
+        title: 'The Takeaway & CTA (12-18s)',
+        action: `Full-screen animated reveal of "${brand.tagline}" with tap link prompt.`,
+        narration: `Experience ${brand.brandName}. Link in bio to join the movement.`,
+        duration: '6s',
+      },
+    ],
+    whatsappMessageTemplate: `*ANNOUNCEMENT FROM ${brand.brandName.toUpperCase()}*\n\n` +
+      `_${brand.tagline}_\n\n` +
+      `Hello everyone,\n\n` +
+      `We are proud to share our latest strategic update with our inner circle.\n\n` +
+      `*Core Vision:* ${brand.mission}\n\n` +
+      `• High-precision design & engineering\n` +
+      `• Uncompromising materials and attention to detail\n` +
+      `• Designed specifically for discerning creators\n\n` +
+      `Read our full brand manifesto: https://www.${brand.brandName.toLowerCase().replace(/\s+/g, '')}.com\n\n` +
+      `Reply to this message directly if you have any questions!`,
   });
 
   // When postData platform changes, sync selectedPlatform
@@ -124,7 +194,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
       setPostData((prev) => ({
         ...prev,
         headline: initialTopicHeadline,
-        fullCaption: `📌 ${initialTopicHeadline}\n\n"${brand.mission}"\n\nAt ${brand.brandName}, we believe every touchpoint is a promise kept.\n\n🔗 Link in bio.\n\n#${brand.brandName.replace(/\s+/g, '')} #${brand.industry.replace(/\s+/g, '')} #BrandStrategy #Innovation`,
+        fullCaption: `${initialTopicHeadline}\n\n"${brand.mission}"\n\nAt ${brand.brandName}, we believe every touchpoint is a promise kept.\n\nLink in bio.\n\n#${brand.brandName.replace(/\s+/g, '')} #${brand.industry.replace(/\s+/g, '')} #BrandStrategy #Innovation`,
       }));
       setCustomPrompt(`Focus post on the topic: "${initialTopicHeadline}"`);
     }
@@ -217,7 +287,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
   // Call API to generate post content
   const handleGeneratePost = async (overridePrompt?: string) => {
     setIsGenerating(true);
-    setStatusMessage('Crafting AI brand copy and layout structure...');
+    setStatusMessage('Synthesizing professional campaign copy and platform hooks...');
     try {
       const response = await fetch('/api/generate-social-post', {
         method: 'POST',
@@ -237,7 +307,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
 
       const generated = (await response.json()) as SocialPostData;
       setPostData(generated);
-      setStatusMessage('✨ Template generated successfully!');
+      setStatusMessage('Campaign template generated successfully.');
       setTimeout(() => setStatusMessage(null), 3000);
     } catch (err: any) {
       console.error('Social generation error:', err);
@@ -253,7 +323,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
     setIsGeneratingVisual(true);
     setStatusMessage('Generating AI background visual with Gemini...');
     try {
-      const targetAspect = selectedPlatform === 'instagram_story' ? '9:16' : '1:1';
+      const targetAspect = selectedPlatform === 'instagram_story' || selectedPlatform === 'tiktok_video' || selectedPlatform === 'whatsapp_status' ? '9:16' : '1:1';
       const response = await fetch('/api/generate-social-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -271,7 +341,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
       const data = await response.json();
       if (data.imageUrl) {
         setPostData((prev) => ({ ...prev, aiGeneratedImageUrl: data.imageUrl }));
-        setStatusMessage('Artwork generated and integrated into template!');
+        setStatusMessage('Artwork generated and integrated into template.');
         setTimeout(() => setStatusMessage(null), 3000);
       }
     } catch (err: any) {
@@ -296,7 +366,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
       link.download = `${brand.brandName.toLowerCase().replace(/\s+/g, '-')}-${selectedPlatform}-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
-      setStatusMessage('Graphic downloaded successfully!');
+      setStatusMessage('Graphic downloaded successfully.');
       setTimeout(() => setStatusMessage(null), 3000);
     } catch (err: any) {
       console.error('PNG export failed:', err);
@@ -314,6 +384,29 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
     setTimeout(() => setCopiedCaption(false), 2500);
   };
 
+  // Copy WhatsApp Broadcast
+  const handleCopyBroadcast = () => {
+    if (!postData.whatsappMessageTemplate) return;
+    navigator.clipboard.writeText(postData.whatsappMessageTemplate);
+    setCopiedBroadcast(true);
+    setTimeout(() => setCopiedBroadcast(false), 2500);
+  };
+
+  // Copy Video Script
+  const handleCopyScript = () => {
+    const scriptText = `TIKTOK / SHORT VIDEO SCRIPT: ${brand.brandName.toUpperCase()}\n` +
+      `TOPIC: ${postData.headline}\n` +
+      `AUDIO SUGGESTION: ${postData.viralAudioSuggestion || 'Deep atmospheric lo-fi'}\n\n` +
+      `OPENING HOOK (0-3s):\n"${postData.videoHookScript || postData.headline}"\n\n` +
+      `SCENE BREAKDOWN:\n` +
+      (postData.videoScenes?.map((s) => `[${s.title}] (${s.duration})\nAction: ${s.action}\nVoiceover: ${s.narration}\n`).join('\n') || '') +
+      `\nCAPTION:\n${postData.fullCaption}`;
+
+    navigator.clipboard.writeText(scriptText);
+    setCopiedScript(true);
+    setTimeout(() => setCopiedScript(false), 2500);
+  };
+
   const currentPlatformObj = PLATFORMS.find((p) => p.id === selectedPlatform) || PLATFORMS[0];
 
   return (
@@ -323,14 +416,14 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[11px] uppercase tracking-[0.3em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
-              AI Social Media Template Studio
+              AI Social Media &amp; Content Studio
             </span>
             <span className="bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] text-[9px] uppercase tracking-widest font-black px-2 py-0.5">
               Multi-Channel
             </span>
           </div>
           <p className="font-serif italic text-lg opacity-80 mt-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
-            AI-rendered Instagram & LinkedIn campaign templates auto-infused with {brand.brandName}'s typography, palette, and vector marks.
+            AI-rendered campaigns across Instagram, LinkedIn, TikTok video hooks, and WhatsApp broadcast templates auto-infused with {brand.brandName}'s identity.
           </p>
         </div>
 
@@ -349,35 +442,34 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
           <button
             onClick={handleCopyCaption}
             id="copy-social-caption-btn"
-            className="px-4 py-2.5 border border-[#1A1A1A] dark:border-[#F9F7F2]/30 text-[#1A1A1A] dark:text-[#F9F7F2] text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="px-4 py-2.5 border border-[#1A1A1A] dark:border-[#F9F7F2]/30 text-[#1A1A1A] dark:text-[#F9F7F2] text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
           >
             {copiedCaption ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copiedCaption ? 'Copied!' : 'Copy Caption'}</span>
+            <span>{copiedCaption ? 'Copied' : 'Copy Caption'}</span>
           </button>
         </div>
       </div>
 
-      {/* Status banner */}
+      {/* Status Bar */}
       {statusMessage && (
-        <div className="bg-zinc-100 dark:bg-zinc-800 border-l-2 border-[#1A1A1A] dark:border-[#F9F7F2] p-3 text-xs font-mono text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center justify-between animate-fadeIn">
+        <div className="p-3 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs font-mono text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2 animate-in fade-in">
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
           <span>{statusMessage}</span>
-          <button onClick={() => setStatusMessage(null)} className="text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 cursor-pointer">
-            Dismiss
-          </button>
         </div>
       )}
 
-      {/* Platform & Campaign Type Selector Tabs */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Side: Generator Controls & Configuration */}
+      {/* Main Studio Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Side: Strategy & Controls */}
         <div className="lg:col-span-5 space-y-6">
-          {/* 1. Target Social Platform */}
+          {/* Platform Selector Bar with TikTok & WhatsApp */}
           <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-5 space-y-3">
-            <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2">
               <Share2 className="w-3.5 h-3.5" />
-              <span>1. Target Platform & Dimensions</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2">
+              <span>Target Platform &amp; Format</span>
+            </span>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {PLATFORMS.map((plat) => {
                 const Icon = plat.icon;
                 const isSelected = selectedPlatform === plat.id;
@@ -385,118 +477,118 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                   <button
                     key={plat.id}
                     onClick={() => setSelectedPlatform(plat.id)}
-                    className={`p-3 text-left border flex flex-col justify-between transition-all cursor-pointer ${
+                    className={`p-3 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                        : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                        ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
+                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <Icon className="w-4 h-4" />
-                      <span className="text-[9px] font-mono opacity-60">{plat.aspect}</span>
+                      <span className="text-[8px] font-mono uppercase opacity-60">{plat.badge}</span>
                     </div>
-                    <span className="text-[10px] font-bold mt-2">{plat.label}</span>
+                    <span className="text-[10px] uppercase tracking-wider font-bold truncate">{plat.label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* 2. Post Archetype & Tone */}
+          {/* Post Archetype Selector */}
           <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-5 space-y-3">
-            <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>2. Campaign Archetype</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+            <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2">
+              <Type className="w-3.5 h-3.5" />
+              <span>Campaign Archetype</span>
+            </span>
+
+            <div className="grid grid-cols-2 gap-2">
               {POST_TYPES.map((pt) => {
+                const Icon = pt.icon;
                 const isSelected = selectedType === pt.type;
                 return (
                   <button
                     key={pt.type}
-                    onClick={() => {
-                      setSelectedType(pt.type);
-                      setCustomPrompt(pt.promptHint);
-                    }}
-                    className={`p-2.5 text-left border flex items-center gap-2.5 transition-all text-xs cursor-pointer ${
+                    onClick={() => setSelectedType(pt.type)}
+                    className={`p-2.5 text-left border transition-all cursor-pointer flex items-center gap-2 ${
                       isSelected
-                        ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                        : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                        ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
+                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
                     }`}
                   >
-                    <span className="text-sm">{pt.icon}</span>
-                    <span className="text-[10px] font-bold leading-tight truncate">{pt.label}</span>
+                    <Icon className="w-3.5 h-3.5 shrink-0 opacity-80" />
+                    <span className="text-[9px] uppercase tracking-wider font-bold truncate">{pt.label}</span>
                   </button>
                 );
               })}
             </div>
 
             {/* Custom Prompt Input */}
-            <div className="pt-2">
-              <label className="block text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-zinc-400 mb-1">
-                Custom Topic / Focus Angle (Optional)
+            <div className="pt-2 border-t border-gray-100 dark:border-zinc-800 space-y-2">
+              <label className="block text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-zinc-400">
+                Custom Campaign Directive / Angle (Optional)
               </label>
-              <textarea
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="e.g. Announce our launch, focus on sustainable innovation, quote on design..."
-                rows={2}
-                className="w-full bg-transparent border border-[#1A1A1A] dark:border-[#F9F7F2]/30 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="e.g. Focus on our upcoming launch or craftsmanship values..."
+                  className="w-full bg-transparent border border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+                />
+                <button
+                  onClick={() => handleGeneratePost()}
+                  disabled={isGenerating}
+                  id="generate-social-post-btn"
+                  className="px-4 py-2 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[9px] uppercase tracking-widest font-black flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shrink-0 disabled:opacity-50"
+                >
+                  {isGenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  <span>{isGenerating ? 'Drafting...' : 'Generate'}</span>
+                </button>
+              </div>
             </div>
-
-            <button
-              onClick={() => handleGeneratePost()}
-              disabled={isGenerating}
-              id="generate-social-post-btn"
-              className="w-full py-3 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[10px] uppercase tracking-widest font-black flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
-            >
-              {isGenerating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 text-amber-400" />}
-              <span>{isGenerating ? 'Synthesizing with Gemini...' : 'Generate Post Content'}</span>
-            </button>
           </div>
 
-          {/* 3. Layout Archetype & Theme Selector */}
+          {/* Layout & Aesthetic Themes */}
           <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-5 space-y-4">
             <div>
-              <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2 mb-2">
+              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2 mb-2">
                 <Layout className="w-3.5 h-3.5" />
-                <span>3. Layout Architecture</span>
-              </label>
-              <div className="grid grid-cols-3 gap-1.5">
+                <span>Graphic Layout Structure</span>
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {LAYOUTS.map((layout) => (
                   <button
                     key={layout.id}
                     onClick={() => setPostData((prev) => ({ ...prev, layout: layout.id }))}
                     className={`p-2 text-left border transition-all cursor-pointer ${
                       postData.layout === layout.id
-                        ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                        : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                        ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
+                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
                     }`}
                   >
-                    <p className="text-[9px] uppercase tracking-wider font-bold truncate">{layout.label}</p>
+                    <span className="text-[9px] uppercase tracking-wider font-bold block">{layout.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2 mb-2">
+            <div className="pt-2 border-t border-gray-100 dark:border-zinc-800">
+              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2 mb-2">
                 <Palette className="w-3.5 h-3.5" />
-                <span>4. Color Palette Theme</span>
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                <span>Color System & Contrast Theme</span>
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {THEMES.map((theme) => (
                   <button
                     key={theme.id}
                     onClick={() => setPostData((prev) => ({ ...prev, theme: theme.id }))}
                     className={`p-2 text-left border transition-all cursor-pointer ${
                       postData.theme === theme.id
-                        ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                        : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                        ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
+                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
                     }`}
                   >
-                    <p className="text-[9px] uppercase tracking-wider font-bold truncate">{theme.label}</p>
+                    <span className="text-[9px] uppercase tracking-wider font-bold block">{theme.label}</span>
                   </button>
                 ))}
               </div>
@@ -519,7 +611,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
           </div>
         </div>
 
-        {/* Right Side: Live Social Canvas Render */}
+        {/* Right Side: Live Social Canvas Render & Multi-Platform Extensions */}
         <div className="lg:col-span-7 space-y-6 flex flex-col items-center">
           {/* Card Canvas Container */}
           <div className="w-full flex flex-col items-center justify-center p-4 sm:p-8 bg-gray-100 dark:bg-[#111110] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 transition-colors">
@@ -775,12 +867,99 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
             </div>
           </div>
 
+          {/* TikTok Video Concepts & Hook Overlay Box */}
+          {selectedPlatform === 'tiktok_video' && (
+            <div className="w-full bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
+                <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2">
+                  <Video className="w-3.5 h-3.5 text-rose-500" />
+                  <span>TikTok &amp; Short-Form Video Production Blueprint</span>
+                </span>
+                <button
+                  onClick={handleCopyScript}
+                  className="text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedScript ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedScript ? 'Script Copied' : 'Copy Full Script'}</span>
+                </button>
+              </div>
+
+              {/* Audio Suggestion */}
+              <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Music className="w-4 h-4 text-purple-500" />
+                  <div>
+                    <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 block">Recommended Audio Track / Sound Style:</span>
+                    <span className="font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">{postData.viralAudioSuggestion || 'Deep atmospheric lo-fi beats with ambient vinyl texture (120 BPM)'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hook Voiceover / Text Overlay */}
+              <div className="space-y-1">
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-zinc-400 block">
+                  3-Second Retention Hook (Spoken + Kinetic Text Overlay)
+                </span>
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-xs font-serif italic text-amber-950 dark:text-amber-200">
+                  &ldquo;{postData.videoHookScript || postData.headline}&rdquo;
+                </div>
+              </div>
+
+              {/* Scene Breakdown */}
+              <div className="space-y-2">
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-zinc-400 block">
+                  Scene-by-Scene Video Timeline (15-18s)
+                </span>
+                <div className="space-y-2">
+                  {postData.videoScenes?.map((scene) => (
+                    <div key={scene.step} className="p-3 border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 space-y-1 text-xs">
+                      <div className="flex items-center justify-between font-mono text-[9px] text-gray-500">
+                        <span className="font-bold uppercase tracking-wider text-[#1A1A1A] dark:text-[#F9F7F2]">{scene.title}</span>
+                        <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" />{scene.duration}</span>
+                      </div>
+                      <p className="text-gray-700 dark:text-zinc-300"><strong className="text-[#1A1A1A] dark:text-white">Action:</strong> {scene.action}</p>
+                      <p className="font-serif italic text-gray-600 dark:text-zinc-400"><strong className="font-sans not-italic text-[#1A1A1A] dark:text-white">VO:</strong> &ldquo;{scene.narration}&rdquo;</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* WhatsApp Broadcast & Status Template Box */}
+          {(selectedPlatform === 'whatsapp_broadcast' || selectedPlatform === 'whatsapp_status') && (
+            <div className="w-full bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
+                <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2">
+                  <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>WhatsApp Broadcast &amp; Community Note</span>
+                </span>
+                <button
+                  onClick={handleCopyBroadcast}
+                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] uppercase tracking-widest font-black flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  {copiedBroadcast ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedBroadcast ? 'Message Copied' : 'Copy Broadcast Message'}</span>
+                </button>
+              </div>
+
+              <div className="p-4 bg-[#075E54]/5 dark:bg-[#075E54]/20 border border-[#075E54]/30 space-y-2">
+                <span className="text-[8px] font-mono uppercase tracking-widest text-[#075E54] dark:text-emerald-400 font-bold block">
+                  READY-TO-SEND WHATSAPP FORMAT (WITH BOLD &amp; ITALICS)
+                </span>
+                <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
+                  {postData.whatsappMessageTemplate || postData.fullCaption}
+                </pre>
+              </div>
+            </div>
+          )}
+
           {/* Real-time Content Editor Drawer */}
           <div className="w-full bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
               <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2">
                 <Sliders className="w-3.5 h-3.5" />
-                <span>Live Content & Typography Editor</span>
+                <span>Live Content &amp; Typography Editor</span>
               </span>
               <span className="text-[9px] uppercase tracking-widest font-mono text-gray-400">Instant Sync</span>
             </div>
@@ -836,7 +1015,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
 
               <div>
                 <label className="block text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-zinc-400 mb-1">
-                  Metric Highlight (Number & Label)
+                  Metric Highlight (Number &amp; Label)
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -863,7 +1042,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
             <div className="flex items-center justify-between">
               <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-2">
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>Ready-To-Post Caption & Hashtags</span>
+                <span>Ready-To-Post Caption &amp; Hashtags</span>
               </span>
               <button
                 onClick={handleCopyCaption}

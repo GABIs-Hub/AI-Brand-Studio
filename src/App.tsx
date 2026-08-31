@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react';
-import { BrandBible, GenerateBrandRequest } from './types';
+import { useState, useEffect, useCallback } from 'react';
+import { BrandBible, GenerateBrandRequest, UserStudioSettings } from './types';
+import { DEFAULT_SAVED_BRANDS } from './data/defaultBrands';
 import { Header } from './components/Header';
 import { BrandInputForm } from './components/BrandInputForm';
 import { BrandDashboard } from './components/BrandDashboard';
 import { AiBrandAssistant } from './components/AiBrandAssistant';
 import { ExportModal } from './components/ExportModal';
+import { AccountModal } from './components/AccountModal';
+import { ProjectTour } from './components/ProjectTour';
+import { FloatingAiDirector } from './components/FloatingAiDirector';
+import { BrandDeckPresentationModal } from './components/BrandDeckPresentationModal';
+import { TabType } from './components/BrandDashboard';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -12,21 +18,99 @@ import { auth, googleProvider, signInWithPopup, signOut, db, User } from './lib/
 import { shareBrandBible } from './lib/share';
 import { createMilestoneCheckpoint } from './lib/evolution';
 
-const STORAGE_KEY = 'brand_studio_saved_bibles';
+// Storage keys
+const SAVED_BRANDS_KEY = 'brand_studio_saved_brands';
+const GUEST_SESSION_KEY = 'brand_studio_guest_session_bibles';
+const STUDIO_SETTINGS_KEY = 'brand_studio_user_settings';
+
+// Comprehensive loader that recovers all saved brands from local and session storage with default flagship fallbacks
+function loadInitialSavedBrands(): BrandBible[] {
+  const foundMap = new Map<string, BrandBible>();
+
+  // 1. Recover from all possible localStorage locations
+  const localKeys = [
+    SAVED_BRANDS_KEY,
+    GUEST_SESSION_KEY,
+    'brand_studio_bibles',
+    'saved_brands',
+    'brands'
+  ];
+  for (const k of localKeys) {
+    try {
+      const raw = localStorage.getItem(k);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((b: BrandBible) => {
+            if (b && b.id && b.brandName) {
+              foundMap.set(b.id, b);
+            }
+          });
+        }
+      }
+    } catch {
+      // Ignore parse error
+    }
+  }
+
+  // 2. Recover from sessionStorage
+  try {
+    const raw = sessionStorage.getItem(GUEST_SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((b: BrandBible) => {
+          if (b && b.id && b.brandName) {
+            foundMap.set(b.id, b);
+          }
+        });
+      }
+    }
+  } catch {
+    // Ignore parse error
+  }
+
+  // 3. If no user brands were found or to complement the studio library, incorporate default flagship brands
+  if (foundMap.size === 0) {
+    DEFAULT_SAVED_BRANDS.forEach((b) => foundMap.set(b.id, b));
+  } else {
+    // Ensure flagship showcase brands exist in library if not already present
+    DEFAULT_SAVED_BRANDS.forEach((b) => {
+      if (!foundMap.has(b.id)) {
+        const existsByName = Array.from(foundMap.values()).some(
+          (existing) => existing.brandName.toLowerCase() === b.brandName.toLowerCase()
+        );
+        if (!existsByName) {
+          foundMap.set(b.id, b);
+        }
+      }
+    });
+  }
+
+  const result = Array.from(foundMap.values());
+  result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  try {
+    localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(result));
+  } catch {
+    // Ignore storage quota
+  }
+
+  return result;
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [initialBrandToUpgrade, setInitialBrandToUpgrade] = useState<BrandBible | null>(null);
+
+  // Initialize saved brands with persistent recovery & flagship default brand bibles
   const [savedBrands, setSavedBrands] = useState<BrandBible[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
+    return loadInitialSavedBrands();
   });
 
   const [activeBrand, setActiveBrand] = useState<BrandBible | null>(() => {
-    return savedBrands.length > 0 ? savedBrands[0] : null;
+    const initial = loadInitialSavedBrands();
+    return initial.length > 0 ? initial[0] : null;
   });
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -41,20 +125,93 @@ export default function App() {
     }
   });
 
+  const [studioSettings, setStudioSettings] = useState<UserStudioSettings>(() => {
+    try {
+      const stored = localStorage.getItem(STUDIO_SETTINGS_KEY);
+      return stored
+        ? JSON.parse(stored)
+        : {
+            studioName: 'Independent Creative Studio',
+            creativeDirector: 'Creative Director',
+            defaultIndustry: 'Technology & SaaS',
+            defaultAesthetic: 'Minimalist Swiss & Neo-Modern',
+            autoRecordMilestones: true,
+            highResRenderMode: 'high_definition',
+            colorPaletteHarmony: 'balanced',
+          };
+    } catch {
+      return {
+        studioName: 'Independent Creative Studio',
+        creativeDirector: 'Creative Director',
+        defaultIndustry: 'Technology & SaaS',
+        defaultAesthetic: 'Minimalist Swiss & Neo-Modern',
+        autoRecordMilestones: true,
+        highResRenderMode: 'high_definition',
+        colorPaletteHarmony: 'balanced',
+      };
+    }
+  });
+
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [tourTabOverride, setTourTabOverride] = useState<TabType>('overview');
+  const [tourViewModeOverride, setTourViewModeOverride] = useState<'simple' | 'studio' | undefined>(undefined);
   const [isLoadingBrand, setIsLoadingBrand] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>('');
   const [isGeneratingLogoImage, setIsGeneratingLogoImage] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isDeckOpen, setIsDeckOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
 
-  // Sync to localStorage
+  // Check if first-time visitor should see the interactive tour
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedBrands));
+      const tourSeen = localStorage.getItem('brand_studio_tour_seen');
+      if (!tourSeen) {
+        // Automatically pop tour for new users
+        setIsTourOpen(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleOpenTour = () => {
+    // If no brand selected, select the first saved showcase brand
+    if (!activeBrand && savedBrands.length > 0) {
+      setActiveBrand(savedBrands[0]);
+    }
+    setTourTabOverride('overview');
+    setTourViewModeOverride('simple');
+    setIsTourOpen(true);
+  };
+
+  const handleTourNavigateTab = (tab: TabType) => {
+    // If no active brand, select the first saved showcase brand
+    if (!activeBrand && savedBrands.length > 0) {
+      setActiveBrand(savedBrands[0]);
+    }
+    setTourTabOverride(tab);
+  };
+
+  const handleTourSetViewMode = (mode: 'simple' | 'studio') => {
+    if (!activeBrand && savedBrands.length > 0) {
+      setActiveBrand(savedBrands[0]);
+    }
+    setTourViewModeOverride(mode);
+  };
+
+  // Persistently synchronize saved brands across local and session storage
+  useEffect(() => {
+    try {
+      if (savedBrands && savedBrands.length > 0) {
+        localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(savedBrands));
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(savedBrands));
+      }
     } catch (e) {
-      console.error('Failed to save brands to localStorage', e);
+      console.error('Failed to sync saved brands to local storage', e);
     }
   }, [savedBrands]);
 
@@ -80,7 +237,7 @@ export default function App() {
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
-          // Fetch brands from Firestore with a 4-second timeout to avoid long hanging
+          // Fetch brands from Firestore for authenticated user
           const fetchPromise = (async () => {
             const q = query(
               collection(db, 'brands'),
@@ -100,58 +257,47 @@ export default function App() {
 
           const cloudBrands = await Promise.race([fetchPromise, timeoutPromise]);
 
-          // Sort by creation date descending
-          cloudBrands.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          // Merge local and cloud brands so no user creation is lost
+          const localBrands = loadInitialSavedBrands();
+          const mergedMap = new Map<string, BrandBible>();
 
-          // Merge local-only brands to the cloud
-          const localStored = localStorage.getItem(STORAGE_KEY);
-          const localBrands: BrandBible[] = localStored ? JSON.parse(localStored) : [];
-          const localOnlyBrands = localBrands.filter(
-            (local) => !cloudBrands.some((cloud) => cloud.id === local.id)
-          );
+          // Add cloud brands first
+          cloudBrands.forEach((b) => mergedMap.set(b.id, b));
 
-          if (localOnlyBrands.length > 0) {
-            for (const brand of localOnlyBrands) {
-              const brandWithOwner = { ...brand, userId: firebaseUser.uid };
-              setDoc(doc(db, 'brands', brand.id), brandWithOwner).catch(() => {});
-              cloudBrands.unshift(brandWithOwner);
+          // Add any local brand that hasn't been synced yet
+          localBrands.forEach((b) => {
+            if (!mergedMap.has(b.id)) {
+              mergedMap.set(b.id, { ...b, userId: firebaseUser.uid });
+              // Backfill to Firestore
+              setDoc(doc(db, 'brands', b.id), { ...b, userId: firebaseUser.uid }).catch(() => {});
             }
-          }
+          });
 
-          setSavedBrands(cloudBrands);
-          if (cloudBrands.length > 0) {
-            setActiveBrand(cloudBrands[0]);
-          } else {
-            setActiveBrand(null);
+          const mergedBrands = Array.from(mergedMap.values());
+          mergedBrands.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+          setSavedBrands(mergedBrands);
+          try {
+            localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(mergedBrands));
+          } catch {}
+
+          if (mergedBrands.length > 0) {
+            setActiveBrand((prev) => prev || mergedBrands[0]);
           }
         } catch (e) {
-          // Graceful fallback to local persistence when Firestore is offline/unreachable
           console.info('Cloud database offline or unreachable; using local storage:', e);
-          try {
-            const localStored = localStorage.getItem(STORAGE_KEY);
-            const localBrands: BrandBible[] = localStored ? JSON.parse(localStored) : [];
-            setSavedBrands(localBrands);
-            if (localBrands.length > 0) {
-              setActiveBrand(localBrands[0]);
-            }
-          } catch {
-            // No local brands found
+          const localBrands = loadInitialSavedBrands();
+          setSavedBrands(localBrands);
+          if (localBrands.length > 0) {
+            setActiveBrand((prev) => prev || localBrands[0]);
           }
         }
       } else {
-        // Logged out: fallback to local storage
-        try {
-          const stored = localStorage.getItem(STORAGE_KEY);
-          const localBrands = stored ? JSON.parse(stored) : [];
-          setSavedBrands(localBrands);
-          if (localBrands.length > 0) {
-            setActiveBrand(localBrands[0]);
-          } else {
-            setActiveBrand(null);
-          }
-        } catch {
-          setSavedBrands([]);
-          setActiveBrand(null);
+        // Logged out / Guest: read from persistent local storage
+        const localBrands = loadInitialSavedBrands();
+        setSavedBrands(localBrands);
+        if (localBrands.length > 0) {
+          setActiveBrand((prev) => prev || localBrands[0]);
         }
       }
     });
@@ -170,7 +316,7 @@ export default function App() {
         err?.code === 'auth/cancelled-popup-request' ||
         err?.message?.includes('popup-closed-by-user')
       ) {
-        // User closed or dismissed the popup intentionally; ignore silently
+        // User closed popup intentionally
         return;
       }
       console.warn('Google login notice:', err?.message || err);
@@ -178,25 +324,33 @@ export default function App() {
     }
   };
 
-  // Handle Logout action
+  // Handle Logout action - preserve local library
   const handleLogout = async () => {
     try {
       setErrorMessage(null);
       await signOut(auth);
+      // Keep existing brands in local library rather than wiping them
+      const localBrands = loadInitialSavedBrands();
+      setSavedBrands(localBrands);
+      if (localBrands.length > 0) {
+        setActiveBrand((prev) => prev || localBrands[0]);
+      }
+      setShareToast('Logged out of cloud sync. Your local library remains intact.');
+      setTimeout(() => setShareToast(null), 3000);
     } catch (err: any) {
       console.warn('Logout notice:', err);
     }
   };
 
-  // Handle Brand Bible Generation
+  // Handle Brand Bible Generation / Upgrade
   const handleGenerateBrand = async (req: GenerateBrandRequest) => {
     setIsLoadingBrand(true);
-    setLoadingStep('Analyzing brand mission & category...');
+    setLoadingStep(req.isExistingBrandRefresh ? 'Analyzing existing brand equity & mission...' : 'Analyzing brand mission & category...');
     setErrorMessage(null);
 
     try {
       setTimeout(() => setLoadingStep('Synthesizing 5-color harmony & typography pairings...'), 1500);
-      setTimeout(() => setLoadingStep('Crafting primary & secondary SVG marks...'), 3500);
+      setTimeout(() => setLoadingStep('Crafting primary & secondary vector marks...'), 3500);
       setTimeout(() => setLoadingStep('Building Brand Bible Dashboard...'), 5500);
 
       const res = await fetch('/api/generate-brand', {
@@ -221,13 +375,35 @@ export default function App() {
       if (data.error) throw new Error(data.error);
 
       const newBrand: BrandBible = data;
+
+      // Record Milestone in Brand Evolution
+      if (req.isExistingBrandRefresh) {
+        createMilestoneCheckpoint(newBrand, {
+          title: `Brand Upgrade & Modernization`,
+          changeNote: `Upgraded visual identity, typography pairing, vector mark suite, and brand guidelines while preserving brand equity.`,
+          category: 'identity_refresh',
+          tags: ['Identity Upgrade', 'Modernization', req.aesthetic || 'Brand Bible'],
+        });
+      }
+
+      // If user is authenticated, save permanently to Firestore Cloud Database
       if (user) {
         newBrand.userId = user.uid;
         await setDoc(doc(db, 'brands', newBrand.id), newBrand);
       }
 
-      setSavedBrands((prev) => [newBrand, ...prev]);
+      setSavedBrands((prev) => {
+        const updated = [newBrand, ...prev.filter((b) => b.id !== newBrand.id)];
+        try {
+          localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(updated));
+          sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(updated));
+        } catch (e) {
+          console.warn('Storage write error:', e);
+        }
+        return updated;
+      });
       setActiveBrand(newBrand);
+      setInitialBrandToUpgrade(null);
     } catch (err: any) {
       console.error('Error generating brand:', err);
       setErrorMessage(err.message || 'Failed to generate brand identity.');
@@ -245,12 +421,18 @@ export default function App() {
       }
       const updated = savedBrands.filter((b) => b.id !== id);
       setSavedBrands(updated);
+      try {
+        localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(updated));
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Storage write error:', e);
+      }
       if (activeBrand?.id === id) {
         setActiveBrand(updated.length > 0 ? updated[0] : null);
       }
     } catch (err) {
       console.error('Error deleting brand:', err);
-      setErrorMessage('Failed to delete brand from the cloud database.');
+      setErrorMessage('Failed to delete brand.');
     }
   };
 
@@ -264,7 +446,16 @@ export default function App() {
       const res = await fetch('/api/generate-logo-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, resolution }),
+        body: JSON.stringify({
+          prompt,
+          resolution,
+          brandName: activeBrand.brandName,
+          industry: activeBrand.industry,
+          palette: activeBrand.palette,
+          logoSvg: activeBrand.logo?.primaryLogoSvg,
+          tagline: activeBrand.tagline,
+          typography: activeBrand.typography,
+        }),
       });
 
       if (!res.ok) {
@@ -298,6 +489,10 @@ export default function App() {
       if (user) {
         updatedBrand.userId = user.uid;
         await setDoc(doc(db, 'brands', updatedBrand.id), updatedBrand);
+      } else {
+        const currentGuest = JSON.parse(sessionStorage.getItem(GUEST_SESSION_KEY) || '[]');
+        const updatedGuest = currentGuest.map((b: BrandBible) => b.id === updatedBrand.id ? updatedBrand : b);
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(updatedGuest));
       }
 
       setActiveBrand(updatedBrand);
@@ -333,16 +528,112 @@ export default function App() {
     }
   };
 
+  const handleTriggerUpgrade = (brandToUpgrade: BrandBible) => {
+    setInitialBrandToUpgrade(brandToUpgrade);
+    setActiveBrand(null);
+    setIsChatOpen(false);
+  };
+
+  // Re-fetch and synchronize cloud library with Firestore
+  const handleRefreshCloudSync = async () => {
+    if (user) {
+      try {
+        const q = query(
+          collection(db, 'brands'),
+          where('userId', '==', user.uid)
+        );
+        const querySnapshot = await getDocs(q);
+        const cloudBrands: BrandBible[] = [];
+        querySnapshot.forEach((docSnap) => {
+          cloudBrands.push(docSnap.data() as BrandBible);
+        });
+        cloudBrands.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (cloudBrands.length > 0) {
+          setSavedBrands(cloudBrands);
+          try {
+            localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(cloudBrands));
+          } catch {}
+          if (!activeBrand) setActiveBrand(cloudBrands[0]);
+          return;
+        }
+      } catch (e) {
+        console.warn('Firestore refresh query notice:', e);
+      }
+    }
+    const localBrands = loadInitialSavedBrands();
+    setSavedBrands(localBrands);
+    if (localBrands.length > 0 && !activeBrand) {
+      setActiveBrand(localBrands[0]);
+    }
+  };
+
+  // Handle Importing a Brand Bible (JSON)
+  const handleImportBrand = async (brandToImport: BrandBible) => {
+    const brandWithOwnership = { ...brandToImport };
+    if (user) {
+      brandWithOwnership.userId = user.uid;
+      try {
+        await setDoc(doc(db, 'brands', brandWithOwnership.id), brandWithOwnership);
+      } catch (e) {
+        console.warn('Could not save imported brand to Firestore:', e);
+      }
+    }
+    setSavedBrands((prev) => {
+      const exists = prev.some((b) => b.id === brandWithOwnership.id);
+      const updated = exists
+        ? prev.map((b) => (b.id === brandWithOwnership.id ? brandWithOwnership : b))
+        : [brandWithOwnership, ...prev];
+      try {
+        localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(updated));
+        sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    setActiveBrand(brandWithOwnership);
+    setShareToast(`Imported "${brandWithOwnership.brandName}" to your library!`);
+    setTimeout(() => setShareToast(null), 3000);
+  };
+
+  // Save studio settings
+  const handleUpdateStudioSettings = (newSettings: UserStudioSettings) => {
+    setStudioSettings(newSettings);
+    try {
+      localStorage.setItem(STUDIO_SETTINGS_KEY, JSON.stringify(newSettings));
+    } catch (e) {
+      console.error('Failed to save studio settings to localStorage', e);
+    }
+  };
+
   return (
     <div className={`min-h-screen bg-[#F9F7F2] dark:bg-[#181816] text-[#1A1A1A] dark:text-[#F9F7F2] font-sans flex flex-col selection:bg-[#1A1A1A] selection:text-[#F9F7F2] dark:selection:bg-[#F9F7F2] dark:selection:text-[#1A1A1A] transition-colors duration-300 relative`}>
       {/* Header Bar */}
       <Header
         activeBrand={activeBrand}
         savedBrands={savedBrands}
-        onSelectBrand={(brand) => setActiveBrand(brand)}
-        onNewBrand={() => setActiveBrand(null)}
+        onSelectBrand={(brand) => {
+          setActiveBrand(brand);
+          setInitialBrandToUpgrade(null);
+        }}
+        onNewBrand={() => {
+          setActiveBrand(null);
+          setInitialBrandToUpgrade(null);
+          setIsChatOpen(false);
+        }}
         onOpenChat={() => setIsChatOpen(!isChatOpen)}
         onOpenExport={() => setIsExportOpen(true)}
+        onOpenAccount={() => setIsAccountOpen(true)}
+        onOpenDeck={() => setIsDeckOpen(true)}
+        onOpenTour={handleOpenTour}
+        onOpenResearch={() => {
+          setActiveBrand(null);
+          setInitialBrandToUpgrade(null);
+          setIsChatOpen(false);
+          // Wait a tick then click the research tab
+          setTimeout(() => {
+            const researchTab = document.getElementById('tab-research-brands-mode');
+            if (researchTab) researchTab.click();
+          }, 50);
+        }}
         onShareBrand={handleShareBrand}
         isChatOpen={isChatOpen}
         isDarkMode={isDarkMode}
@@ -372,7 +663,7 @@ export default function App() {
             </div>
             <button
               onClick={() => setErrorMessage(null)}
-              className="text-xs font-semibold hover:underline shrink-0"
+              className="text-xs font-semibold hover:underline shrink-0 cursor-pointer"
             >
               Dismiss
             </button>
@@ -387,6 +678,10 @@ export default function App() {
             onGenerate={handleGenerateBrand}
             isLoading={isLoadingBrand}
             loadingStep={loadingStep}
+            savedBrands={savedBrands}
+            user={user}
+            initialBrandToUpgrade={initialBrandToUpgrade}
+            onClearInitialBrand={() => setInitialBrandToUpgrade(null)}
           />
         ) : (
           <BrandDashboard
@@ -396,9 +691,37 @@ export default function App() {
             savedBrands={savedBrands}
             onSelectBrand={(b) => setActiveBrand(b)}
             onDeleteBrand={handleDeleteBrand}
+            onUpgradeBrand={handleTriggerUpgrade}
+            user={user}
+            activeTabOverride={tourTabOverride}
+            viewModeOverride={tourViewModeOverride}
+            onViewModeChange={(mode) => setTourViewModeOverride(mode)}
           />
         )}
       </main>
+
+      {/* Interactive Project Tour Floating Companion */}
+      <ProjectTour
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onNavigateTab={handleTourNavigateTab}
+        onSetViewMode={handleTourSetViewMode}
+        onOpenChat={() => setIsChatOpen(true)}
+        onOpenExport={() => setIsExportOpen(true)}
+        savedBrands={savedBrands}
+        activeBrand={activeBrand}
+        onSelectBrand={(brand) => {
+          setActiveBrand(brand);
+          setInitialBrandToUpgrade(null);
+        }}
+      />
+
+      {/* Floating AI Director Trigger in Bottom-Right */}
+      <FloatingAiDirector
+        brand={activeBrand}
+        isOpen={isChatOpen}
+        onToggle={() => setIsChatOpen((prev) => !prev)}
+      />
 
       {/* AI Assistant Drawer */}
       <AiBrandAssistant
@@ -412,6 +735,35 @@ export default function App() {
         brand={activeBrand}
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
+        onOpenPitchDeck={() => setIsDeckOpen(true)}
+      />
+
+      {/* Client Pitch Deck Presentation Modal */}
+      <BrandDeckPresentationModal
+        brand={activeBrand}
+        isOpen={isDeckOpen}
+        onClose={() => setIsDeckOpen(false)}
+      />
+
+      {/* Account Settings & Brand Library Hub Modal */}
+      <AccountModal
+        isOpen={isAccountOpen}
+        onClose={() => setIsAccountOpen(false)}
+        user={user}
+        savedBrands={savedBrands}
+        activeBrand={activeBrand}
+        onSelectBrand={(brand) => {
+          setActiveBrand(brand);
+          setInitialBrandToUpgrade(null);
+        }}
+        onDeleteBrand={handleDeleteBrand}
+        onUpgradeBrand={handleTriggerUpgrade}
+        onImportBrand={handleImportBrand}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+        onRefreshCloudSync={handleRefreshCloudSync}
+        studioSettings={studioSettings}
+        onUpdateStudioSettings={handleUpdateStudioSettings}
       />
 
       {/* Footer */}

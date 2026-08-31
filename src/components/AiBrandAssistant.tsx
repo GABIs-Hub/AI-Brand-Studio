@@ -10,9 +10,9 @@ interface AiBrandAssistantProps {
 
 export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantProps) {
   const [selectedModel, setSelectedModel] = useState<'gemini-3.5-flash' | 'gemini-3.1-pro-preview' | 'gemini-3.1-flash-lite'>('gemini-3.5-flash');
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
-      id: 'init-1',
+      id: 'init-' + (brand?.id || 'default'),
       sender: 'assistant',
       text: brand
         ? `Hello! I'm your AI Brand Director for **${brand.brandName}**. How can I help you refine your brand bible, write social media copy, or explore new brand taglines?`
@@ -24,6 +24,22 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Synchronize and reset director conversation whenever the active brand changes
+  useEffect(() => {
+    if (brand) {
+      setMessages([
+        {
+          id: 'init-' + brand.id,
+          sender: 'assistant',
+          text: `Hello! I'm your AI Brand Director for **${brand.brandName}**. How can I help you refine your brand bible, write social media copy, or explore new brand taglines?`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+      setInputText('');
+      setIsLoading(false);
+    }
+  }, [brand?.id]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -32,7 +48,8 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
     scrollToBottom();
   }, [messages, isOpen]);
 
-  if (!isOpen) return null;
+  // AI Director should ONLY be active and visible when a brand is active and drawer is opened
+  if (!isOpen || !brand) return null;
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

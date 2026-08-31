@@ -3,6 +3,8 @@ import { BrandBible, LogoSpec, SecondaryMark } from '../types';
 import { FaviconGenerator } from './FaviconGenerator';
 import { LogoArchetypeStudio } from './LogoArchetypeStudio';
 import { CoTPromptRefinementStudio } from './CoTPromptRefinementStudio';
+import { Render3DStudio } from './Render3DStudio';
+import { downloadRenderAsPng, downloadRenderAsSvg } from '../utils/imageExport';
 import {
   Download,
   Sparkles,
@@ -23,6 +25,7 @@ import {
   Moon,
   Palette,
   SlidersHorizontal,
+  Box,
 } from 'lucide-react';
 
 interface LogoTabProps {
@@ -38,13 +41,6 @@ interface LogoTabProps {
   isProMode?: boolean;
 }
 
-const STUDIO_LIGHTING_PRESETS = [
-  { id: 'matte_foil', label: 'Gold Foil Stamp', prompt: 'Embossed metallic gold foil on luxury black heavy cardstock, studio chiaroscuro lighting, 8k render' },
-  { id: 'titanium', label: 'Brushed Titanium', prompt: 'Precision brushed titanium and frosted optical glass emblem, dramatic architectural ray-traced shadows' },
-  { id: 'neon_noir', label: 'Neon Glow Sign', prompt: 'Backlit cyberpunk neon acrylic sign on rainy dark slate wall, cinematic atmospheric depth' },
-  { id: 'linen_stamp', label: 'Letterpress Stamp', prompt: 'Debossed blind letterpress ink stamp on textured warm ivory artisanal linen paper' },
-];
-
 export function LogoTab({
   brand,
   logo,
@@ -53,11 +49,11 @@ export function LogoTab({
   onGenerateLogoImage,
   onUpdatePrimaryLogo,
   generatedImageUrl,
-  generatedImageResolution,
+  generatedImageResolution = '2K',
   isGeneratingImage,
   isProMode = false,
 }: LogoTabProps) {
-  const [activeTabMode, setActiveTabMode] = useState<'main' | 'styles' | 'favicons' | 'secondary'>('main');
+  const [activeTabMode, setActiveTabMode] = useState<'main' | 'render3d' | 'styles' | 'favicons' | 'secondary'>('main');
   const [bgMode, setBgMode] = useState<'light' | 'dark' | 'brand'>('light');
   const [selectedResolution, setSelectedResolution] = useState<'1K' | '2K' | '4K'>('2K');
   const [customPrompt, setCustomPrompt] = useState(logo.aiImagePrompt || '');
@@ -148,9 +144,10 @@ export function LogoTab({
           </p>
         </div>
 
-        <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-900 p-1">
+        <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-900 p-1 flex-wrap">
           {[
             { id: 'main', label: 'Active Logo', icon: LayoutGrid },
+            { id: 'render3d', label: '3D Studio Render', icon: Box },
             { id: 'styles', label: 'Explore Styles', icon: Sparkles },
             { id: 'favicons', label: 'Favicons', icon: Globe },
             { id: 'secondary', label: 'Sub-Marks', icon: Layers },
@@ -170,6 +167,11 @@ export function LogoTab({
               >
                 <Icon className="w-3 h-3" />
                 <span>{tab.label}</span>
+                {tab.id === 'render3d' && (
+                  <span className="ml-1 px-1 py-0.2 bg-amber-500 text-black text-[7px] font-black rounded-xs">
+                    HD
+                  </span>
+                )}
               </button>
             );
           })}
@@ -353,94 +355,14 @@ export function LogoTab({
 
             {showAdvancedTools && (
               <div className="p-6 space-y-8 bg-white dark:bg-[#1C1C1A] border-t border-gray-200 dark:border-zinc-800">
-                {/* 3D Render Studio */}
-                <div className="bg-[#1A1A1A] dark:bg-[#111110] p-6 text-white space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
-                    <div>
-                      <h4 className="text-sm font-serif italic">3D Photorealistic Render</h4>
-                      <p className="text-xs opacity-60">Generate metallic, neon, or letterpress 3D textures.</p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] uppercase tracking-widest font-bold opacity-60">Resolution:</span>
-                      {(['1K', '2K', '4K'] as const).map((res) => (
-                        <button
-                          key={res}
-                          type="button"
-                          onClick={() => setSelectedResolution(res)}
-                          className={`px-3 py-1 text-[9px] uppercase font-bold cursor-pointer ${
-                            selectedResolution === res ? 'bg-white text-black' : 'border border-white/30 text-white'
-                          }`}
-                        >
-                          {res}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Preset Buttons */}
-                  <div className="flex flex-wrap gap-2">
-                    {STUDIO_LIGHTING_PRESETS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => {
-                          setCustomPrompt(preset.prompt);
-                          handleGenerateImageClick(preset.prompt);
-                        }}
-                        className="px-3 py-1.5 text-[9px] uppercase tracking-widest font-bold border border-white/30 hover:bg-white hover:text-black transition-all cursor-pointer"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Prompt Box */}
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <input
-                      type="text"
-                      value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
-                      placeholder="Describe custom lighting or material..."
-                      className="flex-1 bg-transparent border-b border-white/40 px-2 py-2 text-sm text-white focus:outline-hidden focus:border-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateImageClick()}
-                      disabled={isGeneratingImage || !customPrompt.trim()}
-                      className="px-6 py-2 bg-white text-black text-[9px] uppercase tracking-widest font-black hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 shrink-0"
-                    >
-                      {isGeneratingImage ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-                      <span>Generate 3D Render</span>
-                    </button>
-                  </div>
-
-                  {imageError && (
-                    <div className="p-3 bg-amber-900/50 border border-amber-500/50 text-xs text-amber-200">
-                      {imageError}
-                    </div>
-                  )}
-
-                  {generatedImageUrl && (
-                    <div className="pt-4 border-t border-white/20 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs opacity-75">Rendered Asset:</span>
-                        <a
-                          href={generatedImageUrl}
-                          download={`${brandName.toLowerCase()}-3d-logo.png`}
-                          className="text-xs uppercase font-bold underline cursor-pointer"
-                        >
-                          Download 3D PNG &rarr;
-                        </a>
-                      </div>
-                      <img
-                        src={generatedImageUrl}
-                        alt="3D Logo"
-                        className="max-h-[300px] mx-auto object-contain"
-                      />
-                    </div>
-                  )}
-                </div>
+                {/* Embedded 3D Photorealistic Render Studio */}
+                <Render3DStudio
+                  brand={brand}
+                  onGenerateLogoImage={onGenerateLogoImage}
+                  isGeneratingImage={isGeneratingImage}
+                  generatedImageUrl={generatedImageUrl}
+                  generatedImageResolution={generatedImageResolution}
+                />
 
                 {/* CoT Prompt Refinement Lab */}
                 <div className="pt-6 border-t border-gray-200 dark:border-zinc-800">
@@ -453,13 +375,26 @@ export function LogoTab({
                     }}
                     onSendTo3DRender={(refinedPrompt) => {
                       setCustomPrompt(refinedPrompt);
-                      handleGenerateImageClick(refinedPrompt);
+                      onGenerateLogoImage(refinedPrompt, selectedResolution);
                     }}
                   />
                 </div>
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 2. Full 3D Photorealistic Render Studio Tab */}
+      {activeTabMode === 'render3d' && (
+        <div className="space-y-6">
+          <Render3DStudio
+            brand={brand}
+            onGenerateLogoImage={onGenerateLogoImage}
+            isGeneratingImage={isGeneratingImage}
+            generatedImageUrl={generatedImageUrl}
+            generatedImageResolution={generatedImageResolution}
+          />
         </div>
       )}
 

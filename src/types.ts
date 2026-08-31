@@ -87,7 +87,7 @@ export interface BrandBible {
   version?: string;
 }
 
-export type MilestoneCategory = 'genesis' | 'checkpoint' | 'refinement' | 'pivot' | 'ai_enhancement';
+export type MilestoneCategory = 'genesis' | 'checkpoint' | 'refinement' | 'pivot' | 'ai_enhancement' | 'identity_refresh';
 
 export interface BrandMilestone {
   id: string;
@@ -178,6 +178,12 @@ export interface GenerateBrandRequest {
   isExistingBrandRefresh?: boolean;
   existingColors?: string[];
   existingTagline?: string;
+  baseBrandId?: string;
+  previousVersionDetails?: {
+    typography?: string;
+    logoConcept?: string;
+    values?: string[];
+  };
 }
 
 export type LogoArchetype =
@@ -305,4 +311,16 @@ export interface SamplePreset {
   targetAudience: string;
   icon: string;
 }
+
+export interface UserStudioSettings {
+  studioName?: string;
+  creativeDirector?: string;
+  defaultIndustry?: string;
+  defaultAesthetic?: string;
+  autoRecordMilestones?: boolean;
+  highResRenderMode?: 'standard' | 'high_definition' | 'cinematic';
+  colorPaletteHarmony?: 'balanced' | 'vibrant' | 'minimalist_earthy' | 'monochromatic';
+}
+
+export * from './types/brandCaseStudies';
 

@@ -96,11 +96,23 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate viral topics.');
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error('Viral topics service returned an unexpected response format.');
+        }
       }
 
-      const data = await response.json();
+      if (!response.ok || !data) {
+        throw new Error(data?.error || 'Failed to generate viral topics.');
+      }
+
       if (data.hooks && data.hooks.length > 0) {
         setHooks(data.hooks);
       }
@@ -117,11 +129,11 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
   }, [brand.brandName]);
 
   const copyHookOutline = (hook: ViralTopicHook) => {
-    const textToCopy = `📌 TOPIC HOOK: ${hook.headline}\n\n` +
-      `🎯 ANGLE: ${hook.hookAngleLabel}\n` +
-      `💡 PITCH: ${hook.pitch}\n` +
-      `📊 FORMAT: ${hook.suggestedFormat.toUpperCase()}\n\n` +
-      `📝 SAMPLE SLIDE / OUTLINE BREAKDOWN:\n` +
+    const textToCopy = `TOPIC HOOK: ${hook.headline}\n\n` +
+      `ANGLE: ${hook.hookAngleLabel}\n` +
+      `PITCH: ${hook.pitch}\n` +
+      `FORMAT: ${hook.suggestedFormat.toUpperCase()}\n\n` +
+      `OUTLINE BREAKDOWN:\n` +
       hook.sampleOutline.map((item, idx) => `  ${idx + 1}. ${item}`).join('\n') +
       `\n\n#${hook.suggestedHashtags.join(' #')}`;
 

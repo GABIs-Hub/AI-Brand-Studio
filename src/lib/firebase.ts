@@ -15,11 +15,11 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore with fast auto-detect long polling for iframe sandbox compatibility
+// Initialize Firestore with forced long polling for sandbox and iframe proxy compatibility
 let firestoreDb;
 try {
   firestoreDb = initializeFirestore(app, {
-    experimentalAutoDetectLongPolling: true,
+    experimentalForceLongPolling: true,
   }, config.firestoreDatabaseId || undefined);
 } catch {
   firestoreDb = config.firestoreDatabaseId
