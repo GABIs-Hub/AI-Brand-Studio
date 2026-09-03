@@ -2111,9 +2111,6 @@ Generate structured JSON matching the schema:
     return res.status(500).json({ error: error.message || "Failed to generate social post template." });
   }
 });
-    return res.status(500).json({ error: error.message || "Failed to generate social media post template." });
-  }
-});
 
 // 9. Generate AI Visual Artwork for Social Media Post Background with fallback
 app.post("/api/generate-social-image", async (req, res) => {
