@@ -1,13 +1,31 @@
 import { useState } from 'react';
 import { BrandBible } from '../types';
-import { X, Download, Copy, Check, FileJson, FileCode, FileText, FileUp, Share2 } from 'lucide-react';
+import {
+  X,
+  Download,
+  Copy,
+  Check,
+  FileJson,
+  FileCode,
+  FileText,
+  FileUp,
+  Share2,
+  Package,
+  Presentation,
+  Sparkles,
+  Layers,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { shareBrandBible, formatBrandSummarySnippet } from '../lib/share';
+import { generateFullBrandAssetKitZip, AssetKitProgress } from '../utils/brandAssetKit';
 
 interface ExportModalProps {
   brand: BrandBible | null;
   isOpen: boolean;
   onClose: () => void;
+  onOpenPitchDeck?: () => void;
 }
 
 // Convert Hex string to RGB numbers for jsPDF fill styling
@@ -49,15 +67,41 @@ const svgToPngDataUrl = (svgString: string): Promise<string> => {
   });
 };
 
-export function ExportModal({ brand, isOpen, onClose }: ExportModalProps) {
+export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportModalProps) {
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isZipping, setIsZipping] = useState(false);
+  const [zipProgress, setZipProgress] = useState<AssetKitProgress | null>(null);
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
   if (!isOpen || !brand) return null;
 
   const jsonString = JSON.stringify(brand, null, 2);
   const summarySnippet = formatBrandSummarySnippet(brand);
+
+  const handleDownloadFullAssetKit = async () => {
+    if (!brand) return;
+    setIsZipping(true);
+    try {
+      const zipBlob = await generateFullBrandAssetKitZip(brand, (progress) => {
+        setZipProgress(progress);
+      });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      const brandSlug = brand.brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'brand';
+      link.href = url;
+      link.download = `${brandSlug}-full-brand-asset-kit.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to generate full asset kit zip:', err);
+    } finally {
+      setIsZipping(false);
+      setZipProgress(null);
+    }
+  };
 
   const cssString = `:root {\n` +
     `  /* Brand Bible: ${brand.brandName} Palette */\n` +
@@ -381,6 +425,79 @@ export function ExportModal({ brand, isOpen, onClose }: ExportModalProps) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Full Production Asset Kit (.ZIP) Enterprise Card */}
+          <div
+            className="sm:col-span-2 p-5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-2 border-amber-400/40 dark:border-amber-400/30 rounded-2xl relative overflow-hidden flex flex-col justify-between space-y-4"
+            id="full-asset-kit-card"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-amber-400 text-black flex items-center justify-center font-bold shrink-0 shadow-md">
+                  <Package className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-base text-gray-900 dark:text-[#F9F7F2]">
+                      Full Brand Production Asset Kit (.ZIP)
+                    </h3>
+                    <span className="text-[9px] uppercase font-black px-2 py-0.5 bg-amber-400 text-black rounded-full">
+                      All-in-One
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed max-w-xl">
+                    1-Click compiled production ZIP containing <strong>Vector SVGs</strong> (primary, monochrome, secondary), <strong>Raster PNGs</strong> (1024px, 512px, 256px, 128px), <strong>Web Favicon Suite</strong> (ICO, PNGs, manifest), <strong>Design Tokens</strong> (CSS, SCSS, Tailwind, JSON), and <strong>Markdown Guidelines</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress bar or Download Button */}
+            {isZipping ? (
+              <div className="space-y-2 p-3 bg-black/5 dark:bg-white/5 rounded-xl">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="flex items-center gap-2 font-bold text-amber-600 dark:text-amber-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {zipProgress?.stage || 'Compiling asset bundle...'}
+                  </span>
+                  <span className="font-bold">{zipProgress?.percent || 0}%</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-amber-400 h-full transition-all duration-300"
+                    style={{ width: `${zipProgress?.percent || 0}%` }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleDownloadFullAssetKit}
+                  className="py-2.5 px-5 rounded-xl bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-gray-100 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+                  id="download-full-zip-btn"
+                >
+                  <Download className="w-4 h-4 text-amber-400 dark:text-amber-600" />
+                  <span>Download Full Asset Bundle (.ZIP)</span>
+                </button>
+
+                {onOpenPitchDeck && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenPitchDeck();
+                    }}
+                    className="py-2.5 px-4 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-900 dark:text-amber-300 font-bold text-xs flex items-center justify-center gap-2 border border-amber-400/40 transition-all cursor-pointer"
+                    id="open-deck-from-export-btn"
+                  >
+                    <Presentation className="w-4 h-4" />
+                    <span>Launch Client Pitch Deck</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Web Share & Quick Snippet */}
           <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between sm:col-span-2" id="share-snippet-card">
             <div className="flex items-start justify-between gap-3">

@@ -2,6 +2,8 @@ import { BrandBible, BrandMilestone, MilestoneCategory } from '../types';
 
 const EVOLUTION_STORAGE_PREFIX = 'brand_evolution_milestones_';
 
+const memoryMilestoneCache = new Map<string, BrandMilestone[]>();
+
 /**
  * Retrieves all evolution milestones for a given brand.
  * Automatically bootstraps a Genesis (v1.0) milestone if none exists.
@@ -12,12 +14,15 @@ export function getBrandMilestones(brand: BrandBible): BrandMilestone[] {
   let milestones: BrandMilestone[] = [];
 
   try {
-    const raw = localStorage.getItem(key);
+    const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
     if (raw) {
       milestones = JSON.parse(raw);
+    } else if (memoryMilestoneCache.has(key)) {
+      milestones = memoryMilestoneCache.get(key) || [];
     }
   } catch (err) {
-    console.error('Failed to parse brand milestones from localStorage:', err);
+    console.error('Failed to parse brand milestones from sessionStorage:', err);
+    milestones = memoryMilestoneCache.get(key) || [];
   }
 
   // If no milestones recorded yet, initialize v1.0 Genesis
@@ -44,14 +49,17 @@ export function getBrandMilestones(brand: BrandBible): BrandMilestone[] {
 }
 
 /**
- * Saves the full list of milestones for a brand to localStorage.
+ * Saves the full list of milestones for a brand to sessionStorage / tab cache.
  */
 function saveMilestonesToStorage(brandId: string, milestones: BrandMilestone[]): void {
+  const key = `${EVOLUTION_STORAGE_PREFIX}${brandId}`;
+  memoryMilestoneCache.set(key, milestones);
   try {
-    const key = `${EVOLUTION_STORAGE_PREFIX}${brandId}`;
-    localStorage.setItem(key, JSON.stringify(milestones));
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(key, JSON.stringify(milestones));
+    }
   } catch (err) {
-    console.error('Failed to save brand milestones:', err);
+    console.error('Failed to save brand milestones to sessionStorage:', err);
   }
 }
 

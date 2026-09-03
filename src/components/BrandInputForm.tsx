@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SAMPLE_PRESETS } from '../data/presets';
-import { GenerateBrandRequest, SamplePreset } from '../types';
+import { GenerateBrandRequest, SamplePreset, BrandBible } from '../types';
+import { User } from '../lib/firebase';
+import { PopularBrandResearchStudio } from './PopularBrandResearchStudio';
 import {
   Sparkles,
   ArrowRight,
@@ -8,12 +10,21 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
+  History,
+  Database,
+  Check,
+  Compass,
+  Search,
 } from 'lucide-react';
 
 interface BrandInputFormProps {
   onGenerate: (req: GenerateBrandRequest) => void;
   isLoading: boolean;
   loadingStep?: string;
+  savedBrands?: BrandBible[];
+  user?: User | null;
+  initialBrandToUpgrade?: BrandBible | null;
+  onClearInitialBrand?: () => void;
 }
 
 const AESTHETIC_VIBES = [
@@ -53,8 +64,18 @@ const EXISTING_BRAND_SAMPLES = [
   },
 ];
 
-export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInputFormProps) {
-  const [activeMode, setActiveMode] = useState<'new_brand' | 'existing_brand'>('new_brand');
+export function BrandInputForm({
+  onGenerate,
+  isLoading,
+  loadingStep,
+  savedBrands = [],
+  user = null,
+  initialBrandToUpgrade = null,
+  onClearInitialBrand,
+}: BrandInputFormProps) {
+  const [activeMode, setActiveMode] = useState<'new_brand' | 'existing_brand' | 'research_brands'>(
+    initialBrandToUpgrade ? 'existing_brand' : 'new_brand'
+  );
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // New Brand State
@@ -65,15 +86,76 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
   const [targetAudience, setTargetAudience] = useState('');
 
   // Existing Brand State
-  const [existingName, setExistingName] = useState('');
-  const [existingTagline, setExistingTagline] = useState('');
-  const [existingIndustry, setExistingIndustry] = useState('');
-  const [existingMission, setExistingMission] = useState('');
-  const [primaryColor, setPrimaryColor] = useState('#1A1A1A');
-  const [secondaryColor, setSecondaryColor] = useState('#2563EB');
-  const [accentColor, setAccentColor] = useState('#F59E0B');
-  const [existingTargetAudience, setExistingTargetAudience] = useState('');
-  const [existingAesthetics, setExistingAesthetics] = useState<string[]>(['Modern & Minimalist']);
+  const [selectedBaseBrandId, setSelectedBaseBrandId] = useState<string | null>(
+    initialBrandToUpgrade?.id || null
+  );
+  const [existingName, setExistingName] = useState(initialBrandToUpgrade?.brandName || '');
+  const [existingTagline, setExistingTagline] = useState(initialBrandToUpgrade?.tagline || '');
+  const [existingIndustry, setExistingIndustry] = useState(initialBrandToUpgrade?.industry || '');
+  const [existingMission, setExistingMission] = useState(initialBrandToUpgrade?.mission || '');
+  const [primaryColor, setPrimaryColor] = useState(
+    initialBrandToUpgrade?.palette?.[0]?.hex || '#1A1A1A'
+  );
+  const [secondaryColor, setSecondaryColor] = useState(
+    initialBrandToUpgrade?.palette?.[1]?.hex || '#2563EB'
+  );
+  const [accentColor, setAccentColor] = useState(
+    initialBrandToUpgrade?.palette?.[2]?.hex || '#F59E0B'
+  );
+  const [existingTargetAudience, setExistingTargetAudience] = useState(
+    initialBrandToUpgrade?.targetAudience || ''
+  );
+  const [existingAesthetics, setExistingAesthetics] = useState<string[]>([
+    'Modern & Minimalist',
+  ]);
+
+  // Sync if initialBrandToUpgrade changes
+  useEffect(() => {
+    if (initialBrandToUpgrade) {
+      setActiveMode('existing_brand');
+      setSelectedBaseBrandId(initialBrandToUpgrade.id);
+      setExistingName(initialBrandToUpgrade.brandName);
+      setExistingTagline(initialBrandToUpgrade.tagline || '');
+      setExistingIndustry(initialBrandToUpgrade.industry || '');
+      setExistingMission(initialBrandToUpgrade.mission || '');
+      setPrimaryColor(initialBrandToUpgrade.palette?.[0]?.hex || '#1A1A1A');
+      setSecondaryColor(initialBrandToUpgrade.palette?.[1]?.hex || '#2563EB');
+      setAccentColor(initialBrandToUpgrade.palette?.[2]?.hex || '#F59E0B');
+      setExistingTargetAudience(initialBrandToUpgrade.targetAudience || '');
+    }
+  }, [initialBrandToUpgrade]);
+
+  // Handle applying inspiration from Popular Brand Case Studies
+  const handleApplyBrandInspiration = (inspiration: {
+    recommendedMission: string;
+    recommendedAesthetic: string;
+    recommendedTargetAudience: string;
+    recommendedIndustry: string;
+    brandNameSuggestion?: string;
+  }) => {
+    setMission(inspiration.recommendedMission);
+    setIndustry(inspiration.recommendedIndustry);
+    setAesthetics([inspiration.recommendedAesthetic]);
+    setTargetAudience(inspiration.recommendedTargetAudience);
+    if (inspiration.brandNameSuggestion) {
+      setBrandName(inspiration.brandNameSuggestion);
+    }
+    setActiveMode('new_brand');
+  };
+
+  // Look for matching brands in storage/cache as user types
+  const matchingSavedBrand = useMemo(() => {
+    if (!existingName.trim() || activeMode !== 'existing_brand') return null;
+    const query = existingName.trim().toLowerCase();
+    return (
+      savedBrands.find(
+        (b) =>
+          b.id !== selectedBaseBrandId &&
+          (b.brandName.toLowerCase() === query ||
+            b.brandName.toLowerCase().startsWith(query))
+      ) || null
+    );
+  }, [existingName, savedBrands, selectedBaseBrandId, activeMode]);
 
   const handleSelectPreset = (preset: SamplePreset) => {
     setBrandName(preset.name);
@@ -83,7 +165,8 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
     setTargetAudience(preset.targetAudience);
   };
 
-  const handleSelectExistingSample = (sample: typeof EXISTING_BRAND_SAMPLES[0]) => {
+  const handleSelectExistingSample = (sample: (typeof EXISTING_BRAND_SAMPLES)[0]) => {
+    setSelectedBaseBrandId(null);
     setExistingName(sample.name);
     setExistingTagline(sample.tagline);
     setExistingIndustry(sample.industry);
@@ -94,14 +177,37 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
     setExistingAesthetics([sample.aesthetic]);
   };
 
+  const handleSelectSavedBrandToUpgrade = (brand: BrandBible) => {
+    setSelectedBaseBrandId(brand.id);
+    setExistingName(brand.brandName);
+    setExistingTagline(brand.tagline || '');
+    setExistingIndustry(brand.industry || '');
+    setExistingMission(brand.mission || '');
+    setPrimaryColor(brand.palette?.[0]?.hex || '#1A1A1A');
+    setSecondaryColor(brand.palette?.[1]?.hex || '#2563EB');
+    setAccentColor(brand.palette?.[2]?.hex || '#F59E0B');
+    setExistingTargetAudience(brand.targetAudience || '');
+    if (brand.personalityTraits?.length) {
+      setExistingAesthetics(['Sophisticated & Editorial']);
+    }
+  };
+
   const handleToggleAesthetic = (vibe: string, isExisting: boolean = false) => {
     if (isExisting) {
       setExistingAesthetics((prev) =>
-        prev.includes(vibe) ? (prev.length <= 1 ? prev : prev.filter((x) => x !== vibe)) : [...prev, vibe]
+        prev.includes(vibe)
+          ? prev.length <= 1
+            ? prev
+            : prev.filter((x) => x !== vibe)
+          : [...prev, vibe]
       );
     } else {
       setAesthetics((prev) =>
-        prev.includes(vibe) ? (prev.length <= 1 ? prev : prev.filter((x) => x !== vibe)) : [...prev, vibe]
+        prev.includes(vibe)
+          ? prev.length <= 1
+            ? prev
+            : prev.filter((x) => x !== vibe)
+          : [...prev, vibe]
       );
     }
   };
@@ -121,6 +227,12 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
   const handleExistingBrandSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!existingName.trim() || !existingMission.trim()) return;
+
+    // Find original brand if upgrading an existing library/cache brand
+    const baseBrand = savedBrands.find(
+      (b) => b.id === selectedBaseBrandId || b.brandName.toLowerCase() === existingName.trim().toLowerCase()
+    );
+
     onGenerate({
       brandName: existingName.trim(),
       existingTagline: existingTagline.trim() || undefined,
@@ -130,6 +242,14 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
       targetAudience: existingTargetAudience.trim() || undefined,
       isExistingBrandRefresh: true,
       existingColors: [primaryColor, secondaryColor, accentColor],
+      baseBrandId: baseBrand?.id || selectedBaseBrandId || undefined,
+      previousVersionDetails: baseBrand
+        ? {
+            typography: baseBrand.typography?.headingFont,
+            logoConcept: baseBrand.logo?.concept,
+            values: baseBrand.values?.map((v) => v.title),
+          }
+        : undefined,
     });
   };
 
@@ -140,27 +260,46 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
         <div className="inline-flex p-1 bg-gray-100 dark:bg-zinc-900 border border-[#1A1A1A] dark:border-[#F9F7F2]/20">
           <button
             type="button"
-            onClick={() => setActiveMode('new_brand')}
-            className={`px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-2 cursor-pointer ${
+            onClick={() => {
+              setActiveMode('new_brand');
+              if (onClearInitialBrand) onClearInitialBrand();
+            }}
+            className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMode === 'new_brand'
                 ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
                 : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
             }`}
+            id="tab-new-brand-mode"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Create New Brand</span>
           </button>
           <button
             type="button"
+            onClick={() => setActiveMode('research_brands')}
+            className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeMode === 'research_brands'
+                ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
+                : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+            }`}
+            id="tab-research-brands-mode"
+          >
+            <Compass className="w-3.5 h-3.5 text-amber-400" />
+            <span>Iconic Brand Case Studies</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveMode('existing_brand')}
-            className={`px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMode === 'existing_brand'
                 ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
                 : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
             }`}
+            id="tab-upgrade-brand-mode"
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Upgrade Existing Brand</span>
+            <span className="hidden sm:inline">Upgrade Existing Brand</span>
+            <span className="sm:hidden">Upgrade</span>
           </button>
         </div>
       </div>
@@ -302,7 +441,7 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
                         type="text"
                         value={targetAudience}
                         onChange={(e) => setTargetAudience(e.target.value)}
-                        placeholder="e.g. Eco-conscious millennial homeowners"
+                        placeholder="e.g. Discerning lifestyle enthusiasts"
                         className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
                       />
                     </div>
@@ -339,37 +478,124 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
         <div className="space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-3xl sm:text-4xl font-serif italic font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
-              Refresh an Existing Brand
+              Upgrade Existing Brand
             </h1>
             <p className="text-sm font-serif italic text-gray-600 dark:text-zinc-400 max-w-lg mx-auto">
-              Preserve your existing brand name and identity while upgrading your vector logos, social content, and brand bible.
+              Preserve your existing brand name and identity equity while upgrading your vector marks, typography, social templates, and brand bible.
             </p>
           </div>
 
-          {/* Existing Brand Sample Quick-Fills */}
-          <div className="space-y-2">
-            <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 block text-center">
-              Quick test with sample brands:
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {EXISTING_BRAND_SAMPLES.map((sample, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => handleSelectExistingSample(sample)}
-                  className="p-3 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white text-left transition-all cursor-pointer"
-                >
-                  <span className="text-[8px] font-mono text-gray-500 uppercase tracking-widest block">
-                    {sample.industry.split('&')[0]}
+          {/* LOOKUP FROM SAVED BRANDS HISTORY (Account Library or Tab Cache) */}
+          {savedBrands.length > 0 && (
+            <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-4 sm:p-5 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
+                  <span className="text-[10px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
+                    {user ? 'Select From Your Saved Cloud Library' : 'Select From Current Tab Session Cache'}
                   </span>
-                  <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate">
-                    {sample.name}
-                  </h4>
-                </button>
-              ))}
+                </div>
+                <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400">
+                  {user ? `${savedBrands.length} Cloud Saved` : `${savedBrands.length} In Tab Cache`}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1">
+                {savedBrands.map((b) => {
+                  const isSelected = selectedBaseBrandId === b.id;
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => handleSelectSavedBrandToUpgrade(b)}
+                      className={`p-3 border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                        isSelected
+                          ? 'border-[#1A1A1A] dark:border-[#F9F7F2] bg-gray-50 dark:bg-zinc-900/90 shadow-xs'
+                          : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[8px] font-mono uppercase tracking-widest text-gray-500 truncate">
+                          {b.industry || 'Brand'}
+                        </span>
+                        {isSelected && (
+                          <span className="flex items-center gap-1 text-[8px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400">
+                            <Check className="w-3 h-3" /> Selected
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate">
+                          {b.brandName}
+                        </h4>
+                        {b.tagline && (
+                          <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-serif italic truncate">
+                            "{b.tagline}"
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 pt-1">
+                        {b.palette?.slice(0, 4).map((c, i) => (
+                          <div
+                            key={i}
+                            className="w-3.5 h-3.5 border border-black/10"
+                            style={{ backgroundColor: c.hex }}
+                          />
+                        ))}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Quick test with sample brands if user has none yet */}
+          {savedBrands.length === 0 && (
+            <div className="space-y-2">
+              <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 block text-center">
+                Or test with sample existing brands:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {EXISTING_BRAND_SAMPLES.map((sample, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => handleSelectExistingSample(sample)}
+                    className="p-3 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white text-left transition-all cursor-pointer"
+                  >
+                    <span className="text-[8px] font-mono text-gray-500 uppercase tracking-widest block">
+                      {sample.industry.split('&')[0]}
+                    </span>
+                    <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate">
+                      {sample.name}
+                    </h4>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Real-time Match Banner if typed name matches a saved brand */}
+          {matchingSavedBrand && (
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <Database className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="text-xs">
+                  Found <strong>"{matchingSavedBrand.brandName}"</strong> in your{' '}
+                  {user ? 'saved cloud library' : 'current tab cache'}.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSelectSavedBrandToUpgrade(matchingSavedBrand)}
+                className="px-2.5 py-1 text-[9px] uppercase tracking-widest font-black bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] hover:opacity-80 transition-opacity cursor-pointer shrink-0"
+              >
+                Auto-Fill Identity
+              </button>
+            </div>
+          )}
 
           {/* Existing Brand Form */}
           <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-6 sm:p-8 space-y-5 shadow-sm">
@@ -406,6 +632,20 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
               </div>
 
               <div>
+                <label htmlFor="existing-tagline-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
+                  Existing Tagline <span className="text-gray-400 font-normal">(Optional)</span>
+                </label>
+                <input
+                  id="existing-tagline-input"
+                  type="text"
+                  value={existingTagline}
+                  onChange={(e) => setExistingTagline(e.target.value)}
+                  placeholder="e.g. Truth in Every Roast"
+                  className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
+                />
+              </div>
+
+              <div>
                 <label htmlFor="existing-mission-input" className="block text-[10px] uppercase tracking-widest font-black mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Brand Mission &amp; Values <span className="text-rose-500">*</span>
                 </label>
@@ -425,7 +665,7 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
                 <span className="block text-[9px] uppercase tracking-widest font-bold mb-2 text-gray-600 dark:text-zinc-400">
                   Current Brand Colors (Optional):
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1.5">
                     <input
                       type="color"
@@ -443,6 +683,15 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
                       className="w-7 h-7 rounded-none border border-gray-300 cursor-pointer"
                     />
                     <span className="text-[9px] font-mono uppercase">{secondaryColor}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="color"
+                      value={accentColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      className="w-7 h-7 rounded-none border border-gray-300 cursor-pointer"
+                    />
+                    <span className="text-[9px] font-mono uppercase">{accentColor}</span>
                   </div>
                 </div>
               </div>
@@ -468,6 +717,13 @@ export function BrandInputForm({ onGenerate, isLoading, loadingStep }: BrandInpu
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODE 3: ICONIC BRAND CASE STUDIES & HISTORY */}
+      {activeMode === 'research_brands' && (
+        <PopularBrandResearchStudio
+          onApplyBrandInspiration={handleApplyBrandInspiration}
+        />
       )}
     </div>
   );

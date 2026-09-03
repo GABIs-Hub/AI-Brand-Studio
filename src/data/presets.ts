@@ -2,6 +2,15 @@ import { SamplePreset } from '../types';
 
 export const SAMPLE_PRESETS: SamplePreset[] = [
   {
+    id: 'gabis-roastery',
+    name: "Gabi's Roastery",
+    industry: 'Artisanal Coffee & Provisions',
+    aesthetic: 'Heritage Craft & Warmth',
+    mission: 'To elevate daily rituals through obsessively sourced single-origin micro-lot coffees and artisanal culinary provisions, roasted in small batches with uncompromising attention to origin transparency, ethical direct trade, and sensory depth.',
+    targetAudience: 'Design-conscious coffee purists, creative professionals, and culinary explorers seeking thoughtful everyday luxury.',
+    icon: 'Coffee'
+  },
+  {
     id: 'lumina-audio',
     name: 'Lumina Audio',
     industry: 'Consumer Tech / Audio Gear',

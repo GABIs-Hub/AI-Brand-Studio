@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrandBible } from '../types';
+import { User } from '../lib/firebase';
+import { SimpleBrandView } from './SimpleBrandView';
 import { BrandOverviewTab } from './BrandOverviewTab';
 import { PaletteTab } from './PaletteTab';
 import { TypographyTab } from './TypographyTab';
@@ -11,6 +13,7 @@ import { MockupsTab } from './MockupsTab';
 import { SocialTemplatesTab } from './SocialTemplatesTab';
 import { ViralTopicsTab } from './ViralTopicsTab';
 import { BrandAuditTab } from './BrandAuditTab';
+import { DesignSystemSandbox } from './DesignSystemSandbox';
 import { FontLoader } from './FontLoader';
 import {
   LayoutDashboard,
@@ -30,6 +33,10 @@ import {
   Sparkles,
   SlidersHorizontal,
   Download,
+  Layers,
+  Cloud,
+  Clock,
+  Box,
 } from 'lucide-react';
 
 interface BrandDashboardProps {
@@ -39,9 +46,14 @@ interface BrandDashboardProps {
   savedBrands: BrandBible[];
   onSelectBrand: (brand: BrandBible) => void;
   onDeleteBrand: (id: string) => void;
+  onUpgradeBrand?: (brand: BrandBible) => void;
+  user?: User | null;
+  activeTabOverride?: TabType;
+  viewModeOverride?: 'simple' | 'studio';
+  onViewModeChange?: (mode: 'simple' | 'studio') => void;
 }
 
-type TabType =
+export type TabType =
   | 'overview'
   | 'logos'
   | 'design_system'
@@ -56,14 +68,38 @@ export function BrandDashboard({
   savedBrands,
   onSelectBrand,
   onDeleteBrand,
+  onUpgradeBrand,
+  user,
+  activeTabOverride,
+  viewModeOverride,
+  onViewModeChange,
 }: BrandDashboardProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [isProMode, setIsProMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>(activeTabOverride || 'overview');
+  const [isProMode, setIsProMode] = useState(viewModeOverride ? viewModeOverride === 'studio' : false);
   const [selectedTopicHeadline, setSelectedTopicHeadline] = useState<string | undefined>(undefined);
-  const [designSubTab, setDesignSubTab] = useState<'palette' | 'typography'>('palette');
+  const [designSubTab, setDesignSubTab] = useState<'palette' | 'typography' | 'sandbox'>('palette');
   const [socialSubTab, setSocialSubTab] = useState<'templates' | 'topics'>('templates');
   const [mockupSubTab, setMockupSubTab] = useState<'mockups' | 'usage'>('mockups');
   const [strategySubTab, setStrategySubTab] = useState<'tone' | 'audit' | 'evolution' | 'history'>('tone');
+
+  // Synchronize when activeTabOverride changes from tour
+  useEffect(() => {
+    if (activeTabOverride) {
+      setActiveTab(activeTabOverride);
+    }
+  }, [activeTabOverride]);
+
+  // Synchronize when viewModeOverride changes from tour
+  useEffect(() => {
+    if (viewModeOverride !== undefined) {
+      setIsProMode(viewModeOverride === 'studio');
+    }
+  }, [viewModeOverride]);
+
+  const handleSetMode = (mode: 'simple' | 'studio') => {
+    setIsProMode(mode === 'studio');
+    onViewModeChange?.(mode);
+  };
 
   const mainTabs = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, desc: 'Brand Kit & Summary' },
@@ -113,62 +149,85 @@ export function BrandDashboard({
           </div>
         </div>
 
-        {/* Simple vs Pro Mode Pill */}
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500">
-            View Mode:
-          </span>
-          <div className="inline-flex p-0.5 bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700">
+        {/* Right Controls: Upgrade Brand + View Mode Pill */}
+        <div className="flex items-center gap-2.5 self-end sm:self-auto">
+          {onUpgradeBrand && (
             <button
               type="button"
-              onClick={() => setIsProMode(false)}
-              className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer ${
-                !isProMode
-                  ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                  : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
-              }`}
+              onClick={() => onUpgradeBrand(brand)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[9px] uppercase tracking-widest font-black hover:opacity-85 transition-opacity cursor-pointer shadow-xs"
+              title="Upgrade and modernize this brand identity"
             >
-              Simple
+              <Layers className="w-3 h-3" />
+              <span>Upgrade Brand</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setIsProMode(true)}
-              className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1 ${
-                isProMode
-                  ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                  : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
-              }`}
-            >
-              <SlidersHorizontal className="w-2.5 h-2.5" />
-              <span>Studio</span>
-            </button>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 hidden sm:inline">
+              View:
+            </span>
+            <div className="inline-flex p-0.5 bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700">
+              <button
+                type="button"
+                onClick={() => handleSetMode('simple')}
+                className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer ${
+                  !isProMode
+                    ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                    : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                Simple
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetMode('studio')}
+                className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  isProMode
+                    ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                    : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                <SlidersHorizontal className="w-2.5 h-2.5" />
+                <span>Studio</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main 6-Tab Navigation Bar */}
-      <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-1.5 flex items-center overflow-x-auto scrollbar-none transition-colors duration-300">
-        <div className="flex items-center gap-1 w-full">
-          {mainTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabType)}
-                className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 px-3 py-2.5 text-[10px] uppercase tracking-widest font-bold whitespace-nowrap transition-all border cursor-pointer ${
-                  isActive
-                    ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2] shadow-sm'
-                    : 'text-[#1A1A1A] dark:text-[#F9F7F2] border-transparent hover:border-dashed hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2]'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Main View Mode Split: Simple View vs Studio Workstation */}
+      {!isProMode ? (
+        <SimpleBrandView
+          brand={brand}
+          onSwitchToStudio={() => handleSetMode('studio')}
+          onUpgradeBrand={onUpgradeBrand}
+        />
+      ) : (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Main 6-Tab Navigation Bar */}
+          <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-1.5 flex items-center overflow-x-auto scrollbar-none transition-colors duration-300">
+            <div className="flex items-center gap-1 w-full">
+              {mainTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as TabType)}
+                    className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 px-3 py-2.5 text-[10px] uppercase tracking-widest font-bold whitespace-nowrap transition-all border cursor-pointer ${
+                      isActive
+                        ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2] shadow-sm'
+                        : 'text-[#1A1A1A] dark:text-[#F9F7F2] border-transparent hover:border-dashed hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2]'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
       {/* Tab Content Area */}
       <div className="min-h-[500px]">
@@ -216,7 +275,7 @@ export function BrandDashboard({
                   }`}
                 >
                   <Palette className="w-3 h-3" />
-                  <span>Color Palette</span>
+                  <span>Color &amp; WCAG</span>
                 </button>
                 <button
                   type="button"
@@ -230,14 +289,26 @@ export function BrandDashboard({
                   <Type className="w-3 h-3" />
                   <span>Typography</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setDesignSubTab('sandbox')}
+                  className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                    designSubTab === 'sandbox'
+                      ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <Box className="w-3 h-3" />
+                  <span>UI Sandbox</span>
+                </button>
               </div>
             </div>
 
-            {designSubTab === 'palette' ? (
-              <PaletteTab palette={brand.palette} />
-            ) : (
+            {designSubTab === 'palette' && <PaletteTab palette={brand.palette} />}
+            {designSubTab === 'typography' && (
               <TypographyTab typography={brand.typography} brandName={brand.brandName} />
             )}
+            {designSubTab === 'sandbox' && <DesignSystemSandbox brand={brand} />}
           </div>
         )}
 
@@ -444,13 +515,30 @@ export function BrandDashboard({
 
             {strategySubTab === 'history' && (
               <div className="space-y-6" id="history-view-container">
-                <div>
-                  <h2 className="text-xl font-bold uppercase tracking-widest text-[#1A1A1A] dark:text-[#F9F7F2]">
-                    Saved Brand History
-                  </h2>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1">
-                    Browse and instantly restore previously created brand strategies stored locally.
-                  </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-200 dark:border-zinc-800">
+                  <div>
+                    <h2 className="text-xl font-bold uppercase tracking-widest text-[#1A1A1A] dark:text-[#F9F7F2]">
+                      {user ? 'Saved Brand Library' : 'Session Brand Cache'}
+                    </h2>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                      {user
+                        ? 'Permanently synced to your Google Account Cloud Storage.'
+                        : 'Temporary session cache. Log in to permanently preserve and sync your brands across devices.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {user ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[9px] uppercase tracking-widest font-black bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        <Cloud className="w-3 h-3 text-emerald-600" />
+                        <span>Cloud Synced</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[9px] uppercase tracking-widest font-black bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                        <Clock className="w-3 h-3 text-amber-600" />
+                        <span>Tab Session Cache</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {savedBrands.length === 0 ? (
@@ -509,14 +597,26 @@ export function BrandDashboard({
                             </div>
                           </div>
 
-                          <div className="pt-6 mt-6 border-t border-dashed border-gray-200 dark:border-zinc-800 flex items-center justify-between">
-                            <button
-                              type="button"
-                              onClick={() => onSelectBrand(saved)}
-                              className="text-[9px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2] hover:opacity-70 transition-opacity cursor-pointer"
-                            >
-                              Restore Version &rarr;
-                            </button>
+                          <div className="pt-6 mt-6 border-t border-dashed border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => onSelectBrand(saved)}
+                                className="text-[9px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2] hover:opacity-70 transition-opacity cursor-pointer"
+                              >
+                                View &rarr;
+                              </button>
+                              {onUpgradeBrand && (
+                                <button
+                                  type="button"
+                                  onClick={() => onUpgradeBrand(saved)}
+                                  className="text-[9px] uppercase tracking-widest font-black text-amber-700 dark:text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
+                                >
+                                  <Layers className="w-2.5 h-2.5" />
+                                  <span>Upgrade</span>
+                                </button>
+                              )}
+                            </div>
                             <button
                               type="button"
                               onClick={() => onDeleteBrand(saved.id)}
@@ -537,5 +637,7 @@ export function BrandDashboard({
         )}
       </div>
     </div>
-  );
+  )}
+</div>
+);
 }

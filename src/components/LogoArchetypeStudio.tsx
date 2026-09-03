@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrandBible, LogoVariation, LogoArchetype } from '../types';
+import { LogoRenderSkeleton } from './LogoRenderSkeleton';
 import {
   Sparkles,
   Download,
@@ -90,11 +91,23 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate logo variations.');
+      let data: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error('Logo variations service returned an unexpected response format.');
+        }
       }
 
-      const data = await response.json();
+      if (!response.ok || !data) {
+        throw new Error(data?.error || 'Failed to generate logo variations.');
+      }
+
       if (data.variations && data.variations.length > 0) {
         setVariations(data.variations);
         setSelectedVariation(data.variations[0]);
@@ -201,21 +214,24 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: 6 Archetype Cards (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {variations.map((v) => {
-              const isSelected = selectedVariation?.id === v.id;
-              const isPrimaryActive = brand.logo.primaryLogoSvg.includes(v.concept) || appliedId === v.id;
+          {isLoading ? (
+            <LogoRenderSkeleton mode="archetype_grid" brandName={brand.brandName} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-300">
+              {variations.map((v) => {
+                const isSelected = selectedVariation?.id === v.id;
+                const isPrimaryActive = brand.logo.primaryLogoSvg.includes(v.concept) || appliedId === v.id;
 
-              return (
-                <div
-                  key={v.id}
-                  onClick={() => setSelectedVariation(v)}
-                  className={`bg-white dark:bg-[#1C1C1A] border transition-all cursor-pointer flex flex-col justify-between group ${
-                    isSelected
-                      ? 'border-[#1A1A1A] dark:border-[#F9F7F2] shadow-lg ring-1 ring-[#1A1A1A] dark:ring-[#F9F7F2]'
-                      : 'border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600'
-                  }`}
-                >
+                return (
+                  <div
+                    key={v.id}
+                    onClick={() => setSelectedVariation(v)}
+                    className={`bg-white dark:bg-[#1C1C1A] border transition-all cursor-pointer flex flex-col justify-between group ${
+                      isSelected
+                        ? 'border-[#1A1A1A] dark:border-[#F9F7F2] shadow-lg ring-1 ring-[#1A1A1A] dark:ring-[#F9F7F2]'
+                        : 'border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600'
+                    }`}
+                  >
                   {/* Card Top Banner */}
                   <div className="p-4 border-b border-gray-100 dark:border-zinc-800/80 flex items-center justify-between bg-gray-50/50 dark:bg-zinc-900/30">
                     <span className="text-[9px] uppercase tracking-widest font-black text-gray-800 dark:text-zinc-200">
@@ -292,6 +308,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
               );
             })}
           </div>
+          )}
         </div>
 
         {/* Right Column: Detailed Inspector & Live Background Sandbox (4 cols) */}

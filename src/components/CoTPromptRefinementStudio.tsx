@@ -174,11 +174,23 @@ export function CoTPromptRefinementStudio({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Chain-of-Thought prompt refinement could not be completed.');
+      let data: LogoPromptRefinementResult | null = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = (await response.json()) as LogoPromptRefinementResult;
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text) as LogoPromptRefinementResult;
+        } catch {
+          throw new Error('Chain-of-Thought service returned invalid response format.');
+        }
       }
 
-      const data = (await response.json()) as LogoPromptRefinementResult;
+      if (!response.ok || !data) {
+        throw new Error((data as any)?.error || 'Chain-of-Thought prompt refinement could not be completed.');
+      }
+
       setRefinementResult(data);
       setActiveStepIndex(0);
     } catch (err: any) {

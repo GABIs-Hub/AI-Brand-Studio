@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BrandColor } from '../types';
-import { Copy, Check, Info, Sparkles } from 'lucide-react';
+import { Copy, Check, Info, Code2, Terminal, ShieldCheck } from 'lucide-react';
+import { ColorAccessibilityMatrix } from './ColorAccessibilityMatrix';
 
 interface PaletteTabProps {
   palette: BrandColor[];
@@ -9,6 +10,7 @@ interface PaletteTabProps {
 export function PaletteTab({ palette }: PaletteTabProps) {
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+  const [activeFormat, setActiveFormat] = useState<'css' | 'tailwind' | 'json' | 'scss'>('css');
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -27,9 +29,43 @@ export function PaletteTab({ palette }: PaletteTabProps) {
     `\n}`;
 
   // Generate Tailwind config snippet
-  const tailwindConfigSnippet = `// tailwind.config.js\ncolors: {\n` +
-    palette.map((c) => `  'brand-${c.role.toLowerCase().replace(/\s+/g, '-')}': '${c.hex}',`).join('\n') +
-    `\n}`;
+  const tailwindConfigSnippet = `// tailwind.config.js / tailwind.config.ts\nmodule.exports = {\n  theme: {\n    extend: {\n      colors: {\n` +
+    palette.map((c) => `        'brand-${c.role.toLowerCase().replace(/\s+/g, '-')}': '${c.hex}', // ${c.name}`).join('\n') +
+    `\n      }\n    }\n  }\n};`;
+
+  // Generate JSON snippet
+  const jsonSnippet = JSON.stringify(
+    palette.reduce((acc, c) => {
+      acc[c.role.toLowerCase().replace(/\s+/g, '_')] = {
+        name: c.name,
+        hex: c.hex,
+        rgb: c.rgb,
+        usage: c.usage,
+      };
+      return acc;
+    }, {} as Record<string, any>),
+    null,
+    2
+  );
+
+  // Generate SCSS variables
+  const scssSnippet = palette
+    .map((c) => `$brand-${c.role.toLowerCase().replace(/\s+/g, '-')}: ${c.hex}; // ${c.name}`)
+    .join('\n');
+
+  const getCurrentSnippet = () => {
+    switch (activeFormat) {
+      case 'tailwind':
+        return tailwindConfigSnippet;
+      case 'json':
+        return jsonSnippet;
+      case 'scss':
+        return scssSnippet;
+      case 'css':
+      default:
+        return cssVariablesSnippet;
+    }
+  };
 
   return (
     <div className="space-y-8 relative">
@@ -44,7 +80,7 @@ export function PaletteTab({ palette }: PaletteTabProps) {
           </div>
           <div className="flex flex-col text-left">
             <span className="text-[9px] uppercase tracking-widest font-black opacity-60">Color Copied</span>
-            <span className="text-xs font-mono font-bold tracking-wider">{copiedHex} successfully copied!</span>
+            <span className="text-xs font-mono font-bold tracking-wider">{copiedHex} successfully copied</span>
           </div>
         </div>
       )}
@@ -60,7 +96,7 @@ export function PaletteTab({ palette }: PaletteTabProps) {
           </div>
           <div className="flex flex-col text-left">
             <span className="text-[9px] uppercase tracking-widest font-black opacity-60">Snippet Copied</span>
-            <span className="text-xs font-bold tracking-wider">Copied {copiedSnippet === 'css' ? 'CSS Variables' : 'Tailwind Config'} to clipboard!</span>
+            <span className="text-xs font-mono font-bold tracking-wider">{copiedSnippet} copied to clipboard</span>
           </div>
         </div>
       )}
@@ -73,22 +109,22 @@ export function PaletteTab({ palette }: PaletteTabProps) {
             Curated 5-color hex palette with strict semantic roles, contrast compliance, and digital usage rules.
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => copyToClipboard(cssVariablesSnippet, 'css')}
-            className="text-[9px] uppercase tracking-widest font-bold flex items-center gap-2 hover:opacity-70 transition-opacity text-[#1A1A1A] dark:text-[#F9F7F2]"
-            id="copy-css-vars-btn"
+            onClick={() => copyToClipboard(cssVariablesSnippet, 'CSS Variables')}
+            className="px-3 py-1.5 border border-[#1A1A1A] dark:border-[#F9F7F2]/30 text-[9px] uppercase tracking-widest font-bold flex items-center gap-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all cursor-pointer text-[#1A1A1A] dark:text-[#F9F7F2]"
+            id="quick-copy-css-btn"
           >
-            {copiedSnippet === 'css' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-            <span>Copy CSS Vars</span>
+            {copiedSnippet === 'CSS Variables' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>Copy CSS</span>
           </button>
           <button
-            onClick={() => copyToClipboard(tailwindConfigSnippet, 'tailwind')}
-            className="text-[9px] uppercase tracking-widest font-bold flex items-center gap-2 hover:opacity-70 transition-opacity text-[#1A1A1A] dark:text-[#F9F7F2]"
-            id="copy-tailwind-btn"
+            onClick={() => copyToClipboard(tailwindConfigSnippet, 'Tailwind Config')}
+            className="px-3 py-1.5 border border-[#1A1A1A] dark:border-[#F9F7F2]/30 text-[9px] uppercase tracking-widest font-bold flex items-center gap-1.5 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all cursor-pointer text-[#1A1A1A] dark:text-[#F9F7F2]"
+            id="quick-copy-tailwind-btn"
           >
-            {copiedSnippet === 'tailwind' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-            <span>Copy Tailwind Config</span>
+            {copiedSnippet === 'Tailwind Config' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>Copy Tailwind</span>
           </button>
         </div>
       </div>
@@ -153,18 +189,94 @@ export function PaletteTab({ palette }: PaletteTabProps) {
         })}
       </div>
 
-      {/* Palette Export Snippets Box */}
-      <div className="bg-[#1A1A1A] dark:bg-[#222220] text-white dark:text-[#F9F7F2] p-8 space-y-6 border border-[#1A1A1A] dark:border-[#F9F7F2]/10 rounded-none mt-8 transition-colors duration-300">
-        <div className="flex items-center justify-between border-b border-dashed border-white/30 dark:border-white/10 pb-4">
-          <h3 className="text-[11px] uppercase tracking-[0.3em] font-black flex items-center gap-3">
-            <Sparkles className="w-4 h-4" />
-            <span>Developer Code Snippet</span>
-          </h3>
-          <span className="text-[9px] uppercase tracking-widest font-bold opacity-50">CSS Custom Properties</span>
+      {/* Interactive WCAG 2.1 Color Accessibility & Contrast Audit Matrix */}
+      <div className="pt-4">
+        <ColorAccessibilityMatrix palette={palette} />
+      </div>
+
+      {/* Palette Export Snippets Box with Multi-Format Selector and 1-Click Copy */}
+      <div className="bg-[#1A1A1A] dark:bg-[#1E1E1C] text-white dark:text-[#F9F7F2] p-6 sm:p-8 space-y-6 border border-[#1A1A1A] dark:border-[#F9F7F2]/10 rounded-none mt-8 transition-colors duration-300 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dashed border-white/20 pb-4">
+          <div className="flex items-center gap-3">
+            <Code2 className="w-4 h-4 text-amber-400" />
+            <h3 className="text-[11px] uppercase tracking-[0.25em] font-black">Developer Color Snippet</h3>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Format Selector Pills */}
+            <div className="inline-flex p-0.5 bg-black/40 border border-white/20">
+              <button
+                type="button"
+                onClick={() => setActiveFormat('css')}
+                className={`px-3 py-1 text-[9px] uppercase tracking-widest font-bold transition-all cursor-pointer ${
+                  activeFormat === 'css' ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                CSS Var
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFormat('tailwind')}
+                className={`px-3 py-1 text-[9px] uppercase tracking-widest font-bold transition-all cursor-pointer ${
+                  activeFormat === 'tailwind' ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                Tailwind
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFormat('scss')}
+                className={`px-3 py-1 text-[9px] uppercase tracking-widest font-bold transition-all cursor-pointer ${
+                  activeFormat === 'scss' ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                SCSS
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFormat('json')}
+                className={`px-3 py-1 text-[9px] uppercase tracking-widest font-bold transition-all cursor-pointer ${
+                  activeFormat === 'json' ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                JSON
+              </button>
+            </div>
+
+            {/* Direct Copy Code Action Button */}
+            <button
+              type="button"
+              onClick={() => copyToClipboard(getCurrentSnippet(), `${activeFormat.toUpperCase()} Code`)}
+              className="px-4 py-1.5 bg-white hover:bg-amber-400 text-black text-[9px] uppercase tracking-widest font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+              id="copy-developer-code-btn"
+            >
+              {copiedSnippet === `${activeFormat.toUpperCase()} Code` ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Code</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
-        <pre className="text-sm font-mono text-white/80 dark:text-white/70 overflow-x-auto leading-relaxed">
-          {cssVariablesSnippet}
-        </pre>
+
+        <div className="relative">
+          <div className="flex items-center justify-between text-[8px] font-mono text-white/40 uppercase tracking-wider mb-2">
+            <span className="flex items-center gap-1">
+              <Terminal className="w-3 h-3" />
+              <span>{activeFormat.toUpperCase()} Export</span>
+            </span>
+            <span>Click &apos;Copy Code&apos; to paste into your codebase</span>
+          </div>
+          <pre className="p-4 bg-black/60 border border-white/10 text-xs font-mono text-white/90 overflow-x-auto leading-relaxed max-h-60 selection:bg-amber-400 selection:text-black">
+            {getCurrentSnippet()}
+          </pre>
+        </div>
       </div>
     </div>
   );
