@@ -78,11 +78,23 @@ export function createMilestoneCheckpoint(
 ): BrandMilestone {
   const currentMilestones = getBrandMilestones(brand);
   
-  // Calculate next version label (e.g. v1.1, v1.2, or user provided)
+  // Calculate next version label (e.g. v1.1, v1.2, or user provided). Derived
+  // from the highest existing minor version so deleted milestones never cause
+  // version collisions or repeats.
   let nextVersion = params.versionOverride;
   if (!nextVersion) {
-    const nextNum = (currentMilestones.length * 0.1 + 1.0).toFixed(1);
-    nextVersion = `v${nextNum}`;
+    let maxMinor = 0;
+    for (const m of currentMilestones) {
+      const parsed = parseFloat(String(m.versionLabel).replace(/^v/i, ''));
+      if (!Number.isNaN(parsed)) {
+        const minor = Math.round((parsed - Math.floor(parsed)) * 10);
+        if (parsed >= 1 && minor >= 0) maxMinor = Math.max(maxMinor, minor);
+      }
+    }
+    // Bump one minor step past the highest existing version (v1.0 genesis → v1.1,
+    // v1.3 → v1.4). maxMinor is derived from existing milestones only, so deleted
+    // milestones never cause collisions or duplicate labels.
+    nextVersion = `v${(1 + (maxMinor + 1) * 0.1).toFixed(1)}`;
   }
 
   const newMilestone: BrandMilestone = {

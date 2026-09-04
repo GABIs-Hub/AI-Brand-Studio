@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BrandBible } from '../types';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import {
   CheckCircle2,
   XCircle,
@@ -86,7 +87,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
           <h2 className="text-3xl sm:text-4xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
             Asset Usage Guide
           </h2>
-          <p className="text-xs text-gray-600 dark:text-zinc-400 max-w-2xl mt-2 leading-relaxed font-sans">
+          <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-2xl mt-2 leading-relaxed font-sans">
             Visual reference standards and strict Do’s & Don’ts to preserve the integrity, legibility, and premium perception of the {brandName} visual identity system.
           </p>
         </div>
@@ -124,7 +125,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold transition-all rounded-none border cursor-pointer ${
                 isActive
                   ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
-                  : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-zinc-800 hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2]'
+                  : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-gray-300 dark:border-zinc-800 hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2]'
               }`}
               id={`filter-guide-${tab.id}`}
             >
@@ -138,7 +139,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
       {/* SECTION 1: LOGOMARK DO'S & DON'TS */}
       {(filter === 'all' || filter === 'logo') && (
         <section className="space-y-6" id="logo-usage-section">
-          <div className="flex items-baseline justify-between border-b border-dashed border-gray-300 dark:border-zinc-800 pb-3">
+          <div className="flex items-baseline justify-between border-b border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-3">
             <div>
               <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                 1. Logomark Integrity & Treatment
@@ -165,10 +166,10 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 </span>
               </div>
               <div className="p-8 flex items-center justify-center min-h-[190px] bg-gray-50 dark:bg-zinc-900/40 relative">
-                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-gray-200">
+                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-gray-200 dark:border-gray-200">
                   <div
                     className="w-full h-full flex items-center justify-center"
-                    dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                   />
                 </div>
               </div>
@@ -194,7 +195,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 <div className="w-36 h-20 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-rose-200 scale-x-125 scale-y-75 opacity-90">
                   <div
                     className="w-full h-full flex items-center justify-center"
-                    dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                   />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -224,15 +225,15 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                   <div className="w-16 h-16 p-1.5 bg-white flex items-center justify-center">
                     <div
                       className="w-full h-full flex items-center justify-center"
-                      dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                     />
                   </div>
                 </div>
-                <div className="bg-[#F9F7F2] p-4 flex items-center justify-center border-l border-gray-200 dark:border-zinc-800">
-                  <div className="w-16 h-16 p-1.5 bg-white flex items-center justify-center border border-gray-200">
+                <div className="bg-[#F9F7F2] p-4 flex items-center justify-center border-l border-gray-200 dark:border-gray-200 dark:border-zinc-800">
+                  <div className="w-16 h-16 p-1.5 bg-white flex items-center justify-center border border-gray-200 dark:border-gray-200">
                     <div
                       className="w-full h-full flex items-center justify-center"
-                      dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                     />
                   </div>
                 </div>
@@ -264,7 +265,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 >
                   <div
                     className="w-full h-full flex items-center justify-center"
-                    dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                   />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -291,22 +292,22 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               </div>
               <div className="p-8 flex items-center justify-center gap-6 min-h-[190px] bg-gray-50 dark:bg-zinc-900/40">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-8 h-8 p-1 bg-white dark:bg-white rounded-none shadow-xs border border-gray-300 flex items-center justify-center">
+                  <div className="w-8 h-8 p-1 bg-white dark:bg-white rounded-none shadow-xs border border-gray-300 dark:border-gray-300 flex items-center justify-center">
                     <div
                       className="w-full h-full"
-                      dangerouslySetInnerHTML={{ __html: secondarySvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(secondarySvg) }}
                     />
                   </div>
-                  <span className="text-[9px] font-mono text-gray-500">32px Favicon</span>
+                  <span className="text-[9px] font-mono text-gray-500 dark:text-gray-500">32px Favicon</span>
                 </div>
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 p-1.5 bg-white dark:bg-white rounded-none shadow-xs border border-gray-300 flex items-center justify-center">
+                  <div className="w-14 h-14 p-1.5 bg-white dark:bg-white rounded-none shadow-xs border border-gray-300 dark:border-gray-300 flex items-center justify-center">
                     <div
                       className="w-full h-full"
-                      dangerouslySetInnerHTML={{ __html: secondarySvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(secondarySvg) }}
                     />
                   </div>
-                  <span className="text-[9px] font-mono text-gray-500">56px App Icon</span>
+                  <span className="text-[9px] font-mono text-gray-500 dark:text-gray-500">56px App Icon</span>
                 </div>
               </div>
               <div className="p-4 border-t border-gray-100 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A]">
@@ -334,7 +335,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 >
                   <div
                     className="w-full h-full flex items-center justify-center invert"
-                    dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                   />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -360,10 +361,10 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 </span>
               </div>
               <div className="p-8 flex items-center justify-center min-h-[190px] bg-gray-50 dark:bg-zinc-900/40">
-                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-gray-200">
+                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-gray-200 dark:border-gray-200">
                   <div
                     className="w-full h-full flex items-center justify-center"
-                    dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                   />
                 </div>
               </div>
@@ -389,7 +390,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-rose-200 rotate-25 skew-x-12 opacity-80">
                   <div
                     className="w-full h-full flex items-center justify-center"
-                    dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                   />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -409,7 +410,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
       {/* SECTION 2: CLEARSPACE & MINIMUM SIZE ARCHITECTURE */}
       {(filter === 'all' || filter === 'clearspace') && (
         <section className="space-y-6" id="clearspace-section">
-          <div className="flex items-baseline justify-between border-b border-dashed border-gray-300 dark:border-zinc-800 pb-3">
+          <div className="flex items-baseline justify-between border-b border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-3">
             <div>
               <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                 2. Clearspace & Minimum Size Specifications
@@ -472,13 +473,13 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                   <div className="w-36 h-36 bg-white p-3 shadow-2xl flex items-center justify-center">
                     <div
                       className="w-full h-full flex items-center justify-center"
-                      dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="text-xs text-gray-600 dark:text-zinc-400 font-sans space-y-2 mt-4">
+              <div className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-sans space-y-2 mt-4">
                 <p>
                   <strong>Formula:</strong> The clear zone margin is calculated by taking 25% of the total logomark height (1X).
                 </p>
@@ -503,30 +504,30 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               </div>
 
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+                <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                   <div>
                     <div className="text-xs font-bold text-gray-900 dark:text-[#F9F7F2]">Primary Lockup (Digital)</div>
-                    <div className="text-[10px] text-gray-500">Web headers, banners, cards</div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-500">Web headers, banners, cards</div>
                   </div>
                   <div className="text-xs font-mono font-bold text-gray-900 dark:text-[#F9F7F2]">
                     min. 96px width
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+                <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                   <div>
                     <div className="text-xs font-bold text-gray-900 dark:text-[#F9F7F2]">Secondary Submark</div>
-                    <div className="text-[10px] text-gray-500">Favicons, micro avatars, buttons</div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-500">Favicons, micro avatars, buttons</div>
                   </div>
                   <div className="text-xs font-mono font-bold text-gray-900 dark:text-[#F9F7F2]">
                     min. 24px × 24px
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+                <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                   <div>
                     <div className="text-xs font-bold text-gray-900 dark:text-[#F9F7F2]">Print Collateral</div>
-                    <div className="text-[10px] text-gray-500">Business cards, packaging, stationery</div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-500">Business cards, packaging, stationery</div>
                   </div>
                   <div className="text-xs font-mono font-bold text-gray-900 dark:text-[#F9F7F2]">
                     min. 20mm (0.78 in)
@@ -535,13 +536,13 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               </div>
 
               {/* Interactive Scale Tester */}
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900/60 border border-dashed border-gray-300 dark:border-zinc-700 space-y-4">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900/60 border border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-700 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-[#F9F7F2]">
                     <ZoomIn className="w-3.5 h-3.5" />
                     <span>Interactive Legibility Tester</span>
                   </div>
-                  <span className="text-xs font-mono font-bold bg-white dark:bg-zinc-800 px-2 py-0.5 border border-gray-300 dark:border-zinc-700">
+                  <span className="text-xs font-mono font-bold bg-white dark:bg-zinc-800 px-2 py-0.5 border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                     {scaleTestSize}px
                   </span>
                 </div>
@@ -556,7 +557,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                   className="w-full accent-[#1A1A1A] dark:accent-[#F9F7F2] cursor-pointer"
                 />
 
-                <div className="flex items-center justify-center p-4 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 min-h-[140px] overflow-hidden">
+                <div className="flex items-center justify-center p-4 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 min-h-[140px] overflow-hidden">
                   <div
                     style={{ width: `${scaleTestSize}px`, height: `${scaleTestSize}px` }}
                     className="flex items-center justify-center transition-all duration-150"
@@ -564,13 +565,13 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                     <div
                       className="w-full h-full flex items-center justify-center"
                       dangerouslySetInnerHTML={{
-                        __html: scaleTestSize <= 40 ? secondarySvg : logo.primaryLogoSvg,
+                        __html: sanitizeSvg(scaleTestSize <= 40 ? secondarySvg : logo.primaryLogoSvg),
                       }}
                     />
                   </div>
                 </div>
 
-                <div className="text-[10px] text-gray-500 text-center">
+                <div className="text-[10px] text-gray-500 dark:text-gray-500 text-center">
                   {scaleTestSize <= 40
                     ? '💡 Micro Mode Active: Automatically switched to Secondary Submark for optimal clarity.'
                     : 'Standard Mode Active: Rendering full Primary Vector Mark.'}
@@ -584,7 +585,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
       {/* SECTION 3: TYPOGRAPHY DO'S & DON'TS */}
       {(filter === 'all' || filter === 'typography') && (
         <section className="space-y-6" id="typography-usage-section">
-          <div className="flex items-baseline justify-between border-b border-dashed border-gray-300 dark:border-zinc-800 pb-3">
+          <div className="flex items-baseline justify-between border-b border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-3">
             <div>
               <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                 3. Typography Hierarchy & Treatment Standards
@@ -682,7 +683,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 </span>
               </div>
               <div className="p-6 space-y-3 bg-gray-50 dark:bg-zinc-900/40 min-h-[190px]">
-                <div className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-900 dark:text-[#F9F7F2] pb-1 border-b border-gray-300 dark:border-zinc-700">
+                <div className="text-[10px] uppercase tracking-[0.3em] font-black text-gray-900 dark:text-[#F9F7F2] pb-1 border-b border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                   SECTION 02 // EDITORIAL CADENCE
                 </div>
                 <p
@@ -734,7 +735,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
       {/* SECTION 4: COLOR CONTRAST & SURFACE APPLICATIONS */}
       {(filter === 'all' || filter === 'color') && (
         <section className="space-y-6" id="color-contrast-section">
-          <div className="flex items-baseline justify-between border-b border-dashed border-gray-300 dark:border-zinc-800 pb-3">
+          <div className="flex items-baseline justify-between border-b border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-3">
             <div>
               <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                 4. Color Contrast & Accessibility Hierarchy
@@ -796,7 +797,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                   </span>
                   <XCircle className="w-4 h-4 text-rose-600" />
                 </div>
-                <h5 className="font-bold text-sm text-gray-500">Low-Contrast Gray on Tint</h5>
+                <h5 className="font-bold text-sm text-gray-500 dark:text-gray-500">Low-Contrast Gray on Tint</h5>
                 <p className="text-xs text-gray-400 mt-1">
                   Muted gray copy over light-gray or mid-tone surfaces makes text illegible.
                 </p>
@@ -811,7 +812,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
 
       {/* SECTION 5: QUICK BRAND RULES CHEAT SHEET */}
       <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-zinc-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-4">
           <div>
             <h4 className="text-sm font-bold uppercase tracking-widest text-[#1A1A1A] dark:text-[#F9F7F2]">
               Quick Reference Governance Checklist
@@ -820,7 +821,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               Hand this checklist to agency partners, external vendors, and internal product teams.
             </p>
           </div>
-          <div className="text-[9px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-200 px-2.5 py-1 border border-gray-300 dark:border-zinc-700">
+          <div className="text-[9px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-200 px-2.5 py-1 border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
             {brandName} Design System v1.0
           </div>
         </div>

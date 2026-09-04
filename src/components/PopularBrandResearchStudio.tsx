@@ -13,6 +13,7 @@ import {
   ChevronRight,
   TrendingUp,
   ShieldCheck,
+  ShieldAlert,
   Zap,
   Globe,
   Palette,
@@ -156,7 +157,7 @@ export function PopularBrandResearchStudio({
     <div className="space-y-8 animate-fadeIn" id="popular-brand-research-studio">
       {/* Strategic Header & Search Bar */}
       <div className="bg-white dark:bg-[#1C1C1A] border-2 border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-6 sm:p-8 space-y-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-zinc-800 pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
@@ -167,7 +168,7 @@ export function PopularBrandResearchStudio({
             <h2 className="text-2xl sm:text-3xl font-serif italic font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
               Study How Iconic Brands Were Built
             </h2>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400 max-w-2xl font-serif italic">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-2xl font-serif italic">
               Search any iconic or historical brand (e.g. Nike, Apple, Patagonia, Spotify, Ferrari). Explore their garage origins, logo evolution over decades, color psychology, and extract actionable takeaways for your own brand.
             </p>
           </div>
@@ -227,7 +228,7 @@ export function PopularBrandResearchStudio({
               className={`px-3 py-1.5 border transition-all cursor-pointer whitespace-nowrap ${
                 selectedCategory === cat
                   ? 'bg-[#1A1A1A] text-white border-black dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-white'
-                  : 'bg-transparent border-gray-200 dark:border-zinc-800 text-gray-500 hover:border-black dark:hover:border-white'
+                  : 'bg-transparent border-gray-200 dark:border-gray-200 dark:border-zinc-800 text-gray-500 dark:text-gray-500 hover:border-black dark:hover:border-white'
               }`}
             >
               {cat}
@@ -251,7 +252,7 @@ export function PopularBrandResearchStudio({
               className={`p-3.5 border text-left transition-all cursor-pointer flex flex-col justify-between h-32 group relative overflow-hidden ${
                 isSelected
                   ? 'border-2 border-black dark:border-white bg-[#FAF9F6] dark:bg-[#161614] shadow-md'
-                  : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-gray-400'
+                  : 'border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-gray-400'
               }`}
             >
               <div className="space-y-1">
@@ -263,7 +264,7 @@ export function PopularBrandResearchStudio({
                 </h4>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-zinc-800 text-[8px] font-mono text-gray-500">
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-zinc-800 text-[8px] font-mono text-gray-500 dark:text-gray-500">
                 <span className="truncate max-w-[80px]">{b.category.split(' ')[0]}</span>
                 <div className="flex items-center gap-0.5">
                   {b.colorPaletteHeritage?.slice(0, 3).map((c) => (
@@ -287,6 +288,13 @@ export function PopularBrandResearchStudio({
       {/* Deep Dossier View of Selected Brand */}
       {selectedBrand && (
         <div className="bg-white dark:bg-[#1C1C1A] border-2 border-[#1A1A1A] dark:border-[#F9F7F2]/20 shadow-md">
+          {/* AI-Generated Content Disclaimer */}
+          <div className="px-6 sm:px-8 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/40 text-[11px] text-amber-900 dark:text-amber-300 flex items-start gap-2">
+            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              <strong>AI-generated research.</strong> Historical details, dates, and quotes are synthesized by AI and may be inaccurate or invented — verify independently before relying on this case study.
+            </span>
+          </div>
           {/* Dossier Header */}
           <div className="p-6 sm:p-8 bg-[#FAF9F6] dark:bg-[#161614] border-b-2 border-[#1A1A1A] dark:border-[#F9F7F2]/20 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
@@ -303,10 +311,10 @@ export function PopularBrandResearchStudio({
                 {selectedBrand.brandName}
               </h1>
 
-              <p className="text-base sm:text-lg font-serif italic text-gray-600 dark:text-zinc-400">
+              <p className="text-base sm:text-lg font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                 &ldquo;{selectedBrand.tagline}&rdquo;
               </p>
-              <div className="text-xs text-gray-500 font-mono">
+              <div className="text-xs text-gray-500 dark:text-gray-500 font-mono">
                 Founders: {selectedBrand.founders.join(', ')} &bull; {selectedBrand.industry}
               </div>
             </div>
@@ -342,14 +350,14 @@ export function PopularBrandResearchStudio({
           )}
 
           {/* Sub-Navigation Tabs */}
-          <div className="flex items-center border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] overflow-x-auto text-[10px] uppercase tracking-widest font-black">
+          <div className="flex items-center border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] overflow-x-auto text-[10px] uppercase tracking-widest font-black">
             <button
               type="button"
               onClick={() => setActiveAnalysisTab('origin')}
               className={`px-5 py-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 activeAnalysisTab === 'origin'
                   ? 'border-black text-black dark:border-white dark:text-white bg-black/5 dark:bg-white/5'
-                  : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'
+                  : 'border-transparent text-gray-500 dark:text-gray-500 hover:text-black dark:hover:text-white'
               }`}
             >
               <History className="w-3.5 h-3.5" />
@@ -361,7 +369,7 @@ export function PopularBrandResearchStudio({
               className={`px-5 py-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 activeAnalysisTab === 'logos'
                   ? 'border-black text-black dark:border-white dark:text-white bg-black/5 dark:bg-white/5'
-                  : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'
+                  : 'border-transparent text-gray-500 dark:text-gray-500 hover:text-black dark:hover:text-white'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -373,7 +381,7 @@ export function PopularBrandResearchStudio({
               className={`px-5 py-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 activeAnalysisTab === 'colors'
                   ? 'border-black text-black dark:border-white dark:text-white bg-black/5 dark:bg-white/5'
-                  : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'
+                  : 'border-transparent text-gray-500 dark:text-gray-500 hover:text-black dark:hover:text-white'
               }`}
             >
               <Palette className="w-3.5 h-3.5" />
@@ -385,7 +393,7 @@ export function PopularBrandResearchStudio({
               className={`px-5 py-3.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 activeAnalysisTab === 'lessons'
                   ? 'border-black text-black dark:border-white dark:text-white bg-black/5 dark:bg-white/5'
-                  : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'
+                  : 'border-transparent text-gray-500 dark:text-gray-500 hover:text-black dark:hover:text-white'
               }`}
             >
               <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
@@ -397,7 +405,7 @@ export function PopularBrandResearchStudio({
           {activeAnalysisTab === 'origin' && (
             <div className="p-6 sm:p-8 space-y-8 animate-fadeIn">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-5 bg-[#FAF9F6] dark:bg-[#161614] border border-gray-200 dark:border-zinc-800 space-y-2">
+                <div className="p-5 bg-[#FAF9F6] dark:bg-[#161614] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-2">
                   <span className="text-[9px] uppercase tracking-widest font-black text-gray-400 dark:text-zinc-500 block">
                     Phase I &bull; The Humble Beginning
                   </span>
@@ -435,7 +443,7 @@ export function PopularBrandResearchStudio({
               </div>
 
               {/* Core Strategic Pillars */}
-              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
+              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <span className="text-[10px] uppercase tracking-[0.25em] font-black text-gray-400 dark:text-zinc-500 block">
                   Foundational Brand Pillars
                 </span>
@@ -448,7 +456,7 @@ export function PopularBrandResearchStudio({
                       <h4 className="font-serif italic font-bold text-sm text-[#1A1A1A] dark:text-[#F9F7F2] mb-1">
                         {pillar.title}
                       </h4>
-                      <p className="text-xs text-gray-600 dark:text-zinc-400 leading-relaxed">
+                      <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed">
                         {pillar.description}
                       </p>
                     </div>
@@ -457,7 +465,7 @@ export function PopularBrandResearchStudio({
               </div>
 
               {/* Historical Timeline */}
-              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
+              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <span className="text-[10px] uppercase tracking-[0.25em] font-black text-gray-400 dark:text-zinc-500 block">
                   Key Historical Milestones &amp; Takeaways
                 </span>
@@ -465,7 +473,7 @@ export function PopularBrandResearchStudio({
                   {selectedBrand.keyMilestones.map((m, i) => (
                     <div
                       key={'milestone-' + i}
-                      className="p-4 bg-[#FAF9F6] dark:bg-[#161614] border border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      className="p-4 bg-[#FAF9F6] dark:bg-[#161614] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div className="flex items-start gap-4">
                         <span className="px-2.5 py-1 bg-black text-white dark:bg-white dark:text-black font-mono font-black text-xs shrink-0">
@@ -475,7 +483,7 @@ export function PopularBrandResearchStudio({
                           <h5 className="font-bold text-sm text-[#1A1A1A] dark:text-[#F9F7F2]">
                             {m.headline}
                           </h5>
-                          <p className="text-xs text-gray-600 dark:text-zinc-400 mt-0.5">
+                          <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-0.5">
                             {m.summary}
                           </p>
                         </div>
@@ -497,7 +505,7 @@ export function PopularBrandResearchStudio({
                 <h3 className="font-serif italic text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
                   How the {selectedBrand.brandName} Logomark Evolved Across Eras
                 </h3>
-                <p className="text-xs text-gray-600 dark:text-zinc-400 font-serif italic">
+                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-serif italic">
                   Notice how nearly all legendary logos start complex, literal, or crowded, and gradually subtract unnecessary detail until only a pure geometric essence remains.
                 </p>
               </div>
@@ -506,10 +514,10 @@ export function PopularBrandResearchStudio({
                 {selectedBrand.logoEvolution.map((logo, idx) => (
                   <div
                     key={'logo-era-' + idx}
-                    className="border-2 border-gray-300 dark:border-zinc-700 bg-[#FAF9F6] dark:bg-[#161614] flex flex-col justify-between"
+                    className="border-2 border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-[#FAF9F6] dark:bg-[#161614] flex flex-col justify-between"
                   >
                     {/* Visual Graphic Representation */}
-                    <div className="p-8 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-center min-h-[160px] text-[#1A1A1A] dark:text-[#F9F7F2]">
+                    <div className="p-8 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-center min-h-[160px] text-[#1A1A1A] dark:text-[#F9F7F2]">
                       {logo.imageUrl ? (
                         <div className="w-32 h-20 flex items-center justify-center">
                           <ImageWithFallback src={logo.imageUrl} alt={`${selectedBrand.brandName} - ${logo.title}`} fallbackText={selectedBrand.brandName} />
@@ -529,12 +537,12 @@ export function PopularBrandResearchStudio({
                         <h4 className="font-serif italic font-bold text-base text-[#1A1A1A] dark:text-[#F9F7F2]">
                           {logo.title}
                         </h4>
-                        <p className="text-xs text-gray-600 dark:text-zinc-400 leading-relaxed">
+                        <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed">
                           {logo.description}
                         </p>
                       </div>
 
-                      <div className="pt-3 border-t border-gray-200 dark:border-zinc-800">
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                         <span className="text-[8px] uppercase tracking-widest font-black text-gray-400 block mb-1">
                           Key Changes Made
                         </span>
@@ -575,7 +583,7 @@ export function PopularBrandResearchStudio({
                   {selectedBrand.colorPaletteHeritage.map((color, cIdx) => (
                     <div
                       key={'color-' + cIdx}
-                      className="border border-gray-200 dark:border-zinc-800 bg-[#FAF9F6] dark:bg-[#161614] overflow-hidden flex flex-col justify-between"
+                      className="border border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-[#FAF9F6] dark:bg-[#161614] overflow-hidden flex flex-col justify-between"
                     >
                       <div
                         className="h-24 p-3 flex items-start justify-between"
@@ -593,7 +601,7 @@ export function PopularBrandResearchStudio({
                         <h4 className="font-bold text-sm text-[#1A1A1A] dark:text-[#F9F7F2]">
                           {color.name}
                         </h4>
-                        <p className="text-xs text-gray-600 dark:text-zinc-400">
+                        <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                           {color.psychology}
                         </p>
                       </div>
@@ -603,7 +611,7 @@ export function PopularBrandResearchStudio({
               </div>
 
               {/* Typography Evolution */}
-              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
+              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <div className="space-y-1">
                   <span className="text-[9px] uppercase tracking-[0.25em] font-black text-gray-400 block">
                     Type Heritage
@@ -617,18 +625,18 @@ export function PopularBrandResearchStudio({
                   {selectedBrand.typographyEvolution.map((typeSpec, tIdx) => (
                     <div
                       key={'type-' + tIdx}
-                      className="p-5 bg-[#FAF9F6] dark:bg-[#161614] border border-gray-200 dark:border-zinc-800 space-y-2"
+                      className="p-5 bg-[#FAF9F6] dark:bg-[#161614] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-2"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-[9px] font-mono font-bold px-2 py-0.5 bg-black text-white dark:bg-white dark:text-black">
                           {typeSpec.era}
                         </span>
-                        <span className="text-[9px] font-mono text-gray-500">{typeSpec.style}</span>
+                        <span className="text-[9px] font-mono text-gray-500 dark:text-gray-500">{typeSpec.style}</span>
                       </div>
                       <h4 className="text-2xl font-bold tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
                         {typeSpec.fontName}
                       </h4>
-                      <p className="text-xs text-gray-600 dark:text-zinc-400 leading-relaxed font-serif italic">
+                      <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed font-serif italic">
                         {typeSpec.rationale}
                       </p>
                     </div>
@@ -645,7 +653,7 @@ export function PopularBrandResearchStudio({
                 <h3 className="font-serif italic text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
                   What You Can Learn From {selectedBrand.brandName} To Build Your Brand
                 </h3>
-                <p className="text-xs text-gray-600 dark:text-zinc-400 font-serif italic">
+                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-serif italic">
                   Direct principles distilled from {selectedBrand.brandName}&apos;s founding journey and how to apply them immediately in your brand prompt.
                 </p>
               </div>

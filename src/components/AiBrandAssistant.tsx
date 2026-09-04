@@ -9,7 +9,13 @@ interface AiBrandAssistantProps {
 }
 
 export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantProps) {
-  const [selectedModel, setSelectedModel] = useState<'gemini-3.5-flash' | 'gemini-3.1-pro-preview' | 'gemini-3.1-flash-lite'>('gemini-3.5-flash');
+  const [selectedProvider, setSelectedProvider] = useState<'auto' | 'openai' | 'anthropic' | 'gemini'>('auto');
+  const PROVIDER_LABELS: Record<string, string> = {
+    auto: 'Auto (Cascade)',
+    openai: 'ChatGPT',
+    anthropic: 'Claude',
+    gemini: 'Gemini',
+  };
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: 'init-' + (brand?.id || 'default'),
@@ -74,7 +80,7 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ sender: m.sender, text: m.text })),
           brandContext: brand,
-          model: selectedModel,
+          provider: selectedProvider,
         }),
       });
 
@@ -130,7 +136,7 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
             <h3 className="font-bold text-[11px] uppercase tracking-[0.3em] text-white flex items-center gap-2">
               <span>Brand Director</span>
               <span className="text-[7px] font-mono px-1.5 py-0.5 border border-white/30 text-white/70 bg-white/5">
-                {selectedModel}
+                {PROVIDER_LABELS[selectedProvider]}
               </span>
             </h3>
             <p className="text-[9px] uppercase tracking-widest text-white/50 mt-1">
@@ -146,48 +152,27 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
         </button>
       </div>
 
-      {/* Model Selection Bar */}
+      {/* AI Engine Selection Bar */}
       <div className="bg-[#F9F7F2] dark:bg-[#20201E] border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-4 flex flex-col gap-2">
         <span className="text-[8px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] opacity-60">
-          Director Mode / Gemini Model:
+          AI Engine:
         </span>
-        <div className="grid grid-cols-3 gap-1.5">
-          <button
-            type="button"
-            onClick={() => setSelectedModel('gemini-3.5-flash')}
-            className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-none cursor-pointer ${
-              selectedModel === 'gemini-3.5-flash'
-                ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
-                : 'bg-white text-[#1A1A1A] border-gray-300 dark:bg-[#181816] dark:text-zinc-400 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900'
-            }`}
-            title="General brand strategy, brainstorms, and Q&A"
-          >
-            General
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedModel('gemini-3.1-pro-preview')}
-            className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-none cursor-pointer ${
-              selectedModel === 'gemini-3.1-pro-preview'
-                ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
-                : 'bg-white text-[#1A1A1A] border-gray-300 dark:bg-[#181816] dark:text-zinc-400 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900'
-            }`}
-            title="Deep strategic analysis & complex creative critique"
-          >
-            Complex
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedModel('gemini-3.1-flash-lite')}
-            className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-none cursor-pointer ${
-              selectedModel === 'gemini-3.1-flash-lite'
-                ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
-                : 'bg-white text-[#1A1A1A] border-gray-300 dark:bg-[#181816] dark:text-zinc-400 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900'
-            }`}
-            title="Hyper-speed copy, captions, and short lookups"
-          >
-            Fast / Lite
-          </button>
+        <div className="grid grid-cols-4 gap-1.5">
+          {(['auto', 'openai', 'anthropic', 'gemini'] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setSelectedProvider(p)}
+              className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-none cursor-pointer ${
+                selectedProvider === p
+                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
+                  : 'bg-white text-[#1A1A1A] border-gray-300 dark:border-gray-300 dark:bg-[#181816] dark:text-zinc-400 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900'
+              }`}
+              title={`${p === 'auto' ? 'Automatic fallback cascade' : p === 'openai' ? 'ChatGPT (OpenAI)' : p === 'anthropic' ? 'Anthropic Claude' : 'Google Gemini'} engine`}
+            >
+              {PROVIDER_LABELS[p].replace(' (Cascade)', '')}
+            </button>
+          ))}
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BrandBible } from '../types';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import {
   Monitor,
   CreditCard,
@@ -64,7 +65,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex flex-wrap gap-1.5 p-1 bg-gray-100 dark:bg-[#151514] border border-gray-200 dark:border-zinc-800">
+        <div className="flex flex-wrap gap-1.5 p-1 bg-gray-100 dark:bg-[#151514] border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
           {[
             { id: 'all', label: 'All Touchpoints', icon: Layers },
             { id: 'website', label: 'Web Platform', icon: Monitor },
@@ -83,7 +84,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   isActive
                     ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-xs'
-                    : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                    : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -105,7 +106,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
 
             {/* Layout Archetype Switcher */}
             <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold">
-              <span className="opacity-50 mr-1 text-gray-500">Archetype:</span>
+              <span className="opacity-50 mr-1 text-gray-500 dark:text-gray-500">Archetype:</span>
               {[
                 { id: 'saas', label: 'SaaS Platform' },
                 { id: 'luxury_editorial', label: 'Haute Editorial' },
@@ -119,7 +120,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   className={`px-2.5 py-1 border transition-all cursor-pointer ${
                     webLayout === layout.id
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white'
+                      : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white'
                   }`}
                 >
                   {layout.label}
@@ -141,7 +142,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 <div className="bg-[#F9F7F2] dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] px-3.5 py-1 flex items-center gap-2 text-[9px] uppercase tracking-widest font-bold max-w-[220px] truncate border border-black/20">
                   <div
                     className="w-3.5 h-3.5 shrink-0"
-                    dangerouslySetInnerHTML={{ __html: brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg) }}
                   />
                   <span className="truncate">{brand.brandName}</span>
                 </div>
@@ -162,7 +163,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 <div className="flex items-center justify-between border-b border-current/15 pb-4">
                   <div
                     className="h-9 max-w-[190px] flex items-center"
-                    dangerouslySetInnerHTML={{ __html: brand.logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                   />
                   <div className="hidden md:flex items-center gap-8 text-[9px] uppercase tracking-widest font-bold opacity-80">
                     <span className="hover:opacity-100 cursor-pointer">Platform</span>
@@ -261,7 +262,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   <span className="text-[9px] uppercase tracking-[0.3em] opacity-60">EST. 2026 // COLLECTION</span>
                   <div
                     className="h-10 max-w-[200px] flex items-center"
-                    dangerouslySetInnerHTML={{ __html: brand.logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                   />
                   <span className="text-[9px] uppercase tracking-widest font-bold opacity-80 cursor-pointer hover:text-amber-400">
                     Private Concierge &rarr;
@@ -296,7 +297,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   </div>
 
                   <div className="lg:col-span-5 border border-white/20 p-8 space-y-6 bg-white/5 relative">
-                    <div className="w-12 h-12" dangerouslySetInnerHTML={{ __html: brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg }} />
+                    <div className="w-12 h-12" dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg) }} />
                     <span className="text-xs uppercase tracking-widest font-bold block" style={{ color: accentColor }}>
                       {brand.brandName} Atelier
                     </span>
@@ -320,7 +321,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 <div className="flex items-center justify-between border-b border-current/20 pb-4">
                   <div
                     className="h-8 max-w-[160px] flex items-center"
-                    dangerouslySetInnerHTML={{ __html: brand.logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                   />
                   <div className="flex items-center gap-6 text-[9px] uppercase tracking-widest font-bold">
                     <span>New Arrivals</span>
@@ -348,7 +349,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                         </span>
                         <div
                           className="w-20 h-20 opacity-85 hover:scale-110 transition-transform duration-300"
-                          dangerouslySetInnerHTML={{ __html: brand.secondaryMarks[idx % brand.secondaryMarks.length]?.svg || brand.logo.primaryLogoSvg }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.secondaryMarks[idx % brand.secondaryMarks.length]?.svg || brand.logo.primaryLogoSvg) }}
                         />
                       </div>
                       <div>
@@ -377,7 +378,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   <div className="p-6 space-y-4">
                     <div
                       className="h-8 max-w-[140px]"
-                      dangerouslySetInnerHTML={{ __html: brand.logo.primaryLogoSvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                     />
                     <span className="text-[9px] uppercase tracking-widest font-bold opacity-50 block">PROJECT INDEX // 2026</span>
                   </div>
@@ -413,7 +414,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
 
             {/* Packaging Type Switcher */}
             <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold">
-              <span className="opacity-50 mr-1 text-gray-500">Format:</span>
+              <span className="opacity-50 mr-1 text-gray-500 dark:text-gray-500">Format:</span>
               {[
                 { id: 'box', label: 'Luxury Box Sleeve' },
                 { id: 'bag', label: 'Artisan Pouch / Bag' },
@@ -426,7 +427,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   className={`px-2.5 py-1 border transition-all cursor-pointer ${
                     packagingType === format.id
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white'
+                      : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white'
                   }`}
                 >
                   {format.label}
@@ -458,7 +459,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   <div className="text-center space-y-4 py-8">
                     <div
                       className="w-24 h-24 mx-auto drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
-                      dangerouslySetInnerHTML={{ __html: brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg) }}
                     />
                     <h3 className="text-xl font-bold uppercase tracking-[0.25em] text-white" style={{ fontFamily: headingFont }}>
                       {brand.brandName}
@@ -494,7 +495,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                     <span className="text-[8px] uppercase tracking-[0.3em] text-amber-400 font-bold">ARTISAN HARVEST</span>
                     <div
                       className="w-16 h-16 mx-auto"
-                      dangerouslySetInnerHTML={{ __html: brand.logo.primaryLogoSvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                     />
                     <p className="text-xs italic font-serif text-white/80 max-w-[200px] mx-auto">
                       &ldquo;{brand.mission.slice(0, 70)}...&rdquo;
@@ -516,7 +517,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   <div className="text-center space-y-3">
                     <div
                       className="w-16 h-16 mx-auto"
-                      dangerouslySetInnerHTML={{ __html: brand.secondaryMarks[1]?.svg || brand.logo.primaryLogoSvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.secondaryMarks[1]?.svg || brand.logo.primaryLogoSvg) }}
                     />
                     <h4 className="text-base font-black tracking-widest uppercase" style={{ fontFamily: headingFont }}>
                       {brand.brandName}
@@ -547,23 +548,23 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   Crafted with heavy-weight 350gsm FSC-certified cotton paper, soft-touch matte lamination, and targeted blind debossing for the primary mark.
                 </p>
 
-                <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-zinc-800 text-xs">
+                <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800 text-xs">
                   <div className="flex justify-between py-1 border-b border-gray-100 dark:border-zinc-800">
-                    <span className="text-gray-500">Substrate:</span>
+                    <span className="text-gray-500 dark:text-gray-500">Substrate:</span>
                     <span className="font-bold">Heavyweight 350gsm Uncoated Board</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-gray-100 dark:border-zinc-800">
-                    <span className="text-gray-500">Foil Finish:</span>
+                    <span className="text-gray-500 dark:text-gray-500">Foil Finish:</span>
                     <span className="font-bold" style={{ color: primaryColor }}>Custom Spot Matte Color</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-gray-100 dark:border-zinc-800">
-                    <span className="text-gray-500">Sustainability:</span>
+                    <span className="text-gray-500 dark:text-gray-500">Sustainability:</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">100% Recyclable &amp; Plastic Free</span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-xs text-gray-600 dark:text-zinc-400">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                 <span className="font-bold text-[#1A1A1A] dark:text-[#F9F7F2] block mb-1">Production Tip:</span>
                 Provide the vector SVG from the &apos;Logo &amp; Marks&apos; tab directly to your packaging manufacturer for flawless die-cutting and plate stamping.
               </div>
@@ -583,7 +584,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
 
             {/* Foil Finish Switcher */}
             <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold">
-              <span className="opacity-50 mr-1 text-gray-500">Finish:</span>
+              <span className="opacity-50 mr-1 text-gray-500 dark:text-gray-500">Finish:</span>
               {[
                 { id: 'gold_foil', label: 'Gold Foil' },
                 { id: 'matte_black', label: 'Matte Obsidian' },
@@ -597,7 +598,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   className={`px-2.5 py-1 border transition-all cursor-pointer ${
                     cardFinish === finish.id
                       ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
-                      : 'bg-transparent text-gray-600 dark:text-gray-400 border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white'
+                      : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white'
                   }`}
                 >
                   {finish.label}
@@ -614,7 +615,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 type="text"
                 value={cardName}
                 onChange={(e) => setCardName(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-300 dark:border-zinc-700 py-1 text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-black dark:focus:border-white"
+                className="w-full bg-transparent border-b border-gray-300 dark:border-gray-300 dark:border-zinc-700 py-1 text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-black dark:focus:border-white"
               />
             </div>
             <div>
@@ -623,7 +624,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 type="text"
                 value={cardTitle}
                 onChange={(e) => setCardTitle(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-300 dark:border-zinc-700 py-1 text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-black dark:focus:border-white"
+                className="w-full bg-transparent border-b border-gray-300 dark:border-gray-300 dark:border-zinc-700 py-1 text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-black dark:focus:border-white"
               />
             </div>
             <div>
@@ -632,7 +633,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 type="text"
                 value={cardEmail}
                 onChange={(e) => setCardEmail(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-300 dark:border-zinc-700 py-1 text-sm font-mono text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-black dark:focus:border-white"
+                className="w-full bg-transparent border-b border-gray-300 dark:border-gray-300 dark:border-zinc-700 py-1 text-sm font-mono text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-black dark:focus:border-white"
               />
             </div>
             <div>
@@ -641,7 +642,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 type="text"
                 value={cardCity}
                 onChange={(e) => setCardCity(e.target.value)}
-                className="w-full bg-transparent border-b border-gray-300 dark:border-zinc-700 py-1 text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-black dark:focus:border-white"
+                className="w-full bg-transparent border-b border-gray-300 dark:border-gray-300 dark:border-zinc-700 py-1 text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-black dark:focus:border-white"
               />
             </div>
           </div>
@@ -664,7 +665,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
               <div className="flex justify-between items-start relative z-10">
                 <div
                   className="w-36 h-12 flex items-center"
-                  dangerouslySetInnerHTML={{ __html: brand.logo.primaryLogoSvg }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                 />
                 <span className="text-[9px] uppercase tracking-widest opacity-50 font-mono">OBVERSE // 01</span>
               </div>
@@ -703,7 +704,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 </div>
                 <div
                   className="w-12 h-12"
-                  dangerouslySetInnerHTML={{ __html: brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg) }}
                 />
               </div>
 
@@ -760,7 +761,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 <div className="flex items-center justify-between relative z-10">
                   <div
                     className="h-12 max-w-[220px]"
-                    dangerouslySetInnerHTML={{ __html: brand.logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                   />
                   <span className="text-[10px] uppercase tracking-[0.3em] font-black px-4 py-1.5 border border-white/30 text-white">
                     {brand.industry}

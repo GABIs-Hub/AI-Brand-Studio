@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrandBible } from '../types';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import { LogoRenderSkeleton } from './LogoRenderSkeleton';
 import {
   downloadRenderAsPng,
@@ -30,7 +31,7 @@ import {
 
 interface Render3DStudioProps {
   brand: BrandBible;
-  onGenerateLogoImage: (prompt: string, resolution: string) => Promise<string | void>;
+  onGenerateLogoImage: (prompt: string, resolution: string, provider?: string) => Promise<string | void>;
   isGeneratingImage: boolean;
   generatedImageUrl?: string;
   generatedImageResolution?: string;
@@ -96,6 +97,14 @@ export function Render3DStudio({
 }: Render3DStudioProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string>('matte_foil');
   const [selectedResolution, setSelectedResolution] = useState<'1K' | '2K' | '4K'>('2K');
+  const [selectedProvider, setSelectedProvider] = useState<'auto' | 'openai' | 'gemini' | 'higgsfield'>('auto');
+
+  const IMAGE_PROVIDERS = [
+    { id: 'auto', label: 'Auto' },
+    { id: 'openai', label: 'OpenAI' },
+    { id: 'gemini', label: 'Gemini' },
+    { id: 'higgsfield', label: 'Higgsfield' },
+  ] as const;
   const [customPrompt, setCustomPrompt] = useState<string>(
     STUDIO_PRESETS[0].prompt
   );
@@ -127,7 +136,7 @@ export function Render3DStudio({
     setImgLoadFailed(false);
     try {
       const promptToUse = promptOverride || customPrompt;
-      await onGenerateLogoImage(promptToUse, selectedResolution);
+      await onGenerateLogoImage(promptToUse, selectedResolution, selectedProvider);
     } catch (err: any) {
       setRenderError(err.message || 'Rendering error encountered.');
     }
@@ -140,7 +149,7 @@ export function Render3DStudio({
       let imageToDownload = generatedImageUrl;
       if (!imageToDownload) {
         // Automatically synthesize render if not already triggered
-        const synthesized = await onGenerateLogoImage(customPrompt, selectedResolution);
+        const synthesized = await onGenerateLogoImage(customPrompt, selectedResolution, selectedProvider);
         if (typeof synthesized === 'string') {
           imageToDownload = synthesized;
         } else {
@@ -190,7 +199,7 @@ export function Render3DStudio({
             <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[9px] uppercase tracking-widest font-black">
               Studio Render Engine 3.0
             </span>
-            <span className="text-[10px] text-gray-500 font-mono">
+            <span className="text-[10px] text-gray-500 dark:text-gray-500 font-mono">
               Raytracer &bull; AI Physical Simulation
             </span>
           </div>
@@ -205,7 +214,7 @@ export function Render3DStudio({
         {/* Global Export & Action Bar */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Resolution Selector */}
-          <div className="flex items-center bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 p-0.5">
+          <div className="flex items-center bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 p-0.5">
             {(['1K', '2K', '4K'] as const).map((res) => (
               <button
                 key={res}
@@ -214,10 +223,32 @@ export function Render3DStudio({
                 className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer ${
                   selectedResolution === res
                     ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-xs'
-                    : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                    : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 {res}
+              </button>
+            ))}
+          </div>
+
+          {/* AI Engine Selector */}
+          <div
+            className="flex items-center gap-1.5 bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 p-0.5"
+            title="Choose the AI engine for this render. Auto cascades OpenAI → Gemini → Higgsfield."
+          >
+            <Sparkles className="w-3 h-3 text-gray-400 ml-1 shrink-0" />
+            {IMAGE_PROVIDERS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setSelectedProvider(p.id)}
+                className={`px-2 py-1 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer ${
+                  selectedProvider === p.id
+                    ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-xs'
+                    : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                {p.label}
               </button>
             ))}
           </div>
@@ -244,7 +275,7 @@ export function Render3DStudio({
             <button
               type="button"
               onClick={handleCopyClipboard}
-              className="px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-[#1A1A1A] dark:text-[#F9F7F2] text-[9px] uppercase tracking-widest font-bold flex items-center gap-1.5 cursor-pointer hover:border-black dark:hover:border-white transition-colors"
+              className="px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-[#1A1A1A] dark:text-[#F9F7F2] text-[9px] uppercase tracking-widest font-bold flex items-center gap-1.5 cursor-pointer hover:border-black dark:hover:border-white transition-colors"
             >
               {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{isCopied ? 'Copied' : 'Copy'}</span>
@@ -280,7 +311,7 @@ export function Render3DStudio({
                     className={`p-3 text-left border transition-all cursor-pointer relative overflow-hidden ${
                       isSelected
                         ? 'bg-white dark:bg-[#1C1C1A] border-[#1A1A1A] dark:border-[#F9F7F2] shadow-md ring-1 ring-[#1A1A1A] dark:ring-[#F9F7F2]'
-                        : 'bg-gray-50 dark:bg-[#141413] border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600'
+                        : 'bg-gray-50 dark:bg-[#141413] border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -304,7 +335,7 @@ export function Render3DStudio({
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-gray-600 dark:text-zinc-400 font-serif italic mt-2 line-clamp-2 leading-relaxed">
+                    <p className="text-[10px] text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-serif italic mt-2 line-clamp-2 leading-relaxed">
                       {preset.description}
                     </p>
                   </button>
@@ -314,10 +345,10 @@ export function Render3DStudio({
           </div>
 
           {/* Custom Prompt & Prompt Enhancement Controls */}
-          <div className="p-4 bg-gray-50 dark:bg-[#141413] border border-gray-200 dark:border-zinc-800 space-y-3">
+          <div className="p-4 bg-gray-50 dark:bg-[#141413] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-[9px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3 h-3 text-gray-500" />
+                <SlidersHorizontal className="w-3 h-3 text-gray-500 dark:text-gray-500" />
                 <span>Fine-Tune Lighting &amp; Texture Prompt</span>
               </label>
               <button
@@ -334,7 +365,7 @@ export function Render3DStudio({
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
               placeholder="Describe optical glass, specular flares, brushed metals..."
-              className="w-full bg-white dark:bg-[#1C1C1A] border border-gray-300 dark:border-zinc-700 p-2.5 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] font-sans focus:outline-hidden focus:border-black dark:focus:border-white leading-relaxed resize-none"
+              className="w-full bg-white dark:bg-[#1C1C1A] border border-gray-300 dark:border-gray-300 dark:border-zinc-700 p-2.5 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] font-sans focus:outline-hidden focus:border-black dark:focus:border-white leading-relaxed resize-none"
             />
 
             {/* Quick Modifiers */}
@@ -350,7 +381,7 @@ export function Render3DStudio({
                   key={mod}
                   type="button"
                   onClick={() => setCustomPrompt((prev) => `${prev.trim()}, ${mod.replace('+ ', '')}`)}
-                  className="px-2 py-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-[8px] font-mono text-gray-600 dark:text-zinc-300 hover:border-black dark:hover:border-white cursor-pointer transition-colors"
+                  className="px-2 py-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 text-[8px] font-mono text-gray-600 dark:text-gray-600 dark:text-zinc-300 hover:border-black dark:hover:border-white cursor-pointer transition-colors"
                 >
                   {mod}
                 </button>
@@ -473,7 +504,7 @@ export function Render3DStudio({
                     /* Fallback direct decoded vector SVG injection */
                     <div
                       className="max-h-[380px] w-full max-w-[420px] drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] transition-transform hover:scale-105 duration-300 flex items-center justify-center animate-in fade-in duration-300"
-                      dangerouslySetInnerHTML={{ __html: extractCleanSvgText(generatedImageUrl) }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(extractCleanSvgText(generatedImageUrl)) }}
                       onClick={() => setIsFullscreen(true)}
                     />
                   )}
@@ -502,7 +533,7 @@ export function Render3DStudio({
                     />
                     <div
                       className="w-24 h-24 text-white drop-shadow-[0_6px_16px_rgba(255,255,255,0.25)] relative z-10"
-                      dangerouslySetInnerHTML={{ __html: brand.logo?.primaryLogoSvg || '' }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo?.primaryLogoSvg || '') }}
                     />
                   </div>
 
@@ -565,7 +596,7 @@ export function Render3DStudio({
                     >
                       Download SVG Scene
                     </button>
-                    <span className="text-gray-600">|</span>
+                    <span className="text-gray-600 dark:text-gray-600">|</span>
                   </>
                 )}
 
@@ -588,7 +619,7 @@ export function Render3DStudio({
 
           {/* Quick Specifications & Usage Guide */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[10px]">
-            <div className="p-3 bg-gray-50 dark:bg-[#141413] border border-gray-200 dark:border-zinc-800 space-y-1">
+            <div className="p-3 bg-gray-50 dark:bg-[#141413] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-1">
               <span className="text-[9px] uppercase tracking-widest font-bold text-gray-400 block">
                 Primary Medium
               </span>
@@ -597,7 +628,7 @@ export function Render3DStudio({
               </p>
             </div>
 
-            <div className="p-3 bg-gray-50 dark:bg-[#141413] border border-gray-200 dark:border-zinc-800 space-y-1">
+            <div className="p-3 bg-gray-50 dark:bg-[#141413] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-1">
               <span className="text-[9px] uppercase tracking-widest font-bold text-gray-400 block">
                 Color Depth &amp; Alpha
               </span>
@@ -606,7 +637,7 @@ export function Render3DStudio({
               </p>
             </div>
 
-            <div className="p-3 bg-gray-50 dark:bg-[#141413] border border-gray-200 dark:border-zinc-800 space-y-1">
+            <div className="p-3 bg-gray-50 dark:bg-[#141413] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-1">
               <span className="text-[9px] uppercase tracking-widest font-bold text-gray-400 block">
                 Export Formats
               </span>

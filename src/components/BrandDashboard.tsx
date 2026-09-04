@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrandBible } from '../types';
-import { User } from '../lib/firebase';
+import { SessionUser } from '../lib/authClient';
 import { SimpleBrandView } from './SimpleBrandView';
 import { BrandOverviewTab } from './BrandOverviewTab';
 import { PaletteTab } from './PaletteTab';
@@ -37,6 +37,7 @@ import {
   Cloud,
   Clock,
   Box,
+  Info,
 } from 'lucide-react';
 
 interface BrandDashboardProps {
@@ -47,7 +48,7 @@ interface BrandDashboardProps {
   onSelectBrand: (brand: BrandBible) => void;
   onDeleteBrand: (id: string) => void;
   onUpgradeBrand?: (brand: BrandBible) => void;
-  user?: User | null;
+  user?: SessionUser | null;
   activeTabOverride?: TabType;
   viewModeOverride?: 'simple' | 'studio';
   onViewModeChange?: (mode: 'simple' | 'studio') => void;
@@ -110,6 +111,34 @@ export function BrandDashboard({
     { id: 'strategy_audit', label: 'Voice & Strategy', icon: Award, desc: 'Tone, Audit & History' },
   ] as const;
 
+  // Developer-oriented guide for each studio tab
+  const tabGuides: Record<TabType, { title: string; guide: string }> = {
+    overview: {
+      title: 'Brand Overview',
+      guide: 'The complete identity at a glance — mission, positioning, personality, and values. Use this as the single source of truth for the brand.',
+    },
+    logos: {
+      title: 'Logo & Marks',
+      guide: 'Work with the primary SVG logo and secondary marks: preview on any background, copy vector code, download files, or render a high-resolution AI version. The Logo Studio offers six archetypes with chain-of-thought prompt refinement, and the favicon generator ships .ico/.png/manifest bundles.',
+    },
+    design_system: {
+      title: 'Colors & Fonts',
+      guide: 'The design foundation: a WCAG-validated 5-color palette with an accessibility matrix, a Google Fonts pairing with live specimens, and a sandbox to preview real components in both light and dark mode.',
+    },
+    social_content: {
+      title: 'Social & Content',
+      guide: 'Generate platform-ready social templates (IG, LinkedIn, TikTok, WhatsApp), viral topic hooks, and AI-assisted visuals. Pick your AI provider per generation — auto, OpenAI, Gemini, or Higgsfield.',
+    },
+    mockups_usage: {
+      title: 'Mockups & Usage',
+      guide: 'See the logo applied to 3D merchandise mockups (t-shirts, mugs, signage) and review the asset-usage guide for consistent, on-brand application everywhere.',
+    },
+    strategy_audit: {
+      title: 'Voice & Strategy',
+      guide: 'Tone-of-voice rules, a brand-health audit scorecard, evolution history, and upgrade checkpoints — track how the identity grows across versions.',
+    },
+  };
+
   const handleUpdatePrimaryLogo = (svg: string, concept: string, symbolism: string, geometry: string) => {
     const updatedBrand: BrandBible = {
       ...brand,
@@ -137,7 +166,7 @@ export function BrandDashboard({
       <FontLoader url={brand.typography.googleFontsUrl} />
 
       {/* Top Header & Experience Mode Switcher */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-zinc-800">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-[0.25em] font-black bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] px-2 py-0.5">
@@ -164,17 +193,17 @@ export function BrandDashboard({
           )}
 
           <div className="flex items-center gap-2">
-            <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 hidden sm:inline">
+            <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500 hidden sm:inline">
               View:
             </span>
-            <div className="inline-flex p-0.5 bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700">
+            <div className="inline-flex p-0.5 bg-gray-100 dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
               <button
                 type="button"
                 onClick={() => handleSetMode('simple')}
                 className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer ${
                   !isProMode
                     ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                    : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                    : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 Simple
@@ -185,7 +214,7 @@ export function BrandDashboard({
                 className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1 ${
                   isProMode
                     ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                    : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                    : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 <SlidersHorizontal className="w-2.5 h-2.5" />
@@ -229,6 +258,19 @@ export function BrandDashboard({
             </div>
           </div>
 
+          {/* Active-tab explainer strip (Studio guidance for technical users) */}
+          <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 px-4 py-3 flex items-start gap-3 transition-colors duration-300">
+            <Info className="w-4 h-4 text-[#1A1A1A] dark:text-[#F9F7F2] shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <h4 className="text-[10px] uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
+                {tabGuides[activeTab].title}
+              </h4>
+              <p className="text-xs text-gray-600 dark:text-zinc-400 leading-relaxed">
+                {tabGuides[activeTab].guide}
+              </p>
+            </div>
+          </div>
+
       {/* Tab Content Area */}
       <div className="min-h-[500px]">
         {/* 1. Overview Tab */}
@@ -254,7 +296,7 @@ export function BrandDashboard({
         {activeTab === 'design_system' && (
           <div className="space-y-6">
             {/* Sub-nav for Colors vs Fonts */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-3">
               <div>
                 <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Design Foundation
@@ -271,7 +313,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     designSubTab === 'palette'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <Palette className="w-3 h-3" />
@@ -283,7 +325,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     designSubTab === 'typography'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <Type className="w-3 h-3" />
@@ -295,7 +337,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     designSubTab === 'sandbox'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <Box className="w-3 h-3" />
@@ -315,7 +357,7 @@ export function BrandDashboard({
         {/* 4. Social Posts & Marketing Content */}
         {activeTab === 'social_content' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-3">
               <div>
                 <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Social Media &amp; Content Engine
@@ -332,7 +374,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     socialSubTab === 'templates'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <Share2 className="w-3 h-3" />
@@ -344,7 +386,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     socialSubTab === 'topics'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <Flame className="w-3 h-3" />
@@ -370,7 +412,7 @@ export function BrandDashboard({
         {/* 5. Mockups & Brand Usage Guidelines */}
         {activeTab === 'mockups_usage' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-3">
               <div>
                 <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Brand Applications &amp; Guidelines
@@ -387,7 +429,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     mockupSubTab === 'mockups'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <Monitor className="w-3 h-3" />
@@ -399,7 +441,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     mockupSubTab === 'usage'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <ShieldCheck className="w-3 h-3" />
@@ -419,7 +461,7 @@ export function BrandDashboard({
         {/* 6. Brand Voice, Strategy & Health Audit */}
         {activeTab === 'strategy_audit' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-3">
               <div>
                 <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Brand Voice &amp; Health
@@ -436,7 +478,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     strategySubTab === 'tone'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <MessageSquare className="w-3 h-3" />
@@ -448,7 +490,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     strategySubTab === 'audit'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <Award className="w-3 h-3" />
@@ -460,7 +502,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     strategySubTab === 'evolution'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <GitBranch className="w-3 h-3" />
@@ -472,7 +514,7 @@ export function BrandDashboard({
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     strategySubTab === 'history'
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   <History className="w-3 h-3" />
@@ -515,7 +557,7 @@ export function BrandDashboard({
 
             {strategySubTab === 'history' && (
               <div className="space-y-6" id="history-view-container">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-200 dark:border-zinc-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                   <div>
                     <h2 className="text-xl font-bold uppercase tracking-widest text-[#1A1A1A] dark:text-[#F9F7F2]">
                       {user ? 'Saved Brand Library' : 'Session Brand Cache'}
@@ -557,14 +599,14 @@ export function BrandDashboard({
                           className={`group bg-white dark:bg-[#1C1C1A] border p-6 flex flex-col justify-between transition-all duration-300 ${
                             isCurrent
                               ? 'border-[#1A1A1A] dark:border-[#F9F7F2] shadow-[0_10px_20px_rgba(0,0,0,0.06)] scale-[1.01]'
-                              : 'border-gray-200 dark:border-zinc-800 hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2] hover:shadow-md'
+                              : 'border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2] hover:shadow-md'
                           }`}
                           id={`brand-card-${saved.id}`}
                         >
                           <div className="space-y-4">
                             <div className="flex justify-between items-start">
                               <div>
-                                <span className="text-[9px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-300 px-2 py-0.5 rounded-none border border-gray-300 dark:border-zinc-700">
+                                <span className="text-[9px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-300 px-2 py-0.5 rounded-none border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                                   {saved.industry}
                                 </span>
                               </div>
@@ -597,7 +639,7 @@ export function BrandDashboard({
                             </div>
                           </div>
 
-                          <div className="pt-6 mt-6 border-t border-dashed border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-2">
+                          <div className="pt-6 mt-6 border-t border-dashed border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"

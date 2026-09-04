@@ -55,7 +55,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
   return (
     <div className="space-y-8" id="design-system-sandbox">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-gray-200 dark:border-zinc-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-indigo-500" />
@@ -63,13 +63,13 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
               Interactive UI Component &amp; Design System Sandbox
             </h2>
           </div>
-          <p className="text-sm font-serif italic text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm font-serif italic text-gray-600 dark:text-gray-600 dark:text-gray-400 mt-1">
             Real-time interactive component library styled dynamically with {brand.brandName}&apos;s typography, semantic color hierarchy, and border geometry.
           </p>
         </div>
 
         {/* Sandbox Theme Switcher */}
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-zinc-800 p-1 border border-gray-300 dark:border-zinc-700">
+        <div className="flex items-center gap-2 bg-gray-100 dark:bg-zinc-800 p-1 border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
           <button
             type="button"
             onClick={() => setActiveTheme('light')}
@@ -107,7 +107,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
         <div className="space-y-12">
           {/* 1. Buttons & Action Elements */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-300 dark:border-zinc-800 pb-2">
+            <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-2">
               <span
                 className="text-[10px] uppercase tracking-[0.25em] font-black opacity-60"
                 style={{ fontFamily: `"${headingFont}", serif` }}
@@ -170,7 +170,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
 
           {/* 2. Badges, Pills & Indicators */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-300 dark:border-zinc-800 pb-2">
+            <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-2">
               <span
                 className="text-[10px] uppercase tracking-[0.25em] font-black opacity-60"
                 style={{ fontFamily: `"${headingFont}", serif` }}
@@ -209,7 +209,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
 
           {/* 3. Form Inputs & Interactive Toggles */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-300 dark:border-zinc-800 pb-2">
+            <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-2">
               <span
                 className="text-[10px] uppercase tracking-[0.25em] font-black opacity-60"
                 style={{ fontFamily: `"${headingFont}", serif` }}
@@ -240,7 +240,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
                 <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 opacity-80">
                   Interactive Toggle Switch
                 </label>
-                <div className="flex items-center justify-between p-2.5 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+                <div className="flex items-center justify-between p-2.5 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold">Auto-Sync Brand System</span>
                     <span className="text-[10px] opacity-60">Push tokens directly to frontend repository</span>
@@ -263,7 +263,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
 
           {/* 4. Notification & Alert Banners */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-300 dark:border-zinc-800 pb-2">
+            <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-2">
               <span
                 className="text-[10px] uppercase tracking-[0.25em] font-black opacity-60"
                 style={{ fontFamily: `"${headingFont}", serif` }}
@@ -308,7 +308,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
 
           {/* 5. Product & Pricing Showcase Card */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-300 dark:border-zinc-800 pb-2">
+            <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-300 dark:border-zinc-800 pb-2">
               <span
                 className="text-[10px] uppercase tracking-[0.25em] font-black opacity-60"
                 style={{ fontFamily: `"${headingFont}", serif` }}
@@ -319,7 +319,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="p-6 bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-zinc-700 shadow-lg flex flex-col justify-between space-y-6">
+              <div className="p-6 bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-gray-300 dark:border-zinc-700 shadow-lg flex flex-col justify-between space-y-6">
                 <div>
                   <span
                     className="text-[9px] font-mono font-bold uppercase tracking-widest block mb-2"
@@ -338,7 +338,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
                   </p>
                 </div>
 
-                <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-zinc-800">
+                <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                   <div className="flex items-center gap-2 text-xs">
                     <Check className="w-3.5 h-3.5" style={{ color: primaryColor }} />
                     <span>Complete 5-Color Semantic Palette</span>
@@ -389,7 +389,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-gray-200 dark:border-zinc-800">
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                   <div className="flex items-center gap-3">
                     <div
                       className="w-10 h-10 flex items-center justify-center font-bold text-white shadow-sm"
@@ -407,7 +407,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
                     <button
                       type="button"
                       onClick={() => handleCopy(brand.mission, 'Mission')}
-                      className="px-3 py-1.5 text-[9px] uppercase tracking-widest font-bold border border-gray-300 dark:border-zinc-700 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-1"
+                      className="px-3 py-1.5 text-[9px] uppercase tracking-widest font-bold border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer flex items-center gap-1"
                     >
                       {copiedToken === 'Mission' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                       <span>Copy Text</span>

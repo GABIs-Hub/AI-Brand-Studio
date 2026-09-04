@@ -408,7 +408,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" id="export-modal">
-      <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative border border-gray-200 dark:border-[#F9F7F2]/20">
+      <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative border border-gray-200 dark:border-gray-200 dark:border-[#F9F7F2]/20">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
@@ -457,7 +457,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="flex items-center gap-2 font-bold text-amber-600 dark:text-amber-400">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    {zipProgress?.stage || 'Compiling asset bundle...'}
+                    {zipProgress?.step || 'Compiling asset bundle...'}
                   </span>
                   <span className="font-bold">{zipProgress?.percent || 0}%</span>
                 </div>
@@ -499,7 +499,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* Web Share & Quick Snippet */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between sm:col-span-2" id="share-snippet-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between sm:col-span-2" id="share-snippet-card">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -529,7 +529,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
               </button>
               <button
                 onClick={() => handleCopy(summarySnippet, 'snippet')}
-                className="py-2 px-3 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                className="py-2 px-3 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                 id="copy-snippet-btn"
               >
                 {copiedType === 'snippet' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -539,7 +539,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* Structured Brand PDF */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="pdf-export-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="pdf-export-card">
             <div>
               <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 flex items-center justify-center mb-2">
                 <FileText className="w-5 h-5" />
@@ -563,7 +563,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* JSON Export */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="json-export-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="json-export-card">
             <div>
               <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center mb-2">
                 <FileJson className="w-5 h-5" />
@@ -576,7 +576,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(jsonString, 'json')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                 id="copy-json-btn"
               >
                 {copiedType === 'json' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -594,7 +594,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* CSS Variables Export */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="css-export-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="css-export-card">
             <div>
               <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 flex items-center justify-center mb-2">
                 <FileCode className="w-5 h-5" />
@@ -607,7 +607,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(cssString, 'css')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                 id="copy-css-btn"
               >
                 {copiedType === 'css' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -625,7 +625,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* Markdown Summary Export */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="markdown-export-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="markdown-export-card">
             <div>
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mb-2">
                 <FileUp className="w-5 h-5" />
@@ -638,7 +638,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(markdownString, 'md')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                 id="copy-md-btn"
               >
                 {copiedType === 'md' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}

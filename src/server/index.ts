@@ -1,8 +1,13 @@
 import express from "express";
 import path from "path";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
+import { generateText, generateImage, ImageProvider, TextProvider } from "./aiGateway";
+import { generateProceduralLogoVariations, synthesizeProceduralBrand } from "./proceduralBrands";
+import { authMiddleware, registerUser } from "./auth";
+import { getBrandsByUser, upsertBrand, deleteBrand, isDbConfigured } from "./db";
+import { uploadImageToStore, isImageStoreConfigured } from "./imageStore";
 
 dotenv.config();
 
@@ -11,591 +16,149 @@ const PORT = 3000;
 
 app.use(express.json({ limit: "10mb" }));
 
-// Initialize Gemini Client safely
-function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.warn("[Gemini API] GEMINI_API_KEY is not set in environment variables.");
-    return null;
-  }
-  try {
-    return new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    });
-  } catch (err) {
-    console.error("[Gemini API] Client initialization error:", err);
-    return null;
-  }
-}
+// ---------------------------------------------------------------------------
+// API protection: origin enforcement + in-memory sliding-window rate limiting
+// ---------------------------------------------------------------------------
+const APP_URL = (process.env.APP_URL || "").replace(/\/+$/, "");
 
-// In-memory model cooldown tracker to prevent repeated hammering of quota-exhausted or busy models
-const modelCooldowns = new Map<string, number>();
-
-// Helper function to safely query Gemini models with automatic try/catch fallback sequence, circuit breaker, and exponential backoff
-async function generateContentWithFallback(
-  ai: GoogleGenAI,
-  params: { contents: any; config?: any },
-  models: string[] = ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"]
-) {
-  let lastError: any = null;
-  const now = Date.now();
-
-  for (const model of models) {
-    const cooldownUntil = modelCooldowns.get(model) || 0;
-    if (now < cooldownUntil) {
-      const remainingSec = Math.ceil((cooldownUntil - now) / 1000);
-      console.log(`[Gemini API] Model ${model} is on circuit-breaker cooldown (${remainingSec}s remaining). Routing to next model.`);
-      continue;
-    }
-
-    // Attempt generation with up to 1 retry for transient 503 spikes
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        console.log(`[Gemini API] Invoking generation with model: ${model} (attempt ${attempt + 1})`);
-        
-        const fetchPromise = ai.models.generateContent({
-          model,
-          contents: params.contents,
-          config: params.config,
-        });
-
-        // 25-second timeout to prevent 5-minute hanging on network stalls
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("ETIMEDOUT: AI request timed out after 25s")), 25000)
-        );
-
-        const response: any = await Promise.race([fetchPromise, timeoutPromise]);
-
-        if (response && response.text) {
-          console.log(`[Gemini API] Successfully generated content using model: ${model}`);
-          return response;
-        }
-      } catch (error: any) {
-        lastError = error;
-        const errMsg = error?.message || String(error);
-
-        const isQuotaExhausted =
-          errMsg.includes("429") ||
-          errMsg.includes("RESOURCE_EXHAUSTED") ||
-          errMsg.includes("exceeded your current quota") ||
-          errMsg.includes("limit: 0");
-
-        const isTransient =
-          errMsg.includes("503") ||
-          errMsg.includes("UNAVAILABLE") ||
-          errMsg.includes("high demand") ||
-          errMsg.includes("temporary") ||
-          errMsg.includes("busy") ||
-          errMsg.includes("overloaded") ||
-          errMsg.includes("fetch failed") ||
-          errMsg.includes("ECONNRESET") ||
-          errMsg.includes("ETIMEDOUT") ||
-          errMsg.includes("socket");
-
-        if (isQuotaExhausted) {
-          // Model quota reached: set 120s cooldown and immediately switch to next model
-          modelCooldowns.set(model, Date.now() + 120000);
-          console.log(`[Gemini API] Quota limit reached for ${model}. Cooldown set (120s). Cascading to next model.`);
-          break; // break retry loop to try next model in cascade
-        }
-
-        if (isTransient) {
-          if (attempt === 0) {
-            // First transient failure: brief 350ms delay before single retry
-            console.log(`[Gemini API] Model ${model} is experiencing temporary high demand (503). Retrying shortly...`);
-            await new Promise((resolve) => setTimeout(resolve, 350));
-            continue;
-          } else {
-            // Second transient failure: set short 30s cooldown and cascade to next model
-            modelCooldowns.set(model, Date.now() + 30000);
-            console.log(`[Gemini API] Model ${model} remains busy. Cooldown set (30s). Cascading to next model.`);
-            break;
-          }
-        }
-
-        // Other non-transient errors: cascade immediately
-        console.log(`[Gemini API] Notice for ${model}: ${errMsg.slice(0, 100)}... Cascading.`);
-        break;
-      }
+// Reject cross-origin API requests when an explicit APP_URL is configured.
+// Same-origin browser requests carry an Origin header matching APP_URL; requests
+// without an Origin header (curl, same-tab fetches, health probes) are allowed.
+app.use("/api", (req, res, next) => {
+  if (APP_URL) {
+    const origin = req.headers.origin;
+    if (origin && !origin.startsWith(APP_URL)) {
+      return res.status(403).json({ error: "Cross-origin API requests are not allowed." });
     }
   }
+  next();
+});
 
-  throw lastError || new Error("All AI models were temporarily unreachable.");
-}
+// Simple in-memory sliding-window rate limiter keyed by client IP.
+// Protects paid Gemini/Imagen quota from abuse when the applet is deployed publicly.
+const WINDOW_MS = 60_000;
+const rateLimitBuckets = new Map<string, { windowStart: number; count: number }>();
 
-// Procedural Agency Logo Variations Generator (Diverse Archetypes Beyond Basic Shapes)
-function generateProceduralLogoVariations(params: {
-  brandName: string;
-  industry?: string;
-  pColor?: string;
-  sColor?: string;
-  aColor?: string;
-  nlColor?: string;
-  ndColor?: string;
-  headingFont?: string;
-  bodyFont?: string;
-}) {
-  const brandName = params.brandName || "Aura";
-  const pColor = params.pColor || "#1A1A1A";
-  const sColor = params.sColor || "#2563EB";
-  const aColor = params.aColor || "#F59E0B";
-  const nlColor = params.nlColor || "#F9F8F6";
-  const ndColor = params.ndColor || "#111827";
-  const hFont = params.headingFont || "Plus Jakarta Sans";
-  const bFont = params.bodyFont || "Plus Jakarta Sans";
-
-  const initial = brandName.charAt(0).toUpperCase();
-  const secondLetter = brandName.length > 1 ? brandName.charAt(1).toUpperCase() : "S";
-
-  // 1. Negative Space Archetype: Optical illusion where positive geometry carves an inner arrow/flame
-  const negativeSpaceSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="nsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${pColor}" />
-      <stop offset="100%" stop-color="${sColor}" />
-    </linearGradient>
-    <mask id="nsCutout">
-      <rect width="100" height="100" fill="#ffffff" />
-      <!-- Negative space dynamic arrow / forward momentum cutout -->
-      <polygon points="40,25 65,50 40,75 48,50" fill="#000000" />
-      <circle cx="50" cy="50" r="6" fill="#000000" />
-    </mask>
-  </defs>
-  <g transform="translate(15, 12)">
-    <rect x="0" y="0" width="76" height="76" rx="18" fill="url(#nsGrad)" mask="url(#nsCutout)" />
-    <circle cx="16" cy="16" r="4" fill="${aColor}" />
-  </g>
-  <text x="110" y="50" font-family="${hFont}, sans-serif" font-size="26" font-weight="800" fill="${ndColor}" letter-spacing="-0.5">${brandName}</text>
-  <text x="110" y="70" font-family="${bFont}, sans-serif" font-size="9" font-weight="700" fill="${sColor}" letter-spacing="3.5" text-transform="uppercase">NEGATIVE SPACE IDENTITY</text>
-</svg>`;
-
-  // 2. Interlocking Dynamic Monogram Archetype: Overlapping woven typographic ribbon curves
-  const interlockingMonogramSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="monoGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="${pColor}" />
-      <stop offset="100%" stop-color="${sColor}" />
-    </linearGradient>
-    <linearGradient id="monoGrad2" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="${sColor}" />
-      <stop offset="100%" stop-color="${aColor}" />
-    </linearGradient>
-  </defs>
-  <g transform="translate(15, 12)">
-    <circle cx="38" cy="38" r="36" fill="${nlColor}" stroke="${ndColor}" stroke-width="1.5" stroke-opacity="0.1" />
-    <!-- Interlocking Ribbon Loop 1 -->
-    <path d="M22 56 C22 28, 42 22, 54 36 C62 46, 38 52, 28 42" fill="none" stroke="url(#monoGrad1)" stroke-width="6.5" stroke-linecap="round" />
-    <!-- Interlocking Ribbon Loop 2 -->
-    <path d="M54 20 C54 48, 34 54, 22 40 C14 30, 38 24, 48 34" fill="none" stroke="url(#monoGrad2)" stroke-width="4.5" stroke-linecap="round" opacity="0.9" />
-    <circle cx="38" cy="38" r="5" fill="${pColor}" />
-  </g>
-  <text x="110" y="48" font-family="${hFont}, sans-serif" font-size="25" font-weight="700" fill="${ndColor}">${brandName}</text>
-  <text x="110" y="68" font-family="${bFont}, sans-serif" font-size="9" font-weight="600" fill="${aColor}" letter-spacing="3" text-transform="uppercase">DYNAMIC MONOGRAM SYSTEM</text>
-</svg>`;
-
-  // 3. Conceptual Abstract Emblem Archetype: Multi-axis kinetic isometric geometric vortex
-  const abstractEmblemSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="emblemFacet1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${pColor}" />
-      <stop offset="100%" stop-color="${ndColor}" />
-    </linearGradient>
-    <linearGradient id="emblemFacet2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${sColor}" />
-      <stop offset="100%" stop-color="${pColor}" />
-    </linearGradient>
-    <linearGradient id="emblemFacet3" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${aColor}" />
-      <stop offset="100%" stop-color="${sColor}" />
-    </linearGradient>
-  </defs>
-  <g transform="translate(18, 12)">
-    <!-- Isometric Kinetic Prism Structure -->
-    <polygon points="38,6 70,24 38,42 6,24" fill="url(#emblemFacet1)" />
-    <polygon points="6,24 38,42 38,72 6,54" fill="url(#emblemFacet2)" opacity="0.95" />
-    <polygon points="70,24 38,42 38,72 70,54" fill="url(#emblemFacet3)" opacity="0.9" />
-    <!-- Core luminous nucleus -->
-    <circle cx="38" cy="42" r="5" fill="#FFFFFF" />
-    <circle cx="38" cy="42" r="2.5" fill="${aColor}" />
-  </g>
-  <text x="112" y="49" font-family="${hFont}, sans-serif" font-size="25" font-weight="800" fill="${ndColor}" letter-spacing="-0.8">${brandName}</text>
-  <text x="112" y="69" font-family="${bFont}, sans-serif" font-size="9" font-weight="700" fill="${sColor}" letter-spacing="3" text-transform="uppercase">ARCHITECTURAL EMBLEM</text>
-</svg>`;
-
-  // 4. Architectural Badge & Heritage Seal Archetype: Concentric precision rings, radial ticks, and seal
-  const architecturalBadgeSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
-  <g transform="translate(15, 12)">
-    <!-- Outer heritage ring -->
-    <circle cx="38" cy="38" r="36" fill="${nlColor}" stroke="${pColor}" stroke-width="2.5" />
-    <circle cx="38" cy="38" r="30" fill="none" stroke="${sColor}" stroke-width="1.2" stroke-dasharray="3 2" />
-    <!-- Inner geometric badge -->
-    <polygon points="38,15 57,26 57,49 38,60 19,49 19,26" fill="${pColor}" />
-    <text x="38" y="44" font-family="${hFont}, sans-serif" font-size="18" font-weight="800" fill="#FFFFFF" text-anchor="middle">${initial}</text>
-    <circle cx="38" cy="21" r="2" fill="${aColor}" />
-    <circle cx="38" cy="54" r="2" fill="${aColor}" />
-  </g>
-  <text x="108" y="46" font-family="${hFont}, sans-serif" font-size="24" font-weight="700" fill="${ndColor}">${brandName}</text>
-  <text x="108" y="66" font-family="${bFont}, sans-serif" font-size="9" font-weight="700" fill="${pColor}" letter-spacing="3" text-transform="uppercase">AUTHENTICATED HERITAGE SEAL</text>
-</svg>`;
-
-  // 5. Geometric Minimalist Archetype: Clean Bauhaus precision with asymmetrical golden-ratio balance
-  const geometricMinimalistSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
-  <g transform="translate(18, 14)">
-    <rect x="0" y="0" width="70" height="70" fill="none" stroke="${ndColor}" stroke-width="1" opacity="0.2" />
-    <path d="M12 58 L35 14 L58 58 Z" fill="none" stroke="${pColor}" stroke-width="4.5" stroke-linejoin="round" />
-    <circle cx="35" cy="42" r="12" fill="${sColor}" opacity="0.85" />
-    <line x1="12" y1="42" x2="58" y2="42" stroke="${nlColor}" stroke-width="2.5" />
-    <circle cx="35" cy="14" r="4" fill="${aColor}" />
-  </g>
-  <text x="110" y="48" font-family="${hFont}, sans-serif" font-size="26" font-weight="800" fill="${ndColor}" letter-spacing="-0.5">${brandName}</text>
-  <text x="110" y="68" font-family="${bFont}, sans-serif" font-size="9" font-weight="600" fill="${sColor}" letter-spacing="3.5" text-transform="uppercase">MINIMALIST GEOMETRY</text>
-</svg>`;
-
-  // 6. Modern Wordmark + Standalone Responsive Mark
-  const modernWordmarkSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
-  <g transform="translate(16, 20)">
-    <rect x="0" y="0" width="58" height="58" rx="14" fill="${pColor}" />
-    <path d="M16 42 L29 16 L42 42 M20 34 L38 34" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-    <circle cx="44" cy="14" r="5" fill="${aColor}" />
-  </g>
-  <text x="96" y="52" font-family="${hFont}, sans-serif" font-size="28" font-weight="900" fill="${ndColor}" letter-spacing="-1">${brandName}</text>
-  <circle cx="96" cy="66" r="3" fill="${sColor}" />
-  <text x="106" y="69" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${sColor}" letter-spacing="4" text-transform="uppercase">GLOBAL VENTURE</text>
-</svg>`;
-
-  return [
-    {
-      id: "var-negative-space",
-      title: "Negative Space Illusion Mark",
-      archetype: "negative_space",
-      archetypeLabel: "Negative Space Mark",
-      svg: negativeSpaceSvg,
-      concept: "A dual-meaning vector silhouette where the negative space cutout reveals a forward arrow and focal lens, symbolizing visionary direction.",
-      symbolism: "The subtraction creates an optical 'aha!' moment that dramatically elevates brand recall and memorability.",
-      geometryDetails: "Engineered on a 76x76 master grid with 18px outer corner radii and 45-degree optical cutouts.",
-      aiImagePrompt: `3D matte black and glowing titanium negative space emblem logo for ${brandName}, architectural studio lighting, 8k render`,
-      tags: ["Clever Cutout", "Optical Illusion", "High Recall", "Modern Vector"],
-    },
-    {
-      id: "var-interlocking-monogram",
-      title: "Interlocking Ribbon Monogram",
-      archetype: "interlocking_monogram",
-      archetypeLabel: "Dynamic Monogram",
-      svg: interlockingMonogramSvg,
-      concept: "Fluid, woven typographic ribbons intertwining with golden-ratio continuous loops to reflect synergy and unity.",
-      symbolism: "The continuous dual loops symbolize unbroken collaboration, perpetual momentum, and interconnected excellence.",
-      geometryDetails: "Constructed using dual Bézier offset curves with 6.5px and 4.5px differentiated stroke weights.",
-      aiImagePrompt: `Luxe brushed gold and midnight enamel interlocking ribbon monogram for ${brandName}, macro jewelry detail, cinematic lighting`,
-      tags: ["Typographic", "Luxury Craft", "Golden Ratio", "Continuous Loop"],
-    },
-    {
-      id: "var-abstract-emblem",
-      title: "Kinetic Prism Emblem",
-      archetype: "abstract_emblem",
-      archetypeLabel: "Abstract Emblem",
-      svg: abstractEmblemSvg,
-      concept: "An isometric dimensional prism structure with multi-tonal light facets and a central focal core.",
-      symbolism: "The three interlocking planes represent foundation, acceleration, and pinnacle execution.",
-      geometryDetails: "30-degree isometric projection with 3 distinct gradient facets anchored by a central coordinate.",
-      aiImagePrompt: `Futuristic architectural glass and iridescent chrome geometric prism logo for ${brandName}, studio backdrop, octane render`,
-      tags: ["Dimensional", "3D Isometric", "Tech Authority", "Prism Facets"],
-    },
-    {
-      id: "var-architectural-badge",
-      title: "Precision Heritage Crest",
-      archetype: "architectural_badge",
-      archetypeLabel: "Architectural Badge",
-      svg: architecturalBadgeSvg,
-      concept: "A modern evolution of the classic hallmark stamp, marrying circular micro-perforations with a sharp central hexagonal crest.",
-      symbolism: "Communicates institutional credibility, certified standard of excellence, and timeless heritage.",
-      geometryDetails: "Concentric dual-radius circles (36px and 30px) with equilateral hexagonal crest interior.",
-      aiImagePrompt: `Embossed metallic gold foil seal on heavy textured artisanal paper for ${brandName}, high-fashion stationery mockup`,
-      tags: ["Heritage Crest", "Packaging Seal", "Micro Details", "Institutional"],
-    },
-    {
-      id: "var-geometric-minimalist",
-      title: "Bauhaus Minimalist Mark",
-      archetype: "geometric_minimalist",
-      archetypeLabel: "Geometric Minimalist",
-      svg: geometricMinimalistSvg,
-      concept: "Strict Bauhaus geometry combining the triangle of aspiration with the circle of harmony and horizontal baseline.",
-      symbolism: "Represents purity of form, mathematical balance, and eliminating all unnecessary noise.",
-      geometryDetails: "Constructed on an equilateral triangle with 4.5px stroke weight intersecting an offset circle.",
-      aiImagePrompt: `Minimalist matte anodized aluminum geometric badge for ${brandName}, clean stark shadows, gallery aesthetic`,
-      tags: ["Bauhaus", "Architectural", "Clean Lines", "Timeless"],
-    },
-    {
-      id: "var-modern-wordmark",
-      title: "Wordmark + Responsive Symbol",
-      archetype: "modern_wordmark",
-      archetypeLabel: "Wordmark & Mark",
-      svg: modernWordmarkSvg,
-      concept: "A horizontal lockup designed for primary web navigation, mobile apps, and horizontal touchpoints.",
-      symbolism: "The custom vector monogram provides an instant 16px favicon footprint while the full wordmark anchors authority.",
-      geometryDetails: "Proportional 1:3.2 aspect ratio lockup with 14px container radius and 4px vector stroke.",
-      aiImagePrompt: `High-end minimalist tech identity branding sign for ${brandName}, backlit architectural signage on dark concrete`,
-      tags: ["Header Lockup", "Responsive", "High Legibility", "Digital First"],
-    },
-  ];
-}
-
-// Procedural Brand Synthesis Engine (Deterministic high-aesthetic generator)
-function synthesizeProceduralBrand(req: {
-  brandName?: string;
-  mission: string;
-  industry?: string;
-  aesthetic?: string;
-  targetAudience?: string;
-  isExistingBrandRefresh?: boolean;
-  existingColors?: string[];
-  existingTagline?: string;
-}) {
-  const mission = req.mission.trim();
-  const aesthetic = (req.aesthetic || "Modern & Minimalist").toLowerCase();
-  const industry = req.industry || "Creative Innovation & Technology";
-  const audience = req.targetAudience || "Modern creators, forward-thinking professionals, and discerning global audiences";
-
-  // Derive memorable brand name if not provided
-  let brandName = req.brandName?.trim();
-  if (!brandName) {
-    const words = mission.split(/\s+/).filter((w) => w.length > 3);
-    const primaryWord = words[0] || "Aura";
-    const cleanWord = primaryWord.replace(/[^a-zA-Z]/g, "");
-    const capitalized = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
-    
-    if (aesthetic.includes("luxury") || aesthetic.includes("heritage")) {
-      brandName = `${capitalized} & Co.`;
-    } else if (aesthetic.includes("tech") || aesthetic.includes("futuristic")) {
-      brandName = `${capitalized} Labs`;
-    } else if (aesthetic.includes("organic") || aesthetic.includes("artisanal")) {
-      brandName = `${capitalized} Botanica`;
-    } else {
-      brandName = `${capitalized} Studio`;
+function createRateLimiter(maxRequests: number, label: string) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    const key = `${label}:${ip}`;
+    const now = Date.now();
+    const bucket = rateLimitBuckets.get(key);
+    if (!bucket || now - bucket.windowStart >= WINDOW_MS) {
+      rateLimitBuckets.set(key, { windowStart: now, count: 1 });
+      return next();
     }
-  }
-
-  // Generate aesthetic-tailored color palettes (or respect existing hexes if supplied)
-  let palette: any[];
-  let typography: any;
-
-  if (req.existingColors && req.existingColors.length >= 2) {
-    const p = req.existingColors[0] || "#1A1A1A";
-    const s = req.existingColors[1] || "#2563EB";
-    const a = req.existingColors[2] || "#F59E0B";
-    palette = [
-      { name: "Brand Signature Tone", hex: p, rgb: "30, 41, 59", role: "Primary", usage: "Primary brand mark, signature hero sections, structural accents", contrastNote: "Established Core Brand Color" },
-      { name: "Brand Supporting Tone", hex: s, rgb: "37, 99, 235", role: "Secondary", usage: "Secondary buttons, active links, primary highlights", contrastNote: "Established Secondary Color" },
-      { name: "Brand Accent Highlight", hex: a, rgb: "245, 158, 11", role: "Accent", usage: "Key CTAs, badge icons, micro-details", contrastNote: "High-contrast focal point" },
-      { name: "Pure Canvas Light", hex: "#FAF9F6", rgb: "250, 249, 246", role: "Neutral Light", usage: "App background canvas, editorial cards, clean negative space", contrastNote: "Optimal eye-comfort canvas" },
-      { name: "Obsidian Slate", hex: "#111827", rgb: "17, 24, 39", role: "Neutral Dark", usage: "Headings, body copy, deep structural borders", contrastNote: "Passes AAA against Pure Canvas" },
-    ];
-    typography = {
-      headingFont: "Plus Jakarta Sans",
-      headingFontCategory: "Sans-Serif",
-      headingWeights: ["600", "700", "800"],
-      bodyFont: "Plus Jakarta Sans",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Space Grotesk",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
-      rationale: "Plus Jakarta Sans preserves established brand recognition while upgrading digital UI clarity across all scale steps.",
-      cssSnippet: "font-family: 'Plus Jakarta Sans', sans-serif;",
-    };
-  } else if (aesthetic.includes("organic") || aesthetic.includes("artisanal")) {
-    palette = [
-      { name: "Forest Cypress", hex: "#1F4E38", rgb: "31, 78, 56", role: "Primary", usage: "Primary brand mark, signature hero sections, structural accents", contrastNote: "Passes AAA against warm canvas" },
-      { name: "Raw Terracotta", hex: "#C86D51", rgb: "200, 109, 81", role: "Secondary", usage: "Secondary buttons, editorial badges, feature highlights", contrastNote: "Passes AA for large text and buttons" },
-      { name: "Golden Wheat", hex: "#E9B872", rgb: "233, 184, 114", role: "Accent", usage: "Interactive call-to-action pops, badge icons, micro-details", contrastNote: "Use with dark text or as borders" },
-      { name: "Warm Alabaster", hex: "#FAF8F5", rgb: "250, 248, 245", role: "Neutral Light", usage: "App background canvas, editorial cards, clean negative space", contrastNote: "Optimal eye-comfort canvas" },
-      { name: "Charcoal Loam", hex: "#18201B", rgb: "24, 32, 27", role: "Neutral Dark", usage: "Headings, body typography, deep structural borders", contrastNote: "Passes AAA against Warm Alabaster" },
-    ];
-    typography = {
-      headingFont: "Fraunces",
-      headingFontCategory: "Serif",
-      headingWeights: ["600", "700"],
-      bodyFont: "Plus Jakarta Sans",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Space Mono",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap",
-      rationale: "Fraunces offers tactile warmth and editorial craftsmanship, paired with Plus Jakarta Sans for crisp, modern legibility across interfaces.",
-      cssSnippet: "font-family: 'Fraunces', serif; --font-body: 'Plus Jakarta Sans', sans-serif;",
-    };
-  } else if (aesthetic.includes("luxury") || aesthetic.includes("heritage")) {
-    palette = [
-      { name: "Imperial Noir", hex: "#111110", rgb: "17, 17, 16", role: "Primary", usage: "Signature brand identity, luxury cards, premium packaging", contrastNote: "High contrast structural anchor" },
-      { name: "Gilded Champagne", hex: "#C5A880", rgb: "197, 168, 128", role: "Secondary", usage: "Subtle borders, refined monograms, premium accents", contrastNote: "Passes AA for accent graphics" },
-      { name: "Amber Ochre", hex: "#A37A47", rgb: "163, 122, 71", role: "Accent", usage: "Key CTAs, active highlights, curated badges", contrastNote: "Passes AAA against light backgrounds" },
-      { name: "Silk Ecru", hex: "#F7F5F0", rgb: "247, 245, 240", role: "Neutral Light", usage: "Elevated background canvas, document paper tone", contrastNote: "Warm, eye-safe high-end canvas" },
-      { name: "Onyx Slate", hex: "#1C1B18", rgb: "28, 27, 24", role: "Neutral Dark", usage: "Primary text, deep framing borders, typography", contrastNote: "Passes AAA contrast" },
-    ];
-    typography = {
-      headingFont: "Playfair Display",
-      headingFontCategory: "Serif",
-      headingWeights: ["600", "700"],
-      bodyFont: "Plus Jakarta Sans",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Cinzel",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap",
-      rationale: "Playfair Display delivers haute-couture elegance and timeless authority, balanced by Plus Jakarta Sans for frictionless readability.",
-      cssSnippet: "font-family: 'Playfair Display', serif; --font-body: 'Plus Jakarta Sans', sans-serif;",
-    };
-  } else if (aesthetic.includes("futuristic") || aesthetic.includes("tech")) {
-    palette = [
-      { name: "Electric Indigo", hex: "#4F46E5", rgb: "79, 70, 229", role: "Primary", usage: "Core brand logomark, interactive buttons, primary signals", contrastNote: "Passes AAA against light canvas" },
-      { name: "Cyan Pulse", hex: "#06B6D4", rgb: "6, 182, 212", role: "Secondary", usage: "Glow highlights, secondary badges, data visualizations", contrastNote: "Passes AA for badges and graphics" },
-      { name: "Violet Flare", hex: "#8B5CF6", rgb: "139, 92, 246", role: "Accent", usage: "Feature spotlights, gradient accents, tags", contrastNote: "Vibrant CTA contrast" },
-      { name: "Vapor Frost", hex: "#F8FAFC", rgb: "248, 250, 252", role: "Neutral Light", usage: "Modern UI canvas, card backgrounds, negative space", contrastNote: "High-contrast clean tech canvas" },
-      { name: "Quantum Obsidian", hex: "#0F172A", rgb: "15, 23, 42", role: "Neutral Dark", usage: "Headings, typography, dark mode foundations", contrastNote: "Passes AAA readability" },
-    ];
-    typography = {
-      headingFont: "Outfit",
-      headingFontCategory: "Sans-Serif",
-      headingWeights: ["600", "700", "800"],
-      bodyFont: "Inter",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Space Grotesk",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600&display=swap",
-      rationale: "Outfit provides a hyper-modern geometric stance, perfectly grounded by Inter's industry-standard UI ergonomics.",
-      cssSnippet: "font-family: 'Outfit', sans-serif; --font-body: 'Inter', sans-serif;",
-    };
-  } else {
-    // Modern & Minimalist (Default)
-    palette = [
-      { name: "Bauhaus Noir", hex: "#1A1A1A", rgb: "26, 26, 26", role: "Primary", usage: "Signature identity, primary typography, stark contrast elements", contrastNote: "Passes AAA across all light backgrounds" },
-      { name: "Cobalt Slate", hex: "#2563EB", rgb: "37, 99, 235", role: "Secondary", usage: "Secondary buttons, active links, primary highlights", contrastNote: "Passes AAA for interactive elements" },
-      { name: "Amber Blaze", hex: "#F59E0B", rgb: "245, 158, 11", role: "Accent", usage: "Pill badges, status indicators, accent focal points", contrastNote: "Optimal contrast on dark & light" },
-      { name: "Pure Linen", hex: "#F9F8F6", rgb: "249, 248, 246", role: "Neutral Light", usage: "Primary dashboard background, cards, spacious margins", contrastNote: "Soft gallery aesthetic" },
-      { name: "Graphite Deep", hex: "#111827", rgb: "17, 24, 39", role: "Neutral Dark", usage: "Main body copy, headings, structural borders", contrastNote: "Passes AAA readability standards" },
-    ];
-    typography = {
-      headingFont: "Plus Jakarta Sans",
-      headingFontCategory: "Sans-Serif",
-      headingWeights: ["600", "700", "800"],
-      bodyFont: "Plus Jakarta Sans",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Space Grotesk",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
-      rationale: "Plus Jakarta Sans establishes a cohesive, razor-sharp architectural layout with world-class legibility at all scale steps.",
-      cssSnippet: "font-family: 'Plus Jakarta Sans', sans-serif;",
-    };
-  }
-
-  const pColor = palette[0].hex;
-  const sColor = palette[1].hex;
-  const aColor = palette[2].hex;
-  const nlColor = palette[3].hex;
-  const ndColor = palette[4].hex;
-
-  // Generate diverse procedural logo variations
-  const variations = generateProceduralLogoVariations({
-    brandName,
-    industry,
-    pColor,
-    sColor,
-    aColor,
-    nlColor,
-    ndColor,
-    headingFont: typography.headingFont,
-    bodyFont: typography.bodyFont,
-  });
-
-  const primaryLogoSvg = variations[0].svg;
-  const secondaryMarks = [
-    {
-      id: "mark-1",
-      title: variations[1].title,
-      description: variations[1].concept,
-      svg: variations[1].svg,
-    },
-    {
-      id: "mark-2",
-      title: variations[2].title,
-      description: variations[2].concept,
-      svg: variations[2].svg,
-    },
-    {
-      id: "mark-3",
-      title: variations[3].title,
-      description: variations[3].concept,
-      svg: variations[3].svg,
-    },
-  ];
-
-  return {
-    id: "brand-" + Date.now(),
-    brandName,
-    tagline: req.existingTagline || `Defining the Future of ${industry.split(/\s+/)[0] || "Innovation"}`,
-    industry,
-    mission,
-    vision: `To lead a global transformation in ${industry.toLowerCase()} by marrying timeless aesthetic craftsmanship with fearless technological execution.`,
-    positioningStatement: `${brandName} delivers uncompromising quality and visionary design to ${audience.toLowerCase()}, empowering them with refined solutions that elevate everyday standards.`,
-    personalityTraits: [
-      { trait: "Innovation", rating: 4.8, minLabel: "Traditional", maxLabel: "Pioneering" },
-      { trait: "Aesthetic Precision", rating: 4.9, minLabel: "Pragmatic", maxLabel: "Obsessively Crafted" },
-      { trait: "Authority", rating: 4.6, minLabel: "Casual", maxLabel: "Commanding" },
-      { trait: "Warmth & Accessibility", rating: 4.2, minLabel: "Exclusive", maxLabel: "Empathetic" },
-    ],
-    values: [
-      { title: "Architectural Precision", description: "Every line, word, and interaction is engineered with mathematical balance and intentional restraint.", iconName: "Layers" },
-      { title: "Fearless Innovation", description: "Constantly challenging industry conventions to pioneer meaningful breakthroughs for our community.", iconName: "Zap" },
-      { title: "Radical Transparency", description: "Clear communication, honest sourcing, and ethical design principles guiding all product endeavors.", iconName: "Shield" },
-      { title: "Timeless Quality", description: "Creating enduring identity assets and products built to inspire for decades rather than fleeting trends.", iconName: "Sparkles" },
-    ],
-    palette,
-    typography,
-    logo: {
-      primaryLogoSvg,
-      concept: variations[0].concept,
-      symbolism: variations[0].symbolism,
-      geometryDetails: variations[0].geometryDetails,
-      aiImagePrompt: variations[0].aiImagePrompt || `3D architectural glass and brushed metal emblem logomark for ${brandName}, studio lighting, clean minimal background, 8k render`,
-    },
-    secondaryMarks,
-    toneOfVoice: [
-      {
-        trait: "Insightful & Confident",
-        description: "Speak with calm expertise and intellectual clarity. Never preach or shout.",
-        doExample: "Precision engineering crafted for creators who value clarity above noise.",
-        dontExample: "Check out our crazy awesome tool that will blow your mind!!",
-      },
-      {
-        trait: "Empathetic & Direct",
-        description: "Address user challenges straight to the point with warm, professional respect.",
-        doExample: "Designed to remove friction from your workflow from day one.",
-        dontExample: "Our complex paradigm shifts will seamlessly synergize your outputs.",
-      },
-      {
-        trait: "Poetic & Evocative",
-        description: "Use tactile, sensory metaphors to describe aesthetics and craftsmanship.",
-        doExample: "Form follows feeling. Light meets purpose.",
-        dontExample: "We have lots of pretty colors and buttons in our UI.",
-      },
-      {
-        trait: "Decisive & Action-Oriented",
-        description: "Inspire forward momentum through clear, confident calls to action.",
-        doExample: "Begin your brand exploration.",
-        dontExample: "Click here to maybe learn more about what we do.",
-      },
-    ],
-    imageryStyle: {
-      moodboardKeywords: ["Minimalist Architecture", "Cinematic Natural Light", "Tactile Textures", "Sculptural Geometry", "High-Contrast Monochrome"],
-      photographyGuidance: "Favor authentic natural lighting, gentle directional shadows, and tactile materials. Maintain generous negative space with human subjects captured in unposed, contemplative moments.",
-      dos: ["Use natural window light and subtle chiaroscuro", "Feature real tactile textures like linen, ceramic, and matte metal", "Maintain intentional negative space around focal subjects"],
-      donts: ["Avoid artificial studio flash and overly saturated HDR filters", "Never use cheesy, staged corporate stock photography", "Avoid busy, cluttered backgrounds with competing visual noise"],
-    },
-    targetAudience: audience,
-    createdAt: new Date().toISOString(),
+    bucket.count += 1;
+    if (bucket.count > maxRequests) {
+      const retryAfter = Math.ceil((WINDOW_MS - (now - bucket.windowStart)) / 1000);
+      return res.status(429).json({
+        error: `Rate limit exceeded for ${label}. Please wait ${retryAfter}s and try again.`,
+      });
+    }
+    return next();
   };
 }
+
+// General AI endpoints: 30 requests/min per IP.
+const apiRateLimiter = createRateLimiter(30, "AI requests");
+// Expensive image-generation endpoints: 6 requests/min per IP.
+const imageRateLimiter = createRateLimiter(6, "image generation");
+
+// Periodically prune stale rate-limit buckets so memory stays bounded.
+const rateLimitPruner = setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateLimitBuckets) {
+    if (now - bucket.windowStart >= WINDOW_MS) {
+      rateLimitBuckets.delete(key);
+    }
+  }
+}, WINDOW_MS * 2);
+rateLimitPruner.unref();
+
+
+
+
+
+
+
+// ───────────────────────────────────────────────────────────────────────────
+// Authentication (Auth.js Express) + brand library API (Neon Postgres)
+// ───────────────────────────────────────────────────────────────────────────
+// Registration must be mounted before ExpressAuth so it wins for /api/auth/register.
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { email, password, name } = req.body || {};
+    const user = await registerUser({ email, password, name });
+    return res.status(201).json({ user });
+  } catch (err: any) {
+    return res.status(400).json({ error: err?.message || "Registration failed." });
+  }
+});
+
+// Auth.js handles sign-in/sign-out/session for Credentials + Google.
+app.use("/api/auth", authMiddleware());
+
+// Require an authenticated session and attach the user id.
+function requireAuth(req: any, res: any, next: any) {
+  const session = req.auth;
+  const userId = session?.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Authentication required." });
+  }
+  req.userId = userId;
+  next();
+}
+
+// Brand library CRUD (server-side Postgres — credentials never reach the browser)
+app.get("/api/brands", requireAuth, async (req: any, res) => {
+  try {
+    const brands = await getBrandsByUser(req.userId);
+    return res.json({ brands });
+  } catch (err: any) {
+    console.error("[Brands API] List failed:", err);
+    return res.status(500).json({ error: "Failed to load your brand library." });
+  }
+});
+
+app.put("/api/brands/:id", requireAuth, async (req: any, res) => {
+  try {
+    const brand = req.body;
+    if (!brand || !brand.id || !brand.brandName) {
+      return res.status(400).json({ error: "A valid brand is required." });
+    }
+    await upsertBrand(req.userId, brand);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[Brands API] Save failed:", err);
+    return res.status(500).json({ error: "Failed to save your brand." });
+  }
+});
+
+app.delete("/api/brands/:id", requireAuth, async (req: any, res) => {
+  try {
+    await deleteBrand(req.userId, req.params.id);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[Brands API] Delete failed:", err);
+    return res.status(500).json({ error: "Failed to delete your brand." });
+  }
+});
+
+// AI-rendered image upload (Cloudflare R2) — requires auth
+app.post("/api/images", requireAuth, async (req: any, res) => {
+  const { dataUrl, brandId } = req.body || {};
+  if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
+    return res.status(400).json({ error: "A valid image data URL is required." });
+  }
+  try {
+    const url = await uploadImageToStore(dataUrl, `brand-renders/${req.userId}/${brandId || "general"}`);
+    return res.json({ url });
+  } catch (err: any) {
+    console.warn("[Images API] Upload failed:", err?.message || err);
+    return res.status(500).json({ error: "Failed to store image." });
+  }
+});
 
 // 1. Health check endpoint
 app.get("/api/health", (_req, res) => {
@@ -603,7 +166,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 // 2. Generate Brand Bible Endpoint (Handles both new ventures and existing brand refreshes / upgrades)
-app.post("/api/generate-brand", async (req, res) => {
+app.post("/api/generate-brand", apiRateLimiter, async (req, res) => {
   try {
     const {
       brandName,
@@ -622,11 +185,8 @@ app.post("/api/generate-brand", async (req, res) => {
       return res.status(400).json({ error: "Mission statement or current company core is required." });
     }
 
-    const ai = getGeminiClient();
-
-    // If Gemini client is available, attempt AI generation with multi-model fallback
-    if (ai) {
-      try {
+    // Attempt AI generation across the provider gateway (OpenAI → Claude → Gemini)
+    try {
         let refreshInstruction = "Generate a brand identity from scratch.";
         if (isExistingBrandRefresh) {
           refreshInstruction = `NOTE: THIS IS AN EXISTING BRAND REFRESH & MODERNIZATION UPGRADE.
@@ -656,7 +216,7 @@ ${existingColors && existingColors.length > 0 ? `Existing Brand Colors: ${existi
 
 REQUIREMENTS:
 1. Brand Core: brandName, tagline, industry, mission, vision, positioningStatement, personalityTraits (4 items with trait, rating 1-5, minLabel, maxLabel), values (4 items with title, description, iconName among Lucide icons).
-2. 5-Color Hex Palette: Exactly 5 colors (Primary, Secondary, Accent, Neutral Light, Neutral Dark) with name, hex, rgb, role, usage, contrastNote.
+2. 5-Color Hex Palette: Exactly 5 colors (Primary, Secondary, Accent, Neutral Light, Neutral Dark) with name, hex, rgb, role, usage, contrastNote. Apply a real color-harmony strategy — analogous, complementary, triadic, or split-complementary built around ONE seed hue, never a random rainbow. Follow the 60-30-10 balance (neutral canvas ~60%, primary family ~30%, accent ~10%). Enforce WCAG AA: Primary and Secondary must reach >= 4.5:1 against Neutral Light, and the two neutrals must reach >= 7:1 against each other. Tint the neutrals with the seed hue instead of pure gray, and tune saturation/lightness to the industry and aesthetic (muted earth tones for organic/artisanal, desaturated deeps for luxury/heritage, electric saturation for tech/futuristic).
 3. Typography & Google Fonts: headingFont, headingFontCategory, headingWeights, bodyFont, bodyFontCategory, bodyWeights, googleFontsUrl, rationale, cssSnippet.
 4. Primary Logo Design: primaryLogoSvg (MUST BE an agency-quality vector SVG with <defs>, gradients, negative space or interlocking paths, viewBox="0 0 320 100"), concept, symbolism, geometryDetails, aiImagePrompt.
 5. Secondary Marks: 3 marks with id, title, description, and svg (viewBox="0 0 160 160").
@@ -665,11 +225,10 @@ REQUIREMENTS:
 8. targetAudience string.
 `;
 
-        const response = await generateContentWithFallback(ai, {
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
+        const responseText = await generateText({
+          prompt,
+          preferred: req.body?.provider,
+          jsonSchema: {
               type: Type.OBJECT,
               properties: {
                 brandName: { type: Type.STRING },
@@ -817,19 +376,16 @@ REQUIREMENTS:
                 "targetAudience",
               ],
             },
-          },
         });
 
-        const responseText = response.text;
         if (responseText) {
           const brandData = JSON.parse(responseText);
           brandData.id = "brand-" + Date.now();
           brandData.createdAt = new Date().toISOString();
           return res.json(brandData);
         }
-      } catch (geminiError: any) {
-        console.warn("[Gemini API] Live generation failed, engaging procedural synthesis engine:", geminiError.message || geminiError);
-      }
+    } catch (aiError: any) {
+      console.warn("[AI Gateway] Live generation failed, engaging procedural synthesis engine:", aiError?.message || aiError);
     }
 
     // High-quality Procedural fallback synthesis
@@ -854,7 +410,7 @@ REQUIREMENTS:
 });
 
 // 3. Multi-Archetype Logo Variations Generator Endpoint
-app.post("/api/generate-logo-variations", async (req, res) => {
+app.post("/api/generate-logo-variations", apiRateLimiter, async (req, res) => {
   try {
     const { brandName, industry, mission, palette, typography, archetypeFilter, stylePrompt } = req.body;
 
@@ -870,10 +426,7 @@ app.post("/api/generate-logo-variations", async (req, res) => {
     const hFont = typography?.headingFont || "Plus Jakarta Sans";
     const bFont = typography?.bodyFont || "Plus Jakarta Sans";
 
-    const ai = getGeminiClient();
-
-    if (ai) {
-      try {
+    try {
         const prompt = `
 You are a master identity designer & vector craft specialist at Pentagram / Wolff Olins.
 Generate 6 distinct, stunning, production-ready logo variations for:
@@ -896,11 +449,10 @@ Create a complete, clean SVG string (viewBox="0 0 320 100", width="100%", height
 Return strict JSON schema with an array of variations.
 `;
 
-        const response = await generateContentWithFallback(ai, {
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
+        const responseText = await generateText({
+          prompt,
+          preferred: req.body?.provider,
+          jsonSchema: {
               type: Type.OBJECT,
               properties: {
                 variations: {
@@ -935,18 +487,16 @@ Return strict JSON schema with an array of variations.
               },
               required: ["variations"],
             },
-          },
         });
 
-        if (response.text) {
-          const parsed = JSON.parse(response.text);
+        if (responseText) {
+          const parsed = JSON.parse(responseText);
           if (parsed.variations && parsed.variations.length > 0) {
             return res.json({ variations: parsed.variations });
           }
         }
-      } catch (geminiLogoErr: any) {
-        console.warn("[Gemini API] Logo variations fallback engaged:", geminiLogoErr.message || geminiLogoErr);
-      }
+    } catch (aiError: any) {
+      console.warn("[AI Gateway] Logo variations fallback engaged:", aiError?.message || aiError);
     }
 
     // Procedural fallback with 6 handcrafted agency archetypes
@@ -1217,7 +767,7 @@ function refineProceduralLogoPromptCoT(params: {
 }
 
 // 4. Chain-of-Thought Logo Prompt Refinement Engine Endpoint
-app.post("/api/refine-logo-prompt", async (req, res) => {
+app.post("/api/refine-logo-prompt", apiRateLimiter, async (req, res) => {
   try {
     const {
       brandName,
@@ -1245,10 +795,7 @@ app.post("/api/refine-logo-prompt", async (req, res) => {
     const hFont = typography?.headingFont || "Plus Jakarta Sans";
     const bFont = typography?.bodyFont || "Plus Jakarta Sans";
 
-    const ai = getGeminiClient();
-
-    if (ai) {
-      try {
+    try {
         const prompt = `
 You are a legendary Creative Director, Principal Vector Architect, and Brand Semiotician at a top-tier global identity studio (Pentagram, Wolff Olins, Collins).
 Your mission is to perform deep CHAIN-OF-THOUGHT (CoT) REASONING to refine a logo prompt and generate a complex, professional-grade vector visual concept that completely transcends generic, basic shapes (no solo circles, squares, or naive clip-art).
@@ -1276,11 +823,10 @@ MANDATORY CHAIN-OF-THOUGHT STAGES:
 Return strict JSON adhering to the schema.
 `;
 
-        const response = await generateContentWithFallback(ai, {
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
+        const responseText = await generateText({
+          prompt,
+          preferred: req.body?.provider,
+          jsonSchema: {
               type: Type.OBJECT,
               properties: {
                 brandName: { type: Type.STRING },
@@ -1331,16 +877,14 @@ Return strict JSON adhering to the schema.
                 "generatedSvg",
               ],
             },
-          },
         });
 
-        if (response.text) {
-          const parsed = JSON.parse(response.text);
+        if (responseText) {
+          const parsed = JSON.parse(responseText);
           return res.json(parsed);
         }
-      } catch (geminiCoTErr: any) {
-        console.warn("[Gemini API] CoT Logo Prompt Refinement notice:", geminiCoTErr.message || geminiCoTErr);
-      }
+    } catch (aiError: any) {
+      console.warn("[AI Gateway] CoT Logo Prompt Refinement notice:", aiError?.message || aiError);
     }
 
     // Procedural deterministic fallback for CoT Prompt Refinement
@@ -1365,7 +909,7 @@ Return strict JSON adhering to the schema.
 });
 
 // 4. Generate Viral Topic Hooks & Strategic Campaign Angles Endpoint
-app.post("/api/generate-viral-topics", async (req, res) => {
+app.post("/api/generate-viral-topics", apiRateLimiter, async (req, res) => {
   try {
     const { brandName, industry, mission, targetAudience, toneStyle, goal } = req.body;
 
@@ -1373,10 +917,7 @@ app.post("/api/generate-viral-topics", async (req, res) => {
       return res.status(400).json({ error: "Brand name is required." });
     }
 
-    const ai = getGeminiClient();
-
-    if (ai) {
-      try {
+    try {
         const prompt = `
 You are a viral growth strategist and creative director who creates world-class, high-engagement content for top brands on LinkedIn, Instagram, and X.
 Generate 6 highly distinct, viral topic angles and hooks tailored specifically for:
@@ -1396,11 +937,10 @@ Generate structured JSON matching the schema for 6 diverse hook angles:
 6. "data_insight" (counter-intuitive data point or realization)
 `;
 
-        const response = await generateContentWithFallback(ai, {
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
+        const responseText = await generateText({
+          prompt,
+          preferred: req.body?.provider,
+          jsonSchema: {
               type: Type.OBJECT,
               properties: {
                 hooks: {
@@ -1436,18 +976,16 @@ Generate structured JSON matching the schema for 6 diverse hook angles:
               },
               required: ["hooks"],
             },
-          },
         });
 
-        if (response.text) {
-          const parsed = JSON.parse(response.text);
+        if (responseText) {
+          const parsed = JSON.parse(responseText);
           if (parsed.hooks && parsed.hooks.length > 0) {
             return res.json({ hooks: parsed.hooks });
           }
         }
-      } catch (topicErr: any) {
-        console.warn("[Gemini API] Viral topic generator notice:", topicErr.message || topicErr);
-      }
+    } catch (aiError: any) {
+      console.warn("[AI Gateway] Viral topic generator notice:", aiError?.message || aiError);
     }
 
     // Procedural viral topics fallback
@@ -1532,7 +1070,7 @@ Generate structured JSON matching the schema for 6 diverse hook angles:
 });
 
 // 5. Strategic Brand Audit & Non-Destructive Modernization Endpoint
-app.post("/api/audit-brand", async (req, res) => {
+app.post("/api/audit-brand", apiRateLimiter, async (req, res) => {
   try {
     const { brandName, industry, currentMission, palette, typography, toneStyle } = req.body;
 
@@ -1540,10 +1078,7 @@ app.post("/api/audit-brand", async (req, res) => {
       return res.status(400).json({ error: "Brand name is required." });
     }
 
-    const ai = getGeminiClient();
-
-    if (ai) {
-      try {
+    try {
         const prompt = `
 You are a senior brand equity auditor and Chief Design Officer.
 Conduct a thorough, objective, and constructive brand audit for:
@@ -1560,11 +1095,10 @@ Generate a comprehensive audit that:
 3. Gives prioritized, non-destructive modernization recommendations (so the client does not need to start from scratch).
 `;
 
-        const response = await generateContentWithFallback(ai, {
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
+        const responseText = await generateText({
+          prompt,
+          preferred: req.body?.provider,
+          jsonSchema: {
               type: Type.OBJECT,
               properties: {
                 overallScore: { type: Type.NUMBER },
@@ -1599,16 +1133,14 @@ Generate a comprehensive audit that:
                 "quickFixPivots",
               ],
             },
-          },
         });
 
-        if (response.text) {
-          const parsed = JSON.parse(response.text);
+        if (responseText) {
+          const parsed = JSON.parse(responseText);
           return res.json(parsed);
         }
-      } catch (auditErr: any) {
-        console.warn("[Gemini API] Brand audit notice:", auditErr.message || auditErr);
-      }
+    } catch (aiError: any) {
+      console.warn("[AI Gateway] Brand audit notice:", aiError?.message || aiError);
     }
 
     // Procedural fallback audit
@@ -1667,7 +1199,7 @@ Generate a comprehensive audit that:
 });
 
 // 6. Generate High-Res Logo Image Endpoint with brand-specific context, Imagen 3, and rich procedural 3D studio fallback
-app.post("/api/generate-logo-image", async (req, res) => {
+app.post("/api/generate-logo-image", imageRateLimiter, async (req, res) => {
   try {
     const { prompt, resolution, brandName, industry, palette, logoSvg, tagline, typography } = req.body;
 
@@ -1675,7 +1207,6 @@ app.post("/api/generate-logo-image", async (req, res) => {
       return res.status(400).json({ error: "Image prompt is required." });
     }
 
-    const ai = getGeminiClient();
     const validResolution = ["512px", "1K", "2K", "4K"].includes(resolution)
       ? resolution
       : "2K";
@@ -1689,70 +1220,25 @@ app.post("/api/generate-logo-image", async (req, res) => {
     const displayTagline = tagline || "Excellence in Craft";
     const headingFont = typography?.headingFont || "Plus Jakarta Sans";
 
-    // 1. Attempt generation with Gemini Nano Banana Image models if available
-    if (ai) {
-      const imageModels = ["gemini-3.1-flash-image", "gemini-3.1-flash-lite-image"];
-      const now = Date.now();
-      for (const model of imageModels) {
-        const cooldownUntil = modelCooldowns.get(model) || 0;
-        if (now < cooldownUntil) {
-          console.log(`[Gemini API] Image model ${model} is on quota cooldown (${Math.ceil((cooldownUntil - now) / 1000)}s remaining), skipping.`);
-          continue;
-        }
-
-        try {
-          console.log(`[Gemini API] Attempting logo image generation with model: ${model}`);
-          const enrichedPrompt = `Photorealistic 3D luxury physical logomark emblem render for brand "${displayBrandName}" (${industry || "Design"}). Primary color ${pColor}, secondary ${sColor}, accent ${aColor}. High-end architectural studio setting, raytraced global illumination, volumetric rim lighting, macro lens depth of field, 8k octane render: ${prompt}`;
-          
-          const config: any = {
-            imageConfig: {
-              aspectRatio: "1:1",
-            },
-          };
-
-          // imageSize is supported on gemini-3.1-flash-image
-          if (model === "gemini-3.1-flash-image" && ["512px", "1K", "2K", "4K"].includes(validResolution)) {
-            config.imageConfig.imageSize = validResolution;
-          }
-
-          const response = await ai.models.generateContent({
-            model,
-            contents: {
-              parts: [
-                {
-                  text: enrichedPrompt,
-                },
-              ],
-            },
-            config,
-          });
-
-          const candidates = response.candidates;
-          if (candidates && candidates.length > 0 && candidates[0].content?.parts) {
-            for (const part of candidates[0].content.parts) {
-              if (part.inlineData && part.inlineData.data) {
-                const mimeType = part.inlineData.mimeType || "image/png";
-                const imageUrl = `data:${mimeType};base64,${part.inlineData.data}`;
-                return res.json({ imageUrl, resolution: validResolution, engine: "gemini_ai", format: "png" });
-              }
-            }
-          }
-        } catch (err: any) {
-          const errMsg = err?.message || String(err);
-          const isQuota = errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("quota") || errMsg.includes("limit: 0");
-          const isTransient = errMsg.includes("503") || errMsg.includes("UNAVAILABLE") || errMsg.includes("high demand") || errMsg.includes("temporary");
-          
-          if (isQuota) {
-            modelCooldowns.set(model, Date.now() + 120000);
-            console.log(`[Gemini API] Quota limit for image model ${model}. Cooldown set (120s). Cascading.`);
-          } else if (isTransient) {
-            modelCooldowns.set(model, Date.now() + 30000);
-            console.log(`[Gemini API] Image model ${model} temporarily unavailable. Cooldown set (30s). Cascading.`);
-          } else {
-            console.log(`[Gemini API] Notice for image model ${model}: ${errMsg.slice(0, 100)}... Cascading to studio raytracer.`);
-          }
-        }
+    // 1. Attempt AI image generation across the provider gateway (OpenAI → Gemini → Higgsfield)
+    try {
+      const enrichedPrompt = `Photorealistic 3D luxury physical logomark emblem render for brand "${displayBrandName}" (${industry || "Design"}). Primary color ${pColor}, secondary ${sColor}, accent ${aColor}. High-end architectural studio setting, raytraced global illumination, volumetric rim lighting, macro lens depth of field, 8k octane render: ${prompt}`;
+      const result = await generateImage({
+        prompt: enrichedPrompt,
+        aspectRatio: "1:1",
+        size: validResolution,
+        preferred: req.body?.provider,
+      });
+      if (result) {
+        return res.json({
+          imageUrl: result.imageUrl,
+          resolution: validResolution,
+          engine: result.engine,
+          format: result.format || "png",
+        });
       }
+    } catch (imgErr: any) {
+      console.warn("[AI Gateway] Live logo render failed, engaging procedural studio raytracer:", imgErr?.message || imgErr);
     }
 
     // 2. High-Fidelity Procedural 3D Physical Studio Raytracer Fallback
@@ -2049,19 +1535,17 @@ app.post("/api/generate-logo-image", async (req, res) => {
 });
 
 // 7. Multi-turn AI Brand Strategist Chat Assistant
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", apiRateLimiter, async (req, res) => {
   try {
-    const { messages, brandContext, model } = req.body;
+    const { messages, brandContext, model, provider } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: "Messages array is required." });
     }
 
-    const ai = getGeminiClient();
     const lastUserMsg = messages[messages.length - 1]?.text || "";
 
-    if (ai) {
-      try {
+    try {
         let systemInstruction = `You are a world-class AI Brand Director & Strategy Consultant. 
 You help clients refine their brand identity, tagline, copy, color palettes, visual hierarchy, tone of voice, and brand guidelines.
 Be insightful, actionable, elegant, professional, and clear. Never use emojis in your responses.`;
@@ -2082,19 +1566,19 @@ Colors: ${brandContext.palette?.map((c: any) => `${c.role}: ${c.hex} (${c.name})
 Typography: Heading: ${brandContext.typography?.headingFont}, Body: ${brandContext.typography?.bodyFont}`;
         }
 
-        const contents = messages.map((msg: any) => ({
-          role: msg.sender === "user" ? "user" : "model",
-          parts: [{ text: msg.text }],
-        }));
-
-        const targetModels = ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
-        const response = await generateContentWithFallback(ai, { contents, config: { systemInstruction } }, targetModels);
-        if (response.text) {
-          return res.json({ reply: response.text });
+        const transcript = messages
+          .map((msg: any) => `${msg.sender === "user" ? "User" : "Assistant"}: ${msg.text}`)
+          .join("\n\n");
+        const responseText = await generateText({
+          prompt: `${transcript}\n\nAssistant:`,
+          system: systemInstruction,
+          preferred: provider || "auto",
+        });
+        if (responseText) {
+          return res.json({ reply: responseText });
         }
-      } catch (chatError: any) {
-        console.warn("[Gemini API] Chat fallback notice:", chatError.message || chatError);
-      }
+    } catch (chatError: any) {
+      console.warn("[AI Gateway] Chat fallback notice:", chatError?.message || chatError);
     }
 
     // Procedural brand director response fallback
@@ -2125,7 +1609,7 @@ Typography: Heading: ${brandContext.typography?.headingFont}, Body: ${brandConte
 });
 
 // 8. Generate AI Social Media Post Template Content (Instagram, LinkedIn, TikTok, WhatsApp)
-app.post("/api/generate-social-post", async (req, res) => {
+app.post("/api/generate-social-post", apiRateLimiter, async (req, res) => {
   try {
     const { brand, postType, platform, topicPrompt } = req.body;
 
@@ -2133,12 +1617,10 @@ app.post("/api/generate-social-post", async (req, res) => {
       return res.status(400).json({ error: "Brand Bible context is required." });
     }
 
-    const ai = getGeminiClient();
     const selectedType = postType || "thought_leadership";
     const selectedPlatform = platform || "instagram_square";
 
-    if (ai) {
-      try {
+    try {
         const prompt = `
 You are an expert Social Media Creative Director and Video Strategist specializing in high-conversion, aesthetically elevated social media campaigns for premium brands on Instagram, LinkedIn, TikTok, and WhatsApp.
 
@@ -2173,11 +1655,10 @@ Generate structured JSON matching the schema:
 18. whatsappMessageTemplate (clean, markdown-formatted message with bolding and call to action for WhatsApp Broadcast)
 `;
 
-        const response = await generateContentWithFallback(ai, {
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
+        const responseText = await generateText({
+          prompt,
+          preferred: req.body?.provider,
+          jsonSchema: {
               type: Type.OBJECT,
               properties: {
                 headline: { type: Type.STRING },
@@ -2224,11 +1705,10 @@ Generate structured JSON matching the schema:
                 "recommendedTheme",
               ],
             },
-          },
         });
 
-        if (response.text) {
-          const postData = JSON.parse(response.text);
+        if (responseText) {
+          const postData = JSON.parse(responseText);
           postData.id = "post-" + Date.now();
           postData.platform = selectedPlatform;
           postData.postType = selectedType;
@@ -2236,9 +1716,8 @@ Generate structured JSON matching the schema:
           postData.theme = postData.recommendedTheme || "brand_dark";
           return res.json(postData);
         }
-      } catch (socialErr: any) {
-        console.warn("[Gemini API] Social post generation notice:", socialErr.message || socialErr);
-      }
+    } catch (aiError: any) {
+      console.warn("[AI Gateway] Social post generation notice:", aiError?.message || aiError);
     }
 
     // Procedural social post fallback with TikTok and WhatsApp awareness
@@ -2315,7 +1794,7 @@ Generate structured JSON matching the schema:
 });
 
 // 9. Generate AI Visual Artwork for Social Media Post Background with fallback
-app.post("/api/generate-social-image", async (req, res) => {
+app.post("/api/generate-social-image", imageRateLimiter, async (req, res) => {
   try {
     const { prompt, aspectRatio } = req.body;
 
@@ -2323,65 +1802,22 @@ app.post("/api/generate-social-image", async (req, res) => {
       return res.status(400).json({ error: "Image prompt is required." });
     }
 
-    const ai = getGeminiClient();
     const validAspectRatio = ["1:1", "9:16", "4:3", "16:9", "3:4"].includes(aspectRatio)
       ? aspectRatio
       : "1:1";
 
-    if (ai) {
-      const imageModels = ["gemini-3.1-flash-lite-image", "gemini-3.1-flash-image"];
-      const now = Date.now();
-      for (const model of imageModels) {
-        const cooldownUntil = modelCooldowns.get(model) || 0;
-        if (now < cooldownUntil) {
-          console.log(`[Gemini API] Social image model ${model} is on quota cooldown (${Math.ceil((cooldownUntil - now) / 1000)}s remaining), skipping.`);
-          continue;
-        }
-
-        try {
-          console.log(`[Gemini API] Attempting social image generation with model: ${model}`);
-          const response = await ai.models.generateContent({
-            model,
-            contents: {
-              parts: [
-                {
-                  text: `High-end editorial aesthetic background photograph for social media template: ${prompt}. Atmospheric, sophisticated lighting, artistic depth of field, minimalist composition.`,
-                },
-              ],
-            },
-            config: {
-              imageConfig: {
-                aspectRatio: validAspectRatio as any,
-              },
-            },
-          });
-
-          const candidates = response.candidates;
-          if (candidates && candidates.length > 0 && candidates[0].content?.parts) {
-            for (const part of candidates[0].content.parts) {
-              if (part.inlineData && part.inlineData.data) {
-                const mimeType = part.inlineData.mimeType || "image/png";
-                const imageUrl = `data:${mimeType};base64,${part.inlineData.data}`;
-                return res.json({ imageUrl });
-              }
-            }
-          }
-        } catch (err: any) {
-          const errMsg = err?.message || String(err);
-          const isQuota = errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("quota") || errMsg.includes("limit: 0");
-          const isTransient = errMsg.includes("503") || errMsg.includes("UNAVAILABLE") || errMsg.includes("high demand") || errMsg.includes("temporary");
-
-          if (isQuota) {
-            modelCooldowns.set(model, Date.now() + 120000);
-            console.log(`[Gemini API] Quota limit for social image model ${model}. Cooldown set (120s). Cascading.`);
-          } else if (isTransient) {
-            modelCooldowns.set(model, Date.now() + 30000);
-            console.log(`[Gemini API] Social image model ${model} temporarily unavailable. Cooldown set (30s). Cascading.`);
-          } else {
-            console.log(`[Gemini API] Notice for social image model ${model}: ${errMsg.slice(0, 100)}... Cascading.`);
-          }
-        }
+    // Attempt AI image generation across the provider gateway (OpenAI → Gemini → Higgsfield)
+    try {
+      const result = await generateImage({
+        prompt: `High-end editorial aesthetic background photograph for social media template: ${prompt}. Atmospheric, sophisticated lighting, artistic depth of field, minimalist composition.`,
+        aspectRatio: validAspectRatio as any,
+        preferred: req.body?.provider,
+      });
+      if (result) {
+        return res.json({ imageUrl: result.imageUrl, engine: result.engine });
       }
+    } catch (imgErr: any) {
+      console.warn("[AI Gateway] Social visual generation failed, engaging SVG fallback:", imgErr?.message || imgErr);
     }
 
     // High quality aesthetic SVG background graphic fallback
@@ -2416,16 +1852,11 @@ app.post("/api/generate-social-image", async (req, res) => {
 });
 
 // AI Brand History & Origin Case Study Deep Intelligence Endpoint
-app.post("/api/brand-case-study", async (req, res) => {
+app.post("/api/brand-case-study", apiRateLimiter, async (req, res) => {
   try {
     const { brandQuery } = req.body;
     if (!brandQuery || typeof brandQuery !== "string" || !brandQuery.trim()) {
       return res.status(400).json({ error: "brandQuery is required." });
-    }
-
-    const ai = getGeminiClient();
-    if (!ai) {
-      return res.status(500).json({ error: "Gemini AI client unavailable." });
     }
 
     const systemPrompt = `You are a world-class brand strategist, design historian, and identity researcher.
@@ -2488,29 +1919,23 @@ Ensure high analytical rigor, historical accuracy, deep semiotic insight into th
 
     let parsedData = null;
 
-    if (ai) {
-      try {
-        const response = await generateContentWithFallback(ai, {
-          contents: [{ role: "user", parts: [{ text: systemPrompt }] }],
-          config: {
-            responseMimeType: "application/json",
-            temperature: 0.3,
-          },
-        }, ["gemini-3.7-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"]);
-
-        const text = response?.text || "";
-        let cleanJson = text.trim();
-        if (cleanJson.startsWith("```json")) {
-          cleanJson = cleanJson.slice(7);
-        }
-        if (cleanJson.endsWith("```")) {
-          cleanJson = cleanJson.slice(0, -3);
-        }
-
-        parsedData = JSON.parse(cleanJson.trim());
-      } catch (aiErr: any) {
-        console.warn("[Gemini API] Brand case study AI generation notice:", aiErr.message || aiErr);
+    try {
+      const text = await generateText({
+        prompt: systemPrompt,
+        requireJson: true,
+        temperature: 0.3,
+      });
+      let cleanJson = (text || "").trim();
+      if (cleanJson.startsWith("```json")) {
+        cleanJson = cleanJson.slice(7);
       }
+      if (cleanJson.endsWith("```")) {
+        cleanJson = cleanJson.slice(0, -3);
+      }
+
+      parsedData = JSON.parse(cleanJson.trim());
+    } catch (aiErr: any) {
+      console.warn("[AI Gateway] Brand case study AI generation notice:", aiErr?.message || aiErr);
     }
 
     if (parsedData && parsedData.brandName) {

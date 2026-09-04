@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { SAMPLE_PRESETS } from '../data/presets';
+import { DEFAULT_SAVED_BRANDS } from '../data/defaultBrands';
 import { GenerateBrandRequest, SamplePreset, BrandBible } from '../types';
-import { User } from '../lib/firebase';
+import { SessionUser } from '../lib/authClient';
 import { PopularBrandResearchStudio } from './PopularBrandResearchStudio';
 import {
   Sparkles,
@@ -22,9 +23,10 @@ interface BrandInputFormProps {
   isLoading: boolean;
   loadingStep?: string;
   savedBrands?: BrandBible[];
-  user?: User | null;
+  user?: SessionUser | null;
   initialBrandToUpgrade?: BrandBible | null;
   onClearInitialBrand?: () => void;
+  onSelectShowcaseBrand?: (brand: BrandBible) => void;
 }
 
 const AESTHETIC_VIBES = [
@@ -72,6 +74,7 @@ export function BrandInputForm({
   user = null,
   initialBrandToUpgrade = null,
   onClearInitialBrand,
+  onSelectShowcaseBrand,
 }: BrandInputFormProps) {
   const [activeMode, setActiveMode] = useState<'new_brand' | 'existing_brand' | 'research_brands'>(
     initialBrandToUpgrade ? 'existing_brand' : 'new_brand'
@@ -267,7 +270,7 @@ export function BrandInputForm({
             className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMode === 'new_brand'
                 ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
-                : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
             }`}
             id="tab-new-brand-mode"
           >
@@ -280,7 +283,7 @@ export function BrandInputForm({
             className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMode === 'research_brands'
                 ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
-                : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
             }`}
             id="tab-research-brands-mode"
           >
@@ -293,7 +296,7 @@ export function BrandInputForm({
             className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMode === 'existing_brand'
                 ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
-                : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
             }`}
             id="tab-upgrade-brand-mode"
           >
@@ -312,14 +315,45 @@ export function BrandInputForm({
             <h1 className="text-3xl sm:text-4xl font-serif italic font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
               Create Your Complete Brand Identity
             </h1>
-            <p className="text-sm font-serif italic text-gray-600 dark:text-zinc-400 max-w-lg mx-auto">
+            <p className="text-sm font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-lg mx-auto">
               Describe your idea in one sentence. AI will craft your vector logos, color palette, typography, social templates, and guidelines.
             </p>
           </div>
 
+          {/* Showcase Demo Brand Bibles (view-only, never saved to the library) */}
+          {savedBrands.length === 0 && onSelectShowcaseBrand && (
+            <div className="space-y-2">
+              <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500 block text-center">
+                Or explore showcase brand bibles{' '}
+                <span className="font-normal normal-case tracking-normal">(view-only — not saved to your library)</span>:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {DEFAULT_SAVED_BRANDS.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => onSelectShowcaseBrand(b)}
+                    className="p-3 border border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white text-left transition-all cursor-pointer group"
+                  >
+                    <span className="text-[8px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 block">
+                      ★ Showcase
+                    </span>
+                    <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate mt-0.5">
+                      {b.brandName}
+                    </h4>
+                    <p className="text-[9px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                      {b.industry}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 1-Click Starter Presets */}
           <div className="space-y-2">
-            <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 block text-center">
+            <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500 block text-center">
               Or tap a starter concept to test instantly:
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -329,9 +363,9 @@ export function BrandInputForm({
                   type="button"
                   disabled={isLoading}
                   onClick={() => handleSelectPreset(preset)}
-                  className="p-3 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white text-left transition-all cursor-pointer group"
+                  className="p-3 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white text-left transition-all cursor-pointer group"
                 >
-                  <span className="text-[8px] font-mono uppercase tracking-widest text-gray-500 block">
+                  <span className="text-[8px] font-mono uppercase tracking-widest text-gray-500 dark:text-gray-500 block">
                     {preset.aesthetic.split(' ')[0]}
                   </span>
                   <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate mt-0.5">
@@ -357,7 +391,7 @@ export function BrandInputForm({
                   value={mission}
                   onChange={(e) => setMission(e.target.value)}
                   placeholder="e.g. Crafting artisanal cold-brew coffee with ethically sourced single-origin beans and cozy neighborhood cafes..."
-                  className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-4 py-3 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600 text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
+                  className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-4 py-3 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600 text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
                 />
               </div>
 
@@ -373,7 +407,7 @@ export function BrandInputForm({
                     value={brandName}
                     onChange={(e) => setBrandName(e.target.value)}
                     placeholder="e.g. Lumina Audio"
-                    className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                    className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
                   />
                 </div>
 
@@ -387,17 +421,17 @@ export function BrandInputForm({
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
                     placeholder="e.g. Specialty Coffee, SaaS, Fashion"
-                    className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                    className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
                   />
                 </div>
               </div>
 
               {/* Collapsible Additional Details */}
-              <div className="border-t border-dashed border-gray-200 dark:border-zinc-800 pt-3">
+              <div className="border-t border-dashed border-gray-200 dark:border-gray-200 dark:border-zinc-800 pt-3">
                 <button
                   type="button"
                   onClick={() => setShowMoreOptions(!showMoreOptions)}
-                  className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold text-gray-500 hover:text-black dark:hover:text-white cursor-pointer"
+                  className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500 hover:text-black dark:hover:text-white cursor-pointer"
                 >
                   {showMoreOptions ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   <span>{showMoreOptions ? 'Hide Optional Style & Audience' : '+ Choose Aesthetic Style & Target Audience (Optional)'}</span>
@@ -421,7 +455,7 @@ export function BrandInputForm({
                               className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-bold transition-all border cursor-pointer ${
                                 isActive
                                   ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
-                                  : 'bg-transparent text-gray-600 dark:text-zinc-400 border-gray-300 dark:border-zinc-700 hover:border-black'
+                                  : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-zinc-400 border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:border-black'
                               }`}
                             >
                               {vibe}
@@ -442,7 +476,7 @@ export function BrandInputForm({
                         value={targetAudience}
                         onChange={(e) => setTargetAudience(e.target.value)}
                         placeholder="e.g. Discerning lifestyle enthusiasts"
-                        className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                        className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
                       />
                     </div>
                   </div>
@@ -480,7 +514,7 @@ export function BrandInputForm({
             <h1 className="text-3xl sm:text-4xl font-serif italic font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
               Upgrade Existing Brand
             </h1>
-            <p className="text-sm font-serif italic text-gray-600 dark:text-zinc-400 max-w-lg mx-auto">
+            <p className="text-sm font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-lg mx-auto">
               Preserve your existing brand name and identity equity while upgrading your vector marks, typography, social templates, and brand bible.
             </p>
           </div>
@@ -488,14 +522,14 @@ export function BrandInputForm({
           {/* LOOKUP FROM SAVED BRANDS HISTORY (Account Library or Tab Cache) */}
           {savedBrands.length > 0 && (
             <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-4 sm:p-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-zinc-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
+                  <History className="w-4 h-4 text-gray-600 dark:text-gray-600 dark:text-zinc-400" />
                   <span className="text-[10px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                     {user ? 'Select From Your Saved Cloud Library' : 'Select From Current Tab Session Cache'}
                   </span>
                 </div>
-                <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400">
+                <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                   {user ? `${savedBrands.length} Cloud Saved` : `${savedBrands.length} In Tab Cache`}
                 </span>
               </div>
@@ -511,11 +545,11 @@ export function BrandInputForm({
                       className={`p-3 border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
                         isSelected
                           ? 'border-[#1A1A1A] dark:border-[#F9F7F2] bg-gray-50 dark:bg-zinc-900/90 shadow-xs'
-                          : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white'
+                          : 'border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[8px] font-mono uppercase tracking-widest text-gray-500 truncate">
+                        <span className="text-[8px] font-mono uppercase tracking-widest text-gray-500 dark:text-gray-500 truncate">
                           {b.industry || 'Brand'}
                         </span>
                         {isSelected && (
@@ -553,7 +587,7 @@ export function BrandInputForm({
           {/* Quick test with sample brands if user has none yet */}
           {savedBrands.length === 0 && (
             <div className="space-y-2">
-              <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 block text-center">
+              <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500 block text-center">
                 Or test with sample existing brands:
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -563,9 +597,9 @@ export function BrandInputForm({
                     type="button"
                     disabled={isLoading}
                     onClick={() => handleSelectExistingSample(sample)}
-                    className="p-3 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white text-left transition-all cursor-pointer"
+                    className="p-3 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white text-left transition-all cursor-pointer"
                   >
-                    <span className="text-[8px] font-mono text-gray-500 uppercase tracking-widest block">
+                    <span className="text-[8px] font-mono text-gray-500 dark:text-gray-500 uppercase tracking-widest block">
                       {sample.industry.split('&')[0]}
                     </span>
                     <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate">
@@ -612,7 +646,7 @@ export function BrandInputForm({
                     value={existingName}
                     onChange={(e) => setExistingName(e.target.value)}
                     placeholder="e.g. Veritas Coffee Co."
-                    className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                    className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
                   />
                 </div>
 
@@ -626,7 +660,7 @@ export function BrandInputForm({
                     value={existingIndustry}
                     onChange={(e) => setExistingIndustry(e.target.value)}
                     placeholder="e.g. Specialty Coffee & Hospitality"
-                    className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                    className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
                   />
                 </div>
               </div>
@@ -641,7 +675,7 @@ export function BrandInputForm({
                   value={existingTagline}
                   onChange={(e) => setExistingTagline(e.target.value)}
                   placeholder="e.g. Truth in Every Roast"
-                  className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
+                  className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
                 />
               </div>
 
@@ -656,13 +690,13 @@ export function BrandInputForm({
                   value={existingMission}
                   onChange={(e) => setExistingMission(e.target.value)}
                   placeholder="Describe your current brand values and products..."
-                  className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-4 py-3 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600 text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
+                  className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-4 py-3 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600 text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
                 />
               </div>
 
               {/* Colors */}
               <div>
-                <span className="block text-[9px] uppercase tracking-widest font-bold mb-2 text-gray-600 dark:text-zinc-400">
+                <span className="block text-[9px] uppercase tracking-widest font-bold mb-2 text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                   Current Brand Colors (Optional):
                 </span>
                 <div className="flex flex-wrap items-center gap-3">
@@ -671,7 +705,7 @@ export function BrandInputForm({
                       type="color"
                       value={primaryColor}
                       onChange={(e) => setPrimaryColor(e.target.value)}
-                      className="w-7 h-7 rounded-none border border-gray-300 cursor-pointer"
+                      className="w-7 h-7 rounded-none border border-gray-300 dark:border-gray-300 cursor-pointer"
                     />
                     <span className="text-[9px] font-mono uppercase">{primaryColor}</span>
                   </div>
@@ -680,7 +714,7 @@ export function BrandInputForm({
                       type="color"
                       value={secondaryColor}
                       onChange={(e) => setSecondaryColor(e.target.value)}
-                      className="w-7 h-7 rounded-none border border-gray-300 cursor-pointer"
+                      className="w-7 h-7 rounded-none border border-gray-300 dark:border-gray-300 cursor-pointer"
                     />
                     <span className="text-[9px] font-mono uppercase">{secondaryColor}</span>
                   </div>
@@ -689,7 +723,7 @@ export function BrandInputForm({
                       type="color"
                       value={accentColor}
                       onChange={(e) => setAccentColor(e.target.value)}
-                      className="w-7 h-7 rounded-none border border-gray-300 cursor-pointer"
+                      className="w-7 h-7 rounded-none border border-gray-300 dark:border-gray-300 cursor-pointer"
                     />
                     <span className="text-[9px] font-mono uppercase">{accentColor}</span>
                   </div>

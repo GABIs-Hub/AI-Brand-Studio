@@ -3,6 +3,7 @@ import { BrandBible, BrandAuditResult } from '../types';
 import {
   ShieldCheck,
   AlertTriangle,
+  ShieldAlert,
   Sparkles,
   CheckCircle2,
   TrendingUp,
@@ -69,14 +70,14 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
               <span className="text-[9px] uppercase tracking-[0.3em] font-black bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] px-2 py-0.5">
                 Brand Equity &amp; Health
               </span>
-              <span className="text-[9px] uppercase tracking-widest font-mono text-gray-500">
+              <span className="text-[9px] uppercase tracking-widest font-mono text-gray-500 dark:text-gray-500">
                 Non-Destructive Modernization
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
               Strategic Brand Health Audit
             </h2>
-            <p className="text-xs text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
+            <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
               An objective evaluation of your current brand identity. Discover what brand equity to fiercely preserve, identify visual or verbal friction points, and apply surgical upgrades without disrupting existing customer trust.
             </p>
           </div>
@@ -100,6 +101,13 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
 
       {audit && (
         <div className="space-y-8 animate-fadeIn">
+          {/* AI-Generated Content Disclaimer */}
+          <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-[11px] text-amber-900 dark:text-amber-300 flex items-start gap-2">
+            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              <strong>AI-generated assessment.</strong> This audit is synthesized by AI and is a strategic suggestion tool, not professional design or legal advice.
+            </span>
+          </div>
           {/* Top Metric Cards: Score, Maturity, Summary */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {/* Score Metric (4 cols) */}
@@ -112,7 +120,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
                   <span className="text-5xl font-serif italic font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                     {audit.overallScore}
                   </span>
-                  <span className="text-sm font-mono text-gray-500">/ 100</span>
+                  <span className="text-sm font-mono text-gray-500 dark:text-gray-500">/ 100</span>
                 </div>
                 <div className="w-full bg-gray-100 dark:bg-zinc-800 h-2 mt-4 overflow-hidden">
                   <div
@@ -123,10 +131,10 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
               </div>
 
               <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 mt-4 flex items-center justify-between">
-                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500">
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500">
                   Maturity Phase:
                 </span>
-                <span className="text-[10px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-black dark:text-white px-2 py-0.5 border border-gray-200 dark:border-zinc-700">
+                <span className="text-[10px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-black dark:text-white px-2 py-0.5 border border-gray-200 dark:border-gray-200 dark:border-zinc-700">
                   {audit.brandMaturityLevel}
                 </span>
               </div>
@@ -155,7 +163,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
                   {audit.quickFixPivots.map((pivot, idx) => (
                     <span
                       key={idx}
-                      className="text-[9px] bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300 px-2.5 py-1 font-sans flex items-center gap-1.5"
+                      className="text-[9px] bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-zinc-300 px-2.5 py-1 font-sans flex items-center gap-1.5"
                     >
                       <Zap className="w-3 h-3 text-amber-500" />
                       <span>{pivot}</span>
@@ -223,7 +231,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
                   >
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[8px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-300 px-2 py-0.5 border border-gray-200 dark:border-zinc-700">
+                        <span className="text-[8px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-300 px-2 py-0.5 border border-gray-200 dark:border-gray-200 dark:border-zinc-700">
                           {rec.category}
                         </span>
                         <span
@@ -240,13 +248,13 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
                       <h4 className="text-xs font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
                         {rec.finding}
                       </h4>
-                      <p className="text-xs font-serif italic text-gray-600 dark:text-zinc-400">
+                      <p className="text-xs font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                         {rec.recommendation}
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-dashed border-gray-200 dark:border-zinc-800 flex items-center justify-between">
-                      <span className="text-[10px] font-mono text-gray-500">
+                    <div className="pt-3 border-t border-dashed border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-gray-500 dark:text-gray-500">
                         {rec.actionableStep}
                       </span>
                     </div>

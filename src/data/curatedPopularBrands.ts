@@ -1,5 +1,9 @@
 import { PopularBrandCaseStudy } from '../types/brandCaseStudies';
 
+// NOTE: Curated case-study logos rely on the third-party Clearbit Logo API
+// (https://logo.clearbit.com/<domain>). The service is unauthenticated and can
+// rate-limit or change availability; the UI gracefully falls back to a text
+// monogram via ImageWithFallback when a logo cannot be loaded.
 export const CURATED_POPULAR_BRANDS: PopularBrandCaseStudy[] = [
   {
     id: 'nike',
