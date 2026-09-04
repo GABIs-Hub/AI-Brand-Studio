@@ -1,12 +1,18 @@
-# Brand Studio AI
+# GABI — Generate. Align. Build. Inspire.
 
-A production-grade **Brand Identity Generator**: type a mission, and get a complete, downloadable "Brand Bible" — name, tagline, positioning, personality, values, a WCAG-validated color palette, Google Fonts pairing, vector logo suite, tone of voice, and social-ready content.
+> **Turning brand ideas into complete, consistent identities.**
 
-Built for Google AI Studio as a single deployable app, but runs anywhere Node runs.
+GABI is a production-grade **brand identity studio**: describe your idea in a sentence, and get a complete, downloadable "Brand Bible" — name, tagline, positioning, personality, values, a WCAG-validated color palette, Google Fonts pairing, vector logo suite, tone of voice, and social-ready content.
+
+## The name
+
+**GABI** is an acronym for what the studio does — **Generate. Align. Build. Inspire.** — and it is also the name it was built under: the acronym and the founder are two in one. Every surface in the product carries the same identity: the header wordmark, the tagline on the home screen, share snippets, pitch decks, exported asset kits, and the footer.
+
+> **Repository rename note:** the codebase was previously published as `AI-Brand-Studio`. To match the GABI identity, rename the GitHub repository to `GABI` (Settings → rename; GitHub automatically redirects the old URL) and update the local remote with `git remote set-url origin git@github.com:GABIs-Hub/GABI.git`.
 
 ## Highlights
 
-- **Multi-provider AI gateway** — text and image generation cascade across **OpenAI (ChatGPT) → Anthropic (Claude) → Google Gemini** for text, and **OpenAI `gpt-image-1` → Gemini Imagen → Higgsfield Flux** for images, with per-provider circuit breakers, cooldowns, timeouts, and schema-constrained output.
+- **Multi-provider AI gateway** — text and image generation cascade across **OpenAI (ChatGPT) → Anthropic (Claude) → Google Gemini** for text, and **OpenAI `gpt-image-1` → Gemini Imagen → Higgsfield Flux** for images, with per-provider circuit breakers, cooldowns, timeouts, and schema-constrained output. A provider picker in the render studio, chat, and social tools lets you choose the engine per request.
 - **Zero-key resilience** — a fully deterministic procedural synthesis engine generates complete brand identities (including a 6-archetype logo suite) offline, so the app never breaks without API keys.
 - **Deterministic harmony color engine** — palettes are derived from a brand-seeded hue with real color-harmony schemes (analogous, complementary, triadic, split-complementary, monochromatic) and are **WCAG AA/AAA contrast-validated at generation time**.
 - **Real accounts** — email/password + Google sign-in via **Auth.js**, persisted brands in **Neon Postgres**, rendered images in **Cloudflare R2**.
@@ -104,7 +110,7 @@ db/
 └── schema.sql               # Postgres schema (brands table + indexes)
 ```
 
-The server is a single Express app that also serves the built client from `dist/` in production, so one deployable unit runs the whole product.
+The server is a single Express app that also serves the built client from `dist/` in production, so one deployable unit runs the whole product. Brand assets live in `public/` (favicon, social card).
 
 ## Color engine
 
@@ -137,3 +143,4 @@ Apply it once with `psql $DATABASE_URL -f db/schema.sql`.
 - Keep pure logic in `src/utils/` or `src/server/` modules with Vitest coverage — never in components.
 - Never render AI/user-supplied SVG without routing it through `sanitizeSvg()`.
 - Add `dark:` variants for every new surface or text token — the audit treats a missing dark mode pair as a bug.
+- Branding: the product name is **GABI**, the expansion is **Generate. Align. Build. Inspire.**, and the tagline is *Turning brand ideas into complete, consistent identities.* New UI copy should carry the identity, never a legacy name.

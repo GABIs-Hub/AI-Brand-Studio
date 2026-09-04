@@ -258,6 +258,13 @@ export function BrandInputForm({
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12 animate-fadeIn">
+      {/* GABI identity statement — the first thing visitors read */}
+      <div className="text-center mb-6">
+        <p className="text-sm font-serif italic text-gray-600 dark:text-zinc-400">
+          Turning brand ideas into complete, consistent identities.
+        </p>
+      </div>
+
       {/* Mode Switcher Tabs */}
       <div className="flex items-center justify-center mb-8">
         <div className="inline-flex p-1 bg-gray-100 dark:bg-zinc-900 border border-[#1A1A1A] dark:border-[#F9F7F2]/20">

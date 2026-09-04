@@ -8,6 +8,7 @@ import { generateProceduralLogoVariations, synthesizeProceduralBrand } from "./p
 import { authMiddleware, registerUser } from "./auth";
 import { getBrandsByUser, upsertBrand, deleteBrand, isDbConfigured } from "./db";
 import { uploadImageToStore, isImageStoreConfigured } from "./imageStore";
+import { applyLogoHistoryToEras, getLogoHistory, matchImagesToEras } from "./logoHistory";
 
 dotenv.config();
 
@@ -1852,6 +1853,43 @@ app.post("/api/generate-social-image", imageRateLimiter, async (req, res) => {
 });
 
 // AI Brand History & Origin Case Study Deep Intelligence Endpoint
+// Real archival logo history for a brand (Wikimedia Commons). Used by the
+// curated showcase path to attach real images to pre-baked case studies.
+app.get("/api/brand-logo-history", apiRateLimiter, async (req, res) => {
+  const brand = String(req.query.brand || "").trim();
+  if (!brand) {
+    return res.status(400).json({ error: "brand query parameter is required." });
+  }
+  try {
+    const history = await getLogoHistory(brand);
+    if (!history) {
+      return res.json({ brand, currentLogo: null, eras: [] });
+    }
+    // Optional era labels (pipe-separated, e.g. "1971 - 1980|1998 - 2015|2017 - Present")
+    // so the archival files are matched chronologically to each era slot.
+    const eras = req.query.eras
+      ? String(req.query.eras)
+          .split("|")
+          .map((era) => ({ era: era.trim() }))
+          .filter((e) => e.era.length > 0)
+      : [];
+    const matched = await matchImagesToEras(eras, history, brand);
+    return res.json({
+      brand,
+      currentLogo: history.currentLogo
+        ? {
+            title: history.currentLogo.title,
+            imageUrl: `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(history.currentLogo.title)}?width=400`,
+          }
+        : null,
+      eras: matched,
+    });
+  } catch (error: any) {
+    console.warn("Error in /api/brand-logo-history:", error?.message || error);
+    return res.status(502).json({ error: "Archival logo lookup failed." });
+  }
+});
+
 app.post("/api/brand-case-study", apiRateLimiter, async (req, res) => {
   try {
     const { brandQuery } = req.body;
@@ -1888,7 +1926,7 @@ You MUST return a strictly valid JSON object matching this exact schema:
       "title": "Era Name / Concept",
       "description": "Why and how this mark was designed, who drew it, and key flaws or strengths.",
       "keyDesignChanges": ["Key change 1", "Key change 2"],
-      "imageUrl": "https://logo.clearbit.com/branddomain.com"
+      "imageUrl": ""
     }
   ],
   "colorPaletteHeritage": [
@@ -1915,7 +1953,7 @@ You MUST return a strictly valid JSON object matching this exact schema:
   }
 }
 
-Ensure high analytical rigor, historical accuracy, deep semiotic insight into their logo evolution, and actionable advice for modern founders. For the "imageUrl", ALWAYS replace "branddomain.com" with the brand's actual official website domain (e.g. nike.com, apple.com) so the frontend can load their real logo from the Clearbit API. Do NOT wrap in markdown backticks. Return raw JSON.`;
+Ensure high analytical rigor, historical accuracy, deep semiotic insight into their logo evolution, and actionable advice for modern founders. CRITICAL: leave "imageUrl" as an empty string ("") for every era — the server automatically attaches real archival logo images to each era after generation, so never invent or guess image URLs. Each "title" should be a descriptive era title (e.g. "The 1971 Swoosh — $35 sketch"), never just the brand name. Do NOT wrap in markdown backticks. Return raw JSON.`;
 
     let parsedData = null;
 
@@ -1939,7 +1977,12 @@ Ensure high analytical rigor, historical accuracy, deep semiotic insight into th
     }
 
     if (parsedData && parsedData.brandName) {
-      return res.json(parsedData);
+      // Attach real archival logo-history images (Wikimedia Commons) to every era.
+      const logoEvolution = await applyLogoHistoryToEras(
+        Array.isArray(parsedData.logoEvolution) ? parsedData.logoEvolution : [],
+        parsedData.brandName
+      );
+      return res.json({ ...parsedData, logoEvolution });
     }
 
     // Procedural Fallback Brand Case Study
@@ -1985,7 +2028,7 @@ Ensure high analytical rigor, historical accuracy, deep semiotic insight into th
           title: "Pure Minimalist Geometry",
           description: `Subtracted all extraneous framing in favor of a timeless, high-contrast geometric vector silhouette optimized for physical and digital touchpoints.`,
           keyDesignChanges: ["Pure geometric balance", "Refined negative space", "Scalable responsive mark"],
-          imageUrl: `https://logo.clearbit.com/${domain}`,
+          imageUrl: "",
         },
       ],
       colorPaletteHeritage: [
@@ -2050,7 +2093,12 @@ Ensure high analytical rigor, historical accuracy, deep semiotic insight into th
       },
     };
 
-    return res.json(fallbackCaseStudy);
+    // Attach real archival logo-history images (Wikimedia Commons) to every era.
+    const logoEvolution = await applyLogoHistoryToEras(
+      Array.isArray(fallbackCaseStudy.logoEvolution) ? fallbackCaseStudy.logoEvolution : [],
+      normalizedName
+    );
+    return res.json({ ...fallbackCaseStudy, logoEvolution });
   } catch (error: any) {
     console.error("Error in /api/brand-case-study:", error);
     return res.status(500).json({ error: error.message || "Failed to compile brand case study intelligence." });

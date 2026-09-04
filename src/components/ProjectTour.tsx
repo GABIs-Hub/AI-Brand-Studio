@@ -395,7 +395,7 @@ export function ProjectTour({
 
   const handleComplete = () => {
     try {
-      localStorage.setItem('brand_studio_tour_seen', 'true');
+      localStorage.setItem('gabi_tour_seen', 'true');
     } catch {
       // ignore
     }

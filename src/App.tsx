@@ -27,10 +27,21 @@ import {
 import { shareBrandBible } from './lib/share';
 import { createMilestoneCheckpoint } from './lib/evolution';
 
-// Storage keys
-const SAVED_BRANDS_KEY = 'brand_studio_saved_brands';
-const GUEST_SESSION_KEY = 'brand_studio_guest_session_bibles';
-const STUDIO_SETTINGS_KEY = 'brand_studio_user_settings';
+// Storage keys — GABI-prefixed. Legacy brand_studio_* keys are still read as
+// a one-time migration fallback so existing users keep their libraries.
+const SAVED_BRANDS_KEY = 'gabi_saved_brands';
+const GUEST_SESSION_KEY = 'gabi_guest_session_bibles';
+const STUDIO_SETTINGS_KEY = 'gabi_user_settings';
+const DARK_MODE_KEY = 'gabi_dark_mode';
+const TOUR_SEEN_KEY = 'gabi_tour_seen';
+
+// Legacy (pre-rebrand) keys — read-only fallbacks for one-time migration.
+const LEGACY_KEYS = {
+  savedBrands: ['brand_studio_saved_brands', 'brand_studio_bibles', 'saved_brands', 'brands'],
+  guestSession: ['brand_studio_guest_session_bibles'],
+  darkMode: 'brand_studio_dark_mode',
+  tourSeen: 'brand_studio_tour_seen',
+};
 
 // AI-rendered logo images arrive as base64 data URLs that would bloat
 // localStorage. Strip oversized payloads before persisting; the in-memory
@@ -64,13 +75,13 @@ function writeSavedBrands(updated: BrandBible[]) {
 function loadInitialSavedBrands(): BrandBible[] {
   const foundMap = new Map<string, BrandBible>();
 
-  // 1. Recover from all possible localStorage locations
+  // 1. Recover from all possible localStorage locations — new GABI keys first,
+  //    then legacy brand_studio_* keys so fresh data wins on id collisions.
   const localKeys = [
     SAVED_BRANDS_KEY,
     GUEST_SESSION_KEY,
-    'brand_studio_bibles',
-    'saved_brands',
-    'brands'
+    ...LEGACY_KEYS.savedBrands,
+    ...LEGACY_KEYS.guestSession,
   ];
   for (const k of localKeys) {
     try {
@@ -135,7 +146,7 @@ export default function App() {
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     try {
-      const stored = localStorage.getItem('brand_studio_dark_mode');
+      const stored = localStorage.getItem(DARK_MODE_KEY) ?? localStorage.getItem(LEGACY_KEYS.darkMode);
       if (stored !== null) {
         return stored === 'true';
       }
@@ -188,7 +199,7 @@ export default function App() {
   // Check if first-time visitor should see the interactive tour
   useEffect(() => {
     try {
-      const tourSeen = localStorage.getItem('brand_studio_tour_seen');
+      const tourSeen = localStorage.getItem(TOUR_SEEN_KEY) ?? localStorage.getItem(LEGACY_KEYS.tourSeen);
       if (!tourSeen) {
         // Automatically pop tour for new users
         setIsTourOpen(true);
@@ -233,7 +244,7 @@ export default function App() {
   // Sync dark mode class to both html and body elements
   useEffect(() => {
     try {
-      localStorage.setItem('brand_studio_dark_mode', String(isDarkMode));
+      localStorage.setItem(DARK_MODE_KEY, String(isDarkMode));
       if (isDarkMode) {
         document.documentElement.classList.add('dark');
         document.body.classList.add('dark');
@@ -356,7 +367,7 @@ export default function App() {
       const session = await signInWithEmail(email, password);
       if (session?.user) {
         setUser(session.user);
-        setShareToast('Account created — welcome to Brand Studio AI!');
+        setShareToast('Account created — welcome to GABI!');
         setTimeout(() => setShareToast(null), 3500);
       }
     } catch (err: any) {
@@ -814,9 +825,10 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-[#1A1A1A] dark:border-[#F9F7F2]/20 mt-8 py-6 text-center transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[9px] font-black uppercase tracking-[0.5em] opacity-40 text-[#1A1A1A] dark:text-[#F9F7F2]">
-          <span>Brand Studio AI // Generator</span>
-          <div className="flex gap-10">
-            <span>Powered by Gemini</span>
+          <span>GABI // Generate. Align. Build. Inspire.</span>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-10">
+            <span>Turning brand ideas into complete, consistent identities.</span>
+            <span>Powered by OpenAI · Claude · Gemini · Higgsfield</span>
           </div>
         </div>
       </footer>

@@ -9,7 +9,7 @@ import { getSql, isDbConfigured } from './db';
 // ── Configuration ──────────────────────────────────────────────────────
 // AUTH_SECRET is required in production. In local dev it falls back to a
 // fixed dev-only secret (documented in .env.example and the README).
-const DEV_SECRET = 'brand-studio-dev-only-secret-change-me';
+const DEV_SECRET = 'gabi-dev-only-secret-change-me';
 const authSecret =
   process.env.AUTH_SECRET || (process.env.NODE_ENV !== 'production' ? DEV_SECRET : undefined);
 

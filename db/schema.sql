@@ -1,4 +1,4 @@
--- Brand Studio AI — Neon (Postgres) schema
+-- GABI — Generate. Align. Build. Inspire. — Neon (Postgres) schema
 -- Auth.js adapter tables (users, accounts, sessions, verification_tokens) + brand library.
 -- Run this against your Neon database once (psql "DATABASE_URL" -f db/schema.sql).
 

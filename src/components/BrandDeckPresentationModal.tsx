@@ -421,6 +421,10 @@ export function BrandDeckPresentationModal({
           ))}
         </div>
 
+        <span className="hidden sm:block text-[9px] uppercase tracking-[0.3em] font-bold opacity-50 font-serif italic whitespace-nowrap">
+          Created with GABI
+        </span>
+
         <div className="flex items-center gap-2">
           <button
             type="button"

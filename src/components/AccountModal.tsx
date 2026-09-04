@@ -173,7 +173,7 @@ export function AccountModal({
       exportMetadata: {
         exportedAt: new Date().toISOString(),
         totalBrands: savedBrands.length,
-        studioName: localSettings.studioName || 'Brand Studio AI',
+        studioName: localSettings.studioName || 'GABI',
         exportedBy: user ? user.name || user.email || 'User' : 'Guest Session User',
       },
       brands: savedBrands,
@@ -183,7 +183,7 @@ export function AccountModal({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `brand-studio-library-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `gabi-library-backup-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -851,7 +851,7 @@ export function AccountModal({
                       <div className="flex items-center justify-between py-1 border-b border-gray-100 dark:border-zinc-800/60">
                         <span className="text-gray-500 dark:text-zinc-400 font-medium">Cloud Database ID</span>
                         <span className="font-mono text-[10px] opacity-75">
-                          brand-studio-ai (Neon)
+                          gabi (Neon)
                         </span>
                       </div>
                     )}
@@ -1099,7 +1099,7 @@ export function AccountModal({
                   </h4>
                 </div>
                 <p className="text-[11px] leading-relaxed opacity-90">
-                  All vector marks, custom SVG blueprints, color harmonies, typography curation, and brand strategy guidelines generated in Brand Studio AI are 100% royalty-free and owned by you and your studio.
+                  All vector marks, custom SVG blueprints, color harmonies, typography curation, and brand strategy guidelines generated in GABI are 100% royalty-free and owned by you and your studio.
                 </p>
               </div>
             </div>
@@ -1108,7 +1108,7 @@ export function AccountModal({
 
         {/* Footer Bar */}
         <div className="px-6 py-3 border-t border-[#1A1A1A] dark:border-[#F9F7F2]/20 flex items-center justify-between text-[9px] uppercase tracking-widest text-gray-500 dark:text-zinc-400 bg-white/40 dark:bg-zinc-900/40">
-          <span>Brand Studio AI // Account & Studio Workspace Hub</span>
+          <span>GABI // Account & Studio Workspace Hub</span>
           <span>{savedBrands.length} Saved Brands</span>
         </div>
       </div>

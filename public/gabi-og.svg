@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#F9F7F2"/>
+  <rect x="0" y="0" width="1200" height="14" fill="#1A1A1A"/>
+  <text x="600" y="290" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="150" font-weight="700" fill="#1A1A1A" text-anchor="middle">GABI</text>
+  <text x="600" y="360" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="34" fill="#1A1A1A" text-anchor="middle" letter-spacing="4">GENERATE · ALIGN · BUILD · INSPIRE</text>
+  <text x="600" y="430" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="26" fill="#1A1A1A" opacity="0.72" text-anchor="middle">Turning brand ideas into complete, consistent identities.</text>
+  <rect x="540" y="500" width="120" height="4" fill="#1A1A1A"/>
+</svg>

@@ -1,9 +1,11 @@
 import { PopularBrandCaseStudy } from '../types/brandCaseStudies';
 
-// NOTE: Curated case-study logos rely on the third-party Clearbit Logo API
-// (https://logo.clearbit.com/<domain>). The service is unauthenticated and can
-// rate-limit or change availability; the UI gracefully falls back to a text
-// monogram via ImageWithFallback when a logo cannot be loaded.
+// NOTE: Curated case-study logo images are left empty here on purpose. The
+// client calls GET /api/brand-logo-history?brand=<name> on load, which attaches
+// real archival logo-history images (Wikimedia Commons) to every era, falling
+// back to clearly-labeled stylized placeholders when no archival image exists.
+// (The previous Clearbit Logo API URLs were removed — that service shut down
+// in December 2025.)
 export const CURATED_POPULAR_BRANDS: PopularBrandCaseStudy[] = [
   {
     id: 'nike',
@@ -54,7 +56,7 @@ export const CURATED_POPULAR_BRANDS: PopularBrandCaseStudy[] = [
         title: 'The Pure Standalone Swoosh',
         description: 'Nike eliminated all typography from the primary mark. The Swoosh achieved universal global recognition, becoming one of the purest semiotic symbols in world commerce.',
         keyDesignChanges: ['Removal of wordmark', 'Maximum geometric balance', 'Pure standalone silhouette'],
-        imageUrl: "https://logo.clearbit.com/nike.com",
+        imageUrl: "",
       },
     ],
     colorPaletteHeritage: [
@@ -139,7 +141,7 @@ export const CURATED_POPULAR_BRANDS: PopularBrandCaseStudy[] = [
         title: 'Monochrome Minimalist Silhouette',
         description: 'Steve Jobs returned and eliminated the rainbow stripes in favor of solid translucent, metallic, and deep monochrome finishes matched to industrial anodized aluminum.',
         keyDesignChanges: ['Pure solid monochrome fill', 'Harmonized with aluminum & glass hardware', 'Maximum premium restraint'],
-        imageUrl: "https://logo.clearbit.com/apple.com",
+        imageUrl: "",
       },
     ],
     colorPaletteHeritage: [
@@ -225,7 +227,7 @@ export const CURATED_POPULAR_BRANDS: PopularBrandCaseStudy[] = [
         title: 'The Liberated Global Siren',
         description: 'For their 40th anniversary, Starbucks removed the outer ring, the company name, and the word "coffee", letting the pure green siren emerge unobstructed.',
         keyDesignChanges: ['Removal of wordmark and outer circle', 'Asymmetrical subtle human facial contour', 'Pure monochrome emerald green'],
-        imageUrl: "https://logo.clearbit.com/starbucks.com",
+        imageUrl: "",
       },
     ],
     colorPaletteHeritage: [
@@ -304,7 +306,7 @@ export const CURATED_POPULAR_BRANDS: PopularBrandCaseStudy[] = [
         title: 'The Cross-Section Rotor "T"',
         description: 'Stripped the enclosing shield. The "T" represents the rotor pole of an electric motor, with the curved top bar representing the stator armature gap.',
         keyDesignChanges: ['Removal of shield enclosure', 'Direct motor physics symbolism', 'Sharp futuristic geometric cutouts'],
-        imageUrl: "https://logo.clearbit.com/tesla.com",
+        imageUrl: "",
       },
     ],
     colorPaletteHeritage: [
@@ -380,7 +382,7 @@ export const CURATED_POPULAR_BRANDS: PopularBrandCaseStudy[] = [
         title: 'The Bélo (Universal Belonging)',
         description: 'Designed by DesignStudio. An iconic continuous loop uniting 4 core symbols: a person (arms open), a location pin (places), a heart (love), and the letter "A" (Airbnb).',
         keyDesignChanges: ['The Rausch Coral color introduction', 'Continuous single-stroke loop geometry', 'Open-source symbol anyone can draw'],
-        imageUrl: "https://logo.clearbit.com/airbnb.com",
+        imageUrl: "",
       },
     ],
     colorPaletteHeritage: [
@@ -450,7 +452,7 @@ export const CURATED_POPULAR_BRANDS: PopularBrandCaseStudy[] = [
         title: 'The Interlocking Double-C Monogram',
         description: 'Designed personally by Coco Chanel. Two mirrored, perfectly overlapping sans-serif letter "C"s based on the Romanesque curves of Aubazine Abbey.',
         keyDesignChanges: ['Mathematical geometric circular perfection', 'Unaltered for over a century', 'Unmatched status of luxury elegance'],
-        imageUrl: "https://logo.clearbit.com/chanel.com",
+        imageUrl: "",
       },
     ],
     colorPaletteHeritage: [

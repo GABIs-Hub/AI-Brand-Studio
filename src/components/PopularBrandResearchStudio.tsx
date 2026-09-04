@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { PopularBrandCaseStudy } from '../types/brandCaseStudies';
+import React, { useState, useEffect } from 'react';
+import { PopularBrandCaseStudy, BrandHistoricalLogo } from '../types/brandCaseStudies';
 import { CURATED_POPULAR_BRANDS } from '../data/curatedPopularBrands';
 import {
   Search,
@@ -37,12 +37,27 @@ interface PopularBrandResearchStudioProps {
 }
 
 
-function ImageWithFallback({ src, alt, fallbackText }: { src: string; alt: string; fallbackText: string }) {
-  const [error, setError] = React.useState(false);
-  if (error || !src) {
-    return <div className="font-serif italic text-2xl font-bold text-center">{fallbackText}</div>;
+function EraLogoImage({ logo, brandName }: { logo: BrandHistoricalLogo; brandName: string }) {
+  const [failed, setFailed] = React.useState(false);
+  if (failed || !logo.imageUrl) {
+    return (
+      <div className="font-serif italic text-sm font-bold text-center opacity-35 px-4 leading-relaxed">
+        {brandName} — {logo.title}
+        <span className="block font-sans text-[9px] uppercase tracking-widest font-black opacity-60 mt-1">
+          Archival image unavailable
+        </span>
+      </div>
+    );
   }
-  return <img src={src} alt={alt} className="max-w-full max-h-full object-contain" onError={() => setError(true)} />;
+  return (
+    <img
+      src={logo.imageUrl}
+      alt={`${brandName} — ${logo.title}`}
+      loading="lazy"
+      className="max-w-full max-h-full object-contain drop-shadow-sm"
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 export function PopularBrandResearchStudio({
@@ -60,6 +75,61 @@ export function PopularBrandResearchStudio({
   const [activeAnalysisTab, setActiveAnalysisTab] = useState<
     'origin' | 'logos' | 'colors' | 'lessons'
   >('origin');
+  const [logoHistoryLoading, setLogoHistoryLoading] = useState<string | null>(null);
+
+  // Enrich the selected case study's logo evolution with REAL archival images
+  // (Wikimedia Commons via /api/brand-logo-history). Server-researched brands
+  // arrive pre-enriched (every era has an imageUrl); curated showcase brands
+  // are enriched here on load.
+  useEffect(() => {
+    const brand = selectedBrand;
+    if (!brand?.brandName) return;
+    const eras = brand.logoEvolution?.map((e) => e.era) || [];
+    if (eras.length === 0) return;
+    // Already enriched: every era carries an image (real or labeled placeholder).
+    if (brand.logoEvolution.every((e) => e.imageUrl)) return;
+
+    let cancelled = false;
+    setLogoHistoryLoading(brand.id);
+    (async () => {
+      try {
+        const url =
+          '/api/brand-logo-history?brand=' +
+          encodeURIComponent(brand.brandName) +
+          '&eras=' +
+          encodeURIComponent(eras.join('|'));
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Archival logo lookup failed');
+        const data = await res.json();
+        if (cancelled || !data?.eras?.length) return;
+        setSelectedBrand((prev) => {
+          if (!prev || prev.id !== brand.id) return prev;
+          return {
+            ...prev,
+            logoEvolution: prev.logoEvolution.map((era, i) => {
+              const m = data.eras[i];
+              if (!m) return era;
+              return {
+                ...era,
+                imageUrl: m.imageUrl,
+                attribution: m.attribution,
+                isStylizedPlaceholder: m.isStylizedPlaceholder,
+              };
+            }),
+          };
+        });
+      } catch (err) {
+        console.warn('Logo history enrichment failed for', brand.brandName, err);
+      } finally {
+        if (!cancelled) setLogoHistoryLoading(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBrand?.id]);
 
   const categories = [
     'All',
@@ -506,7 +576,7 @@ export function PopularBrandResearchStudio({
                   How the {selectedBrand.brandName} Logomark Evolved Across Eras
                 </h3>
                 <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-serif italic">
-                  Notice how nearly all legendary logos start complex, literal, or crowded, and gradually subtract unnecessary detail until only a pure geometric essence remains.
+                  Notice how nearly all legendary logos start complex, literal, or crowded, and gradually subtract unnecessary detail until only a pure geometric essence remains. Archival images from Wikimedia Commons (CC-licensed){logoHistoryLoading === selectedBrand.id ? ' — loading historical logos…' : ''}.
                 </p>
               </div>
 
@@ -517,13 +587,32 @@ export function PopularBrandResearchStudio({
                     className="border-2 border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-[#FAF9F6] dark:bg-[#161614] flex flex-col justify-between"
                   >
                     {/* Visual Graphic Representation */}
-                    <div className="p-8 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-center min-h-[160px] text-[#1A1A1A] dark:text-[#F9F7F2]">
+                    <div className="p-6 bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-3 min-h-[220px] text-[#1A1A1A] dark:text-[#F9F7F2]">
                       {logo.imageUrl ? (
-                        <div className="w-32 h-20 flex items-center justify-center">
-                          <ImageWithFallback src={logo.imageUrl} alt={`${selectedBrand.brandName} - ${logo.title}`} fallbackText={selectedBrand.brandName} />
-                        </div>
+                        <>
+                          <div className="h-28 flex items-center justify-center">
+                            <EraLogoImage logo={logo} brandName={selectedBrand.brandName} />
+                          </div>
+                          {logo.isStylizedPlaceholder ? (
+                            <span className="text-[8px] uppercase tracking-widest font-black px-2 py-1 bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-400/30 text-center">
+                              Stylized illustration — archival image unavailable
+                            </span>
+                          ) : logo.attribution ? (
+                            <a
+                              href={logo.attribution.pageUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[8px] uppercase tracking-wider text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 flex items-center gap-1 transition-colors"
+                              title="Open the Wikimedia Commons file page (licensing details)"
+                            >
+                              Image: Wikimedia Commons · {logo.attribution.license}
+                              {logo.attribution.artist ? ` · ${logo.attribution.artist}` : ''}
+                              <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                            </a>
+                          ) : null}
+                        </>
                       ) : (
-                        <div className="font-serif italic text-2xl font-bold">
+                        <div className="font-serif italic text-2xl font-bold text-center opacity-40">
                           {selectedBrand.brandName}
                         </div>
                       )}
@@ -531,9 +620,15 @@ export function PopularBrandResearchStudio({
 
                     <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                       <div className="space-y-1.5">
-                        <span className="text-[9px] font-mono uppercase tracking-widest font-black px-2 py-0.5 bg-black/10 dark:bg-white/10 text-[#1A1A1A] dark:text-[#F9F7F2] inline-block">
-                          {logo.era}
-                        </span>
+                        <div className="flex items-center justify-between gap-2 w-full">
+                          <span className="text-[9px] font-mono uppercase tracking-widest font-black px-2 py-0.5 bg-black/10 dark:bg-white/10 text-[#1A1A1A] dark:text-[#F9F7F2] inline-block">
+                            {logo.era}
+                          </span>
+                          <span className="text-[8px] font-mono uppercase tracking-widest font-black text-gray-400 whitespace-nowrap">
+                            Era {idx + 1} / {selectedBrand.logoEvolution.length}
+                            {idx < selectedBrand.logoEvolution.length - 1 ? ' →' : ' ◆'}
+                          </span>
+                        </div>
                         <h4 className="font-serif italic font-bold text-base text-[#1A1A1A] dark:text-[#F9F7F2]">
                           {logo.title}
                         </h4>

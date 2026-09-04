@@ -109,11 +109,11 @@ export function Header({
             onClick={onNewBrand}
             className="flex flex-col text-left group focus:outline-hidden cursor-pointer"
           >
-            <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-50 mb-1">
-              Project Dossier
+            <span className="hidden md:block text-[9px] uppercase tracking-[0.35em] font-bold opacity-50 mb-1 whitespace-nowrap">
+              Generate · Align · Build · Inspire
             </span>
             <h1 className="text-3xl font-serif italic font-light tracking-tighter text-[#1A1A1A] dark:text-[#F9F7F2]">
-              Brand Studio
+              GABI
             </h1>
           </button>
         </div>
