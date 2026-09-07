@@ -26,7 +26,7 @@ import {
   Presentation,
   Package,
 } from 'lucide-react';
-import { User } from '../lib/firebase';
+import { SessionUser } from '../lib/authClient';
 
 interface HeaderProps {
   activeBrand: BrandBible | null;
@@ -43,7 +43,7 @@ interface HeaderProps {
   isChatOpen: boolean;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
-  user: User | null;
+  user: SessionUser | null;
   onLogin: () => void;
   onLogout: () => void;
 }
@@ -109,11 +109,11 @@ export function Header({
             onClick={onNewBrand}
             className="flex flex-col text-left group focus:outline-hidden cursor-pointer"
           >
-            <span className="text-[10px] uppercase tracking-[0.4em] font-bold opacity-50 mb-1">
-              Project Dossier
+            <span className="hidden md:block text-[9px] uppercase tracking-[0.35em] font-bold opacity-50 mb-1 whitespace-nowrap">
+              Generate · Align · Build · Inspire
             </span>
             <h1 className="text-3xl font-serif italic font-light tracking-tighter text-[#1A1A1A] dark:text-[#F9F7F2]">
-              Brand Studio
+              GABI
             </h1>
           </button>
         </div>
@@ -190,14 +190,14 @@ export function Header({
                   {user && (
                     <div className="flex items-center gap-1.5 text-[9px] text-white/70 font-mono">
                       <UserIcon className="w-3 h-3" />
-                      <span className="truncate max-w-[90px]">{user.displayName?.split(' ')[0] || 'User'}</span>
+                      <span className="truncate max-w-[90px]">{user.name?.split(' ')[0] || 'User'}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Section 1: Active Brand Tools */}
                 {activeBrand && (
-                  <div className="p-3 border-b border-gray-200 dark:border-zinc-800 space-y-1">
+                  <div className="p-3 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-1">
                     <span className="text-[8px] uppercase tracking-widest font-black text-gray-400 dark:text-zinc-500 px-2 block mb-1">
                       Active Brand Tools &bull; {activeBrand.brandName}
                     </span>
@@ -240,7 +240,7 @@ export function Header({
                         className="w-full flex items-center justify-between p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-left group"
                       >
                         <div className="flex items-center gap-2.5">
-                          <div className="p-1.5 bg-gray-200 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] border border-gray-300 dark:border-zinc-700">
+                          <div className="p-1.5 bg-gray-200 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                             <Share2 className="w-3.5 h-3.5" />
                           </div>
                           <div>
@@ -293,7 +293,7 @@ export function Header({
                       className="w-full flex items-center justify-between p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-left group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 bg-gray-200 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] border border-gray-300 dark:border-zinc-700">
+                        <div className="p-1.5 bg-gray-200 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                           <Download className="w-3.5 h-3.5" />
                         </div>
                         <div>
@@ -311,7 +311,7 @@ export function Header({
                 )}
 
                 {/* Section 2: Studio Discovery & Comparison */}
-                <div className="p-3 border-b border-gray-200 dark:border-zinc-800 space-y-1">
+                <div className="p-3 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-1">
                   <span className="text-[8px] uppercase tracking-widest font-black text-gray-400 dark:text-zinc-500 px-2 block mb-1">
                     Studio Discovery &amp; Workspace
                   </span>
@@ -354,7 +354,7 @@ export function Header({
                       className="w-full flex items-center justify-between p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-left group"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 bg-gray-200 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] border border-gray-300 dark:border-zinc-700">
+                        <div className="p-1.5 bg-gray-200 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                           <Compass className="w-3.5 h-3.5" />
                         </div>
                         <div>
@@ -380,7 +380,7 @@ export function Header({
                     className="w-full flex items-center justify-between p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer text-left group"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="p-1.5 bg-gray-200 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] border border-gray-300 dark:border-zinc-700">
+                      <div className="p-1.5 bg-gray-200 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                         <ArrowLeftRight className="w-3.5 h-3.5" />
                       </div>
                       <div>
@@ -403,7 +403,7 @@ export function Header({
                   </span>
 
                   {/* Dark Mode Switcher */}
-                  <div className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+                  <div className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                     <div className="flex items-center gap-2">
                       {isDarkMode ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
                       <span className="text-xs font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
@@ -413,30 +413,30 @@ export function Header({
                     <button
                       type="button"
                       onClick={onToggleDarkMode}
-                      className="px-2 py-1 text-[9px] uppercase tracking-widest font-bold border border-gray-300 dark:border-zinc-700 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
+                      className="px-2 py-1 text-[9px] uppercase tracking-widest font-bold border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer"
                     >
                       {isDarkMode ? 'Light' : 'Dark'}
                     </button>
                   </div>
 
                   {/* Account & Profile */}
-                  <div className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+                  <div className="flex items-center justify-between p-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                     <div className="flex items-center gap-2 truncate">
-                      {user?.photoURL ? (
+                      {user?.image ? (
                         <img
-                          src={user.photoURL}
-                          alt={user.displayName || 'User'}
+                          src={user.image}
+                          alt={user.name || 'User'}
                           className="w-5 h-5 rounded-full object-cover border border-black/10"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
                         <div className="w-5 h-5 rounded-full bg-[#1A1A1A] text-white text-[9px] flex items-center justify-center font-bold">
-                          {user?.displayName?.charAt(0) || 'U'}
+                          {user?.name?.charAt(0) || 'U'}
                         </div>
                       )}
                       <div className="truncate">
                         <span className="text-xs font-bold text-[#1A1A1A] dark:text-[#F9F7F2] block truncate">
-                          {user ? user.displayName || user.email : 'Studio Workspace'}
+                          {user ? user.name || user.email : 'Studio Workspace'}
                         </span>
                         <span className="text-[8px] text-gray-400 uppercase tracking-wider block font-mono">
                           {user ? 'Authenticated' : 'Local Sandbox Mode'}
@@ -450,7 +450,7 @@ export function Header({
                         setIsMenuOpen(false);
                         onOpenAccount();
                       }}
-                      className="px-2 py-1 text-[9px] uppercase tracking-widest font-bold border border-gray-300 dark:border-zinc-700 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer shrink-0"
+                      className="px-2 py-1 text-[9px] uppercase tracking-widest font-bold border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors cursor-pointer shrink-0"
                     >
                       Settings
                     </button>

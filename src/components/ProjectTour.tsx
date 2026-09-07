@@ -395,7 +395,7 @@ export function ProjectTour({
 
   const handleComplete = () => {
     try {
-      localStorage.setItem('brand_studio_tour_seen', 'true');
+      localStorage.setItem('gabi_tour_seen', 'true');
     } catch {
       // ignore
     }
@@ -566,15 +566,15 @@ export function ProjectTour({
         </div>
 
         {/* Showcase Brand Selector Bar */}
-        <div className="px-4 py-2 bg-gray-100 dark:bg-zinc-900/90 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-2 text-xs">
+        <div className="px-4 py-2 bg-gray-100 dark:bg-zinc-900/90 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-1.5 truncate">
-            <span className="text-[9px] uppercase tracking-wider font-bold text-gray-500 shrink-0">
+            <span className="text-[9px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-500 shrink-0">
               Active Brand:
             </span>
             <span className="font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate">
               {activeBrand?.brandName || 'Showcase Brand'}
             </span>
-            <span className="text-[9px] text-gray-500 font-serif italic truncate hidden sm:inline">
+            <span className="text-[9px] text-gray-500 dark:text-gray-500 font-serif italic truncate hidden sm:inline">
               ({activeBrand?.industry || 'Brand Bible'})
             </span>
           </div>
@@ -584,7 +584,7 @@ export function ProjectTour({
               <button
                 type="button"
                 onClick={() => setIsBrandPickerOpen(!isBrandPickerOpen)}
-                className="px-2 py-1 text-[9px] uppercase tracking-wider font-black bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-[#1A1A1A] dark:text-[#F9F7F2] hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors cursor-pointer flex items-center gap-1"
+                className="px-2 py-1 text-[9px] uppercase tracking-wider font-black bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-[#1A1A1A] dark:text-[#F9F7F2] hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors cursor-pointer flex items-center gap-1"
                 title="Switch Showcase Brand"
               >
                 <span>Switch Brand</span>
@@ -592,7 +592,7 @@ export function ProjectTour({
               </button>
 
               {isBrandPickerOpen && (
-                <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 shadow-xl z-50 p-1 space-y-1">
+                <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 shadow-xl z-50 p-1 space-y-1">
                   <span className="text-[8px] uppercase tracking-widest font-black text-gray-400 px-2 py-1 block">
                     Select Brand to Tour:
                   </span>
@@ -638,14 +638,14 @@ export function ProjectTour({
                 >
                   {currentStep.viewMode === 'simple' ? 'Simple View' : 'Studio Suite'}
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono">
+                <span className="text-[10px] text-gray-500 dark:text-gray-500 font-mono">
                   Module {currentStepIndex + 1}/{activeSteps.length}
                 </span>
               </div>
               <h4 className="text-sm font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2] font-bold">
                 {currentStep.title}
               </h4>
-              <p className="text-xs text-gray-600 dark:text-zinc-400 mt-1 leading-relaxed">
+              <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 leading-relaxed">
                 {currentStep.description}
               </p>
             </div>
@@ -691,7 +691,7 @@ export function ProjectTour({
         </div>
 
         {/* Step Navigation Dots & Control Buttons */}
-        <div className="p-3 bg-gray-100 dark:bg-[#141412] border-t border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-2">
+        <div className="p-3 bg-gray-100 dark:bg-[#141412] border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-2">
           {/* Quick Jump Step Dots */}
           <div className="flex items-center gap-1">
             {activeSteps.map((s, idx) => (

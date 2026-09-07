@@ -1,6 +1,0 @@
-{
-  "name": "Brand Identity Generator",
-  "description": "Generate a complete Brand Bible dashboard with primary logos, secondary marks, Chain-of-Thought logo prompt refinement lab, 6-archetype logo studio, automated favicon & web icon deployment suite (.ico and .png), color palettes, Google Font pairings, asset usage guide with visual Do's and Don'ts, vertical interactive Brand Evolution timeline, AI-rendered social media post templates (Instagram & LinkedIn), tone of voice guidelines, live mockups, and AI brand strategist assistant.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

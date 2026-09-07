@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import {
   BrandBible,
   SocialPostData,
@@ -121,6 +122,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
   const [copiedScript, setCopiedScript] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<'auto' | 'openai' | 'gemini' | 'higgsfield'>('auto');
 
   // Template Post Data State initialized with brand-aligned defaults (Zero emojis)
   const [postData, setPostData] = useState<SocialPostData>({
@@ -297,6 +299,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
           postType: selectedType,
           platform: selectedPlatform,
           topicPrompt: overridePrompt !== undefined ? overridePrompt : customPrompt,
+          provider: selectedProvider,
         }),
       });
 
@@ -321,7 +324,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
   const handleGenerateVisual = async () => {
     if (!postData.aiImagePrompt) return;
     setIsGeneratingVisual(true);
-    setStatusMessage('Generating AI background visual with Gemini...');
+    setStatusMessage('Generating AI background visual...');
     try {
       const targetAspect = selectedPlatform === 'instagram_story' || selectedPlatform === 'tiktok_video' || selectedPlatform === 'whatsapp_status' ? '9:16' : '1:1';
       const response = await fetch('/api/generate-social-image', {
@@ -330,6 +333,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
         body: JSON.stringify({
           prompt: `${postData.aiImagePrompt}, brand palette tones: ${primaryColor}, ${accentColor}, aesthetic: ${brand.imageryStyle?.moodboardKeywords?.join(', ') || 'modern minimalist'}`,
           aspectRatio: targetAspect,
+          provider: selectedProvider,
         }),
       });
 
@@ -480,7 +484,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                     className={`p-3 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
                         ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
-                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
+                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -512,7 +516,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                     className={`p-2.5 text-left border transition-all cursor-pointer flex items-center gap-2 ${
                       isSelected
                         ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
-                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
+                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5 shrink-0 opacity-80" />
@@ -527,13 +531,24 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
               <label className="block text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-zinc-400">
                 Custom Campaign Directive / Angle (Optional)
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={selectedProvider}
+                  onChange={(e) => setSelectedProvider(e.target.value as any)}
+                  title="AI engine for copy + artwork (Auto cascades OpenAI → Gemini → Higgsfield)"
+                  className="bg-transparent border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-2 text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] cursor-pointer focus:outline-hidden"
+                >
+                  <option value="auto">Auto Engine</option>
+                  <option value="openai">ChatGPT</option>
+                  <option value="gemini">Gemini</option>
+                  <option value="higgsfield">Higgsfield</option>
+                </select>
                 <input
                   type="text"
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
                   placeholder="e.g. Focus on our upcoming launch or craftsmanship values..."
-                  className="w-full bg-transparent border border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+                  className="w-full sm:w-auto flex-1 min-w-[200px] bg-transparent border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
                 />
                 <button
                   onClick={() => handleGeneratePost()}
@@ -563,7 +578,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                     className={`p-2 text-left border transition-all cursor-pointer ${
                       postData.layout === layout.id
                         ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
-                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
+                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
                     }`}
                   >
                     <span className="text-[9px] uppercase tracking-wider font-bold block">{layout.label}</span>
@@ -585,7 +600,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                     className={`p-2 text-left border transition-all cursor-pointer ${
                       postData.theme === theme.id
                         ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
-                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
+                        : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-black dark:hover:border-white'
                     }`}
                   >
                     <span className="text-[9px] uppercase tracking-wider font-bold block">{theme.label}</span>
@@ -660,7 +675,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                   <div
                     className="w-8 h-8 flex items-center justify-center"
                     dangerouslySetInnerHTML={{
-                      __html: brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg,
+                      __html: sanitizeSvg(brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg),
                     }}
                   />
                   <span className="text-[10px] uppercase tracking-[0.25em] font-black" style={{ color: themeStyle.textPrimary }}>
@@ -750,7 +765,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                       >
                         <div
                           className="w-full h-full flex items-center justify-center"
-                          dangerouslySetInnerHTML={{ __html: brand.secondaryMarks[1]?.svg || brand.logo.primaryLogoSvg }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.secondaryMarks[1]?.svg || brand.logo.primaryLogoSvg) }}
                         />
                       </div>
                     </div>
@@ -814,7 +829,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                   <div className="border p-5 space-y-4 text-center" style={{ borderColor: themeStyle.divider }}>
                     <div
                       className="w-10 h-10 mx-auto"
-                      dangerouslySetInnerHTML={{ __html: brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.secondaryMarks[0]?.svg || brand.logo.primaryLogoSvg) }}
                     />
                     <h2
                       style={{ fontFamily: headingFont, color: themeStyle.textPrimary }}
@@ -889,7 +904,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                 <div className="flex items-center gap-2">
                   <Music className="w-4 h-4 text-purple-500" />
                   <div>
-                    <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 block">Recommended Audio Track / Sound Style:</span>
+                    <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500 block">Recommended Audio Track / Sound Style:</span>
                     <span className="font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">{postData.viralAudioSuggestion || 'Deep atmospheric lo-fi beats with ambient vinyl texture (120 BPM)'}</span>
                   </div>
                 </div>
@@ -912,13 +927,13 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                 </span>
                 <div className="space-y-2">
                   {postData.videoScenes?.map((scene) => (
-                    <div key={scene.step} className="p-3 border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 space-y-1 text-xs">
-                      <div className="flex items-center justify-between font-mono text-[9px] text-gray-500">
+                    <div key={scene.step} className="p-3 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50 space-y-1 text-xs">
+                      <div className="flex items-center justify-between font-mono text-[9px] text-gray-500 dark:text-gray-500">
                         <span className="font-bold uppercase tracking-wider text-[#1A1A1A] dark:text-[#F9F7F2]">{scene.title}</span>
                         <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" />{scene.duration}</span>
                       </div>
                       <p className="text-gray-700 dark:text-zinc-300"><strong className="text-[#1A1A1A] dark:text-white">Action:</strong> {scene.action}</p>
-                      <p className="font-serif italic text-gray-600 dark:text-zinc-400"><strong className="font-sans not-italic text-[#1A1A1A] dark:text-white">VO:</strong> &ldquo;{scene.narration}&rdquo;</p>
+                      <p className="font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400"><strong className="font-sans not-italic text-[#1A1A1A] dark:text-white">VO:</strong> &ldquo;{scene.narration}&rdquo;</p>
                     </div>
                   ))}
                 </div>
@@ -973,7 +988,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                   type="text"
                   value={postData.headline}
                   onChange={(e) => setPostData((prev) => ({ ...prev, headline: e.target.value }))}
-                  className="w-full bg-transparent border border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+                  className="w-full bg-transparent border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
                 />
               </div>
 
@@ -985,7 +1000,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                   type="text"
                   value={postData.badgeLabel || ''}
                   onChange={(e) => setPostData((prev) => ({ ...prev, badgeLabel: e.target.value }))}
-                  className="w-full bg-transparent border border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+                  className="w-full bg-transparent border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
                 />
               </div>
 
@@ -997,7 +1012,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                   value={postData.bodyCopy}
                   onChange={(e) => setPostData((prev) => ({ ...prev, bodyCopy: e.target.value }))}
                   rows={2}
-                  className="w-full bg-transparent border border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+                  className="w-full bg-transparent border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
                 />
               </div>
 
@@ -1009,7 +1024,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                   type="text"
                   value={postData.callToAction || ''}
                   onChange={(e) => setPostData((prev) => ({ ...prev, callToAction: e.target.value }))}
-                  className="w-full bg-transparent border border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+                  className="w-full bg-transparent border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
                 />
               </div>
 
@@ -1023,14 +1038,14 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                     value={postData.metricNumber || ''}
                     onChange={(e) => setPostData((prev) => ({ ...prev, metricNumber: e.target.value }))}
                     placeholder="99%"
-                    className="w-1/3 bg-transparent border border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+                    className="w-1/3 bg-transparent border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
                   />
                   <input
                     type="text"
                     value={postData.metricLabel || ''}
                     onChange={(e) => setPostData((prev) => ({ ...prev, metricLabel: e.target.value }))}
                     placeholder="Accuracy rate"
-                    className="w-2/3 bg-transparent border border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
+                    className="w-2/3 bg-transparent border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-2 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -1056,13 +1071,13 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
               value={postData.fullCaption}
               onChange={(e) => setPostData((prev) => ({ ...prev, fullCaption: e.target.value }))}
               rows={4}
-              className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-3 text-xs font-sans text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden leading-relaxed"
+              className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-3 text-xs font-sans text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden leading-relaxed"
             />
             <div className="flex flex-wrap gap-1.5 pt-1">
               {postData.hashtags.map((ht, idx) => (
                 <span
                   key={idx}
-                  className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] text-[9px] font-mono border border-gray-200 dark:border-zinc-700"
+                  className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-[#1A1A1A] dark:text-[#F9F7F2] text-[9px] font-mono border border-gray-200 dark:border-gray-200 dark:border-zinc-700"
                 >
                   #{ht}
                 </span>

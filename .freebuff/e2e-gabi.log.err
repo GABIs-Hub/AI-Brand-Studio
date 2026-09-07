@@ -1,0 +1,99 @@
+[31m[auth][error][0m UnknownAction: Unsupported action. Read more at https://errors.authjs.dev#unknownaction
+    at Object.signin (file:///C:/Users/GABI's%20WORKSPACE/OneDrive/Documents/GitHub/AI-Brand-Studio/node_modules/@auth/core/lib/pages/index.js:55:23)
+    at AuthInternal (file:///C:/Users/GABI's%20WORKSPACE/OneDrive/Documents/GitHub/AI-Brand-Studio/node_modules/@auth/core/lib/index.js:39:31)
+    at async Auth (file:///C:/Users/GABI's%20WORKSPACE/OneDrive/Documents/GitHub/AI-Brand-Studio/node_modules/@auth/core/index.js:111:34)
+    at async file:///C:/Users/GABI's%20WORKSPACE/OneDrive/Documents/GitHub/AI-Brand-Studio/node_modules/@auth/express/index.js:151:45
+[Brands API] Save failed: NeonDbError: insert or update on table "brands" violates foreign key constraint "brands_user_id_fkey"
+    at NeonQueryPromise.execute (file:///C:/Users/GABI's%20WORKSPACE/OneDrive/Documents/GitHub/AI-Brand-Studio/node_modules/@neondatabase/serverless/index.mjs:1298:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async upsertBrand (C:\Users\GABI's WORKSPACE\OneDrive\Documents\GitHub\AI-Brand-Studio\src\server\db.ts:36:3)
+    at async <anonymous> (C:\Users\GABI's WORKSPACE\OneDrive\Documents\GitHub\AI-Brand-Studio\src\server\index.ts:285:5) {
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (user_id)=(988fc634-264f-4ae0-90e1-4afdae428f80) is not present in table "users".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'brands',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'brands_user_id_fkey',
+  file: 'ri_triggers.c',
+  line: '2772',
+  routine: 'ri_ReportViolation',
+  sourceError: undefined
+}
+[Brands API] Save failed: NeonDbError: insert or update on table "brands" violates foreign key constraint "brands_user_id_fkey"
+    at NeonQueryPromise.execute (file:///C:/Users/GABI's%20WORKSPACE/OneDrive/Documents/GitHub/AI-Brand-Studio/node_modules/@neondatabase/serverless/index.mjs:1298:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async upsertBrand (C:\Users\GABI's WORKSPACE\OneDrive\Documents\GitHub\AI-Brand-Studio\src\server\db.ts:36:3)
+    at async <anonymous> (C:\Users\GABI's WORKSPACE\OneDrive\Documents\GitHub\AI-Brand-Studio\src\server\index.ts:285:5) {
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (user_id)=(988fc634-264f-4ae0-90e1-4afdae428f80) is not present in table "users".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'brands',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'brands_user_id_fkey',
+  file: 'ri_triggers.c',
+  line: '2772',
+  routine: 'ri_ReportViolation',
+  sourceError: undefined
+}
+[Brands API] Save failed: NeonDbError: insert or update on table "brands" violates foreign key constraint "brands_user_id_fkey"
+    at NeonQueryPromise.execute (file:///C:/Users/GABI's%20WORKSPACE/OneDrive/Documents/GitHub/AI-Brand-Studio/node_modules/@neondatabase/serverless/index.mjs:1298:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async upsertBrand (C:\Users\GABI's WORKSPACE\OneDrive\Documents\GitHub\AI-Brand-Studio\src\server\db.ts:36:3)
+    at async <anonymous> (C:\Users\GABI's WORKSPACE\OneDrive\Documents\GitHub\AI-Brand-Studio\src\server\index.ts:285:5) {
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (user_id)=(988fc634-264f-4ae0-90e1-4afdae428f80) is not present in table "users".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'brands',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'brands_user_id_fkey',
+  file: 'ri_triggers.c',
+  line: '2772',
+  routine: 'ri_ReportViolation',
+  sourceError: undefined
+}
+[Brands API] Save failed: NeonDbError: insert or update on table "brands" violates foreign key constraint "brands_user_id_fkey"
+    at NeonQueryPromise.execute (file:///C:/Users/GABI's%20WORKSPACE/OneDrive/Documents/GitHub/AI-Brand-Studio/node_modules/@neondatabase/serverless/index.mjs:1298:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async upsertBrand (C:\Users\GABI's WORKSPACE\OneDrive\Documents\GitHub\AI-Brand-Studio\src\server\db.ts:36:3)
+    at async <anonymous> (C:\Users\GABI's WORKSPACE\OneDrive\Documents\GitHub\AI-Brand-Studio\src\server\index.ts:285:5) {
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (user_id)=(988fc634-264f-4ae0-90e1-4afdae428f80) is not present in table "users".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'brands',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'brands_user_id_fkey',
+  file: 'ri_triggers.c',
+  line: '2772',
+  routine: 'ri_ReportViolation',
+  sourceError: undefined
+}
+[Mail] Resend delivery failed, printing to console instead: Resend API error 403: {"statusCode":403,"name":"validation_error","message":"You can only send testing emails to your own email address (gabi.dav3d.005@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain."}
+[Mail] Resend delivery failed, printing to console instead: Resend API error 403: {"statusCode":403,"name":"validation_error","message":"You can only send testing emails to your own email address (gabi.dav3d.005@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain."}

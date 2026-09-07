@@ -299,7 +299,7 @@ export async function generateFullBrandAssetKitZip(
     `## 5. Core Values\n\n` +
     brand.values.map((v) => `### ${v.title}\n${v.description}\n`).join('\n') +
     `\n---\n\n` +
-    `*Generated with Google AI Studio Brand Studio Suite*\n`;
+    `*Generated with GABI — Generate. Align. Build. Inspire.*\n`;
 
   zip.file('BRAND_GUIDELINES.md', markdownGuidelines);
 

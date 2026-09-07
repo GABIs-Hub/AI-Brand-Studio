@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrandBible, LogoVariation, LogoArchetype } from '../types';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import { LogoRenderSkeleton } from './LogoRenderSkeleton';
 import {
   Sparkles,
@@ -160,14 +161,14 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
               <span className="text-[9px] uppercase tracking-[0.3em] font-black bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] px-2 py-0.5">
                 Agency Studio Engine
               </span>
-              <span className="text-[9px] uppercase tracking-widest font-mono text-gray-500">
+              <span className="text-[9px] uppercase tracking-widest font-mono text-gray-500 dark:text-gray-500">
                 6 Archetypes Active
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
               Elevated Logo Archetype Studio
             </h2>
-            <p className="text-xs text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
+            <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
               Break free from generic box-and-line shapes. Explore bespoke negative space illusions, interlocking monogram ribbons, kinetic emblems, and certified architectural seals engineered for <span className="font-bold text-black dark:text-white">{brand.brandName}</span>.
             </p>
           </div>
@@ -191,7 +192,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
             value={customStylePrompt}
             onChange={(e) => setCustomStylePrompt(e.target.value)}
             placeholder="Direct the aesthetic (e.g., 'Emphasize architectural symmetry with subtle golden ratio curves' or 'High-fashion editorial elegance')..."
-            className="flex-1 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-zinc-700 px-4 py-2 text-xs font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 focus:outline-hidden focus:border-[#1A1A1A] dark:focus:border-[#F9F7F2]"
+            className="flex-1 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 px-4 py-2 text-xs font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 focus:outline-hidden focus:border-[#1A1A1A] dark:focus:border-[#F9F7F2]"
           />
           <button
             onClick={() => fetchVariations(customStylePrompt)}
@@ -229,7 +230,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                     className={`bg-white dark:bg-[#1C1C1A] border transition-all cursor-pointer flex flex-col justify-between group ${
                       isSelected
                         ? 'border-[#1A1A1A] dark:border-[#F9F7F2] shadow-lg ring-1 ring-[#1A1A1A] dark:ring-[#F9F7F2]'
-                        : 'border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600'
+                        : 'border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600'
                     }`}
                   >
                   {/* Card Top Banner */}
@@ -252,7 +253,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                   <div className="p-6 flex items-center justify-center min-h-[140px] bg-gray-50/30 dark:bg-black/20">
                     <div
                       className="w-full max-w-[240px] h-20 flex items-center justify-center transition-transform group-hover:scale-105"
-                      dangerouslySetInnerHTML={{ __html: v.svg }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeSvg(v.svg) }}
                     />
                   </div>
 
@@ -265,7 +266,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-200 dark:border-zinc-800">
+                    <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -273,7 +274,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                             e.stopPropagation();
                             copySvgText(v.svg, v.id);
                           }}
-                          className="text-[9px] uppercase tracking-widest font-bold text-gray-600 hover:text-black dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 cursor-pointer"
+                          className="text-[9px] uppercase tracking-widest font-bold text-gray-600 dark:text-gray-600 hover:text-black dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 cursor-pointer"
                         >
                           {copiedId === v.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Layers className="w-3 h-3" />}
                           <span>{copiedId === v.id ? 'Copied' : 'SVG'}</span>
@@ -284,7 +285,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                             e.stopPropagation();
                             downloadSvg(v.svg, `${brand.brandName.toLowerCase()}-${v.archetype}`);
                           }}
-                          className="text-[9px] uppercase tracking-widest font-bold text-gray-600 hover:text-black dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 cursor-pointer"
+                          className="text-[9px] uppercase tracking-widest font-bold text-gray-600 dark:text-gray-600 hover:text-black dark:text-zinc-400 dark:hover:text-white flex items-center gap-1 cursor-pointer"
                         >
                           <Download className="w-3 h-3" />
                           <span>Save</span>
@@ -315,7 +316,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
         <div className="lg:col-span-4 space-y-6">
           {selectedVariation ? (
             <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-6 space-y-6 sticky top-6">
-              <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-3">
                 <span className="text-[9px] uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Live Test Sandbox
                 </span>
@@ -326,7 +327,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
 
               {/* Background Color Switcher Controls */}
               <div className="space-y-2">
-                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500">
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500">
                   Preview Canvas Background:
                 </span>
                 <div className="grid grid-cols-2 gap-2">
@@ -338,7 +339,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                       className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-bold border transition-all cursor-pointer ${
                         previewBg === bg.id
                           ? 'border-[#1A1A1A] dark:border-[#F9F7F2] bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                          : 'border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
+                          : 'border-gray-200 dark:border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
                       }`}
                     >
                       {bg.label}
@@ -348,10 +349,10 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
               </div>
 
               {/* Live Sandbox Canvas */}
-              <div className={`p-8 border border-gray-200 dark:border-zinc-700 min-h-[180px] flex items-center justify-center ${currentBgClass} transition-colors duration-300`}>
+              <div className={`p-8 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 min-h-[180px] flex items-center justify-center ${currentBgClass} transition-colors duration-300`}>
                 <div
                   className="w-full max-w-[280px] h-24 flex items-center justify-center"
-                  dangerouslySetInnerHTML={{ __html: selectedVariation.svg }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeSvg(selectedVariation.svg) }}
                 />
               </div>
 
@@ -373,14 +374,14 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                   <span className="text-[9px] uppercase tracking-widest font-sans font-bold text-gray-400 not-italic block mb-1">
                     Mathematical Geometry
                   </span>
-                  <p className="font-mono text-[10px] not-italic text-gray-600 dark:text-zinc-400">
+                  <p className="font-mono text-[10px] not-italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                     {selectedVariation.geometryDetails}
                   </p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-gray-200 dark:border-zinc-800 flex flex-col gap-2">
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={() => handleApplyAsPrimary(selectedVariation)}
@@ -393,7 +394,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                   <button
                     type="button"
                     onClick={() => copySvgText(selectedVariation.svg, selectedVariation.id)}
-                    className="flex-1 py-2 border border-gray-300 dark:border-zinc-700 text-[9px] uppercase tracking-widest font-bold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 py-2 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-[9px] uppercase tracking-widest font-bold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Layers className="w-3.5 h-3.5" />
                     <span>Copy Raw SVG</span>
@@ -401,7 +402,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                   <button
                     type="button"
                     onClick={() => downloadSvg(selectedVariation.svg, `${brand.brandName.toLowerCase()}-${selectedVariation.archetype}`)}
-                    className="flex-1 py-2 border border-gray-300 dark:border-zinc-700 text-[9px] uppercase tracking-widest font-bold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 py-2 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-[9px] uppercase tracking-widest font-bold text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Export Vector</span>
@@ -410,7 +411,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
               </div>
             </div>
           ) : (
-            <div className="p-8 border border-dashed border-gray-300 dark:border-zinc-800 text-center text-xs text-gray-400">
+            <div className="p-8 border border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-800 text-center text-xs text-gray-400">
               Select an archetype variation to inspect its geometry and sandbox.
             </div>
           )}

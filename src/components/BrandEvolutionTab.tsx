@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrandBible, BrandMilestone, MilestoneCategory } from '../types';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import {
   getBrandMilestones,
   createMilestoneCheckpoint,
@@ -225,7 +226,7 @@ export function BrandEvolutionTab({
           <h2 className="text-3xl sm:text-4xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
             Brand Evolution
           </h2>
-          <p className="text-xs text-gray-600 dark:text-zinc-400 max-w-2xl mt-2 leading-relaxed font-sans">
+          <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-2xl mt-2 leading-relaxed font-sans">
             A vertical interactive timeline tracking iterative shifts across color palettes, typography, visual marks, and positioning strategy. Restore previous iterations or inspect side-by-side visual diffs.
           </p>
         </div>
@@ -244,49 +245,49 @@ export function BrandEvolutionTab({
 
       {/* Evolution Metrics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-zinc-800 p-4 space-y-1">
+        <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-4 space-y-1">
           <span className="text-[9px] uppercase tracking-widest font-black text-gray-400">
             Total Iterations
           </span>
           <div className="text-2xl font-bold font-serif text-gray-900 dark:text-[#F9F7F2]">
             {milestones.length}
           </div>
-          <p className="text-[10px] text-gray-500">Saved identity snapshots</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-500">Saved identity snapshots</p>
         </div>
 
-        <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-zinc-800 p-4 space-y-1">
+        <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-4 space-y-1">
           <span className="text-[9px] uppercase tracking-widest font-black text-gray-400">
             Active Release
           </span>
           <div className="text-2xl font-bold font-serif text-emerald-600 dark:text-emerald-400">
             {milestones[0]?.versionLabel || 'v1.0'}
           </div>
-          <p className="text-[10px] text-gray-500">Current dashboard state</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-500">Current dashboard state</p>
         </div>
 
-        <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-zinc-800 p-4 space-y-1">
+        <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-4 space-y-1">
           <span className="text-[9px] uppercase tracking-widest font-black text-gray-400">
             Genesis Origin
           </span>
           <div className="text-xs font-bold text-gray-900 dark:text-[#F9F7F2] pt-1">
             {formatEvolutionDate(milestones[milestones.length - 1]?.timestamp || brand.createdAt).full}
           </div>
-          <p className="text-[10px] text-gray-500">Initial creation date</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-500">Initial creation date</p>
         </div>
 
-        <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-zinc-800 p-4 space-y-1">
+        <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-4 space-y-1">
           <span className="text-[9px] uppercase tracking-widest font-black text-gray-400">
             Brand Industry
           </span>
           <div className="text-xs font-bold text-gray-900 dark:text-[#F9F7F2] pt-1 truncate">
             {brand.industry}
           </div>
-          <p className="text-[10px] text-gray-500">{brand.brandName}</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-500">{brand.brandName}</p>
         </div>
       </div>
 
       {/* Interactive Filter and Search Controls */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-zinc-800 p-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-3">
         {/* Category Pills */}
         <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto">
           {[
@@ -303,7 +304,7 @@ export function BrandEvolutionTab({
               className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold border transition-all rounded-none cursor-pointer ${
                 selectedCategory === cat.id
                   ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
-                  : 'bg-transparent text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                  : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400'
               }`}
             >
               {cat.label}
@@ -320,13 +321,13 @@ export function BrandEvolutionTab({
               placeholder="Search changelog..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#1A1A1A] dark:focus:border-[#F9F7F2]"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#1A1A1A] dark:focus:border-[#F9F7F2]"
             />
           </div>
 
           <button
             onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-            className="p-1.5 text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-xs font-mono px-2 cursor-pointer"
+            className="p-1.5 text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white border border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-xs font-mono px-2 cursor-pointer"
             title={`Sort ${sortOrder === 'desc' ? 'Oldest First' : 'Newest First'}`}
           >
             {sortOrder === 'desc' ? '↓ Newest' : '↑ Oldest'}
@@ -342,7 +343,7 @@ export function BrandEvolutionTab({
         <div className="absolute left-[19px] sm:left-[35px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-[#1A1A1A] via-gray-300 dark:via-zinc-700 to-transparent dark:from-[#F9F7F2]" />
 
         {filteredMilestones.length === 0 ? (
-          <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-zinc-800 p-8 text-center ml-4">
+          <div className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-8 text-center ml-4">
             <Milestone className="w-8 h-8 text-gray-300 dark:text-zinc-600 mx-auto mb-2" />
             <p className="text-xs font-bold text-gray-700 dark:text-zinc-300">No Milestones Found</p>
             <p className="text-[11px] text-gray-400 mt-1">
@@ -371,14 +372,14 @@ export function BrandEvolutionTab({
                       ? 'bg-[#1A1A1A] text-white border-emerald-500 dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-emerald-400 ring-4 ring-emerald-500/20'
                       : isGenesis
                       ? 'bg-purple-600 text-white border-purple-300 dark:bg-purple-900 dark:border-purple-400'
-                      : 'bg-white dark:bg-[#1C1C1A] text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-zinc-700 group-hover:border-[#1A1A1A] dark:group-hover:border-[#F9F7F2]'
+                      : 'bg-white dark:bg-[#1C1C1A] text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-gray-300 dark:border-zinc-700 group-hover:border-[#1A1A1A] dark:group-hover:border-[#F9F7F2]'
                   }`}
                 >
                   <CatIcon className="w-4 h-4" />
                 </div>
 
                 {/* Milestone Content Card */}
-                <div className="flex-1 bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-zinc-800 transition-all duration-300 hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2]/50 hover:shadow-md">
+                <div className="flex-1 bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 transition-all duration-300 hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2]/50 hover:shadow-md">
                   {/* Card Header Bar */}
                   <div className="p-4 sm:p-6 pb-3 border-b border-gray-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50 dark:bg-zinc-900/30">
                     <div className="flex flex-wrap items-center gap-2">
@@ -412,7 +413,7 @@ export function BrandEvolutionTab({
                       <h3 className="text-lg font-bold text-gray-900 dark:text-[#F9F7F2] font-serif">
                         {milestone.title}
                       </h3>
-                      <p className="text-xs text-gray-600 dark:text-zinc-300 mt-1 leading-relaxed font-sans">
+                      <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-300 mt-1 leading-relaxed font-sans">
                         {milestone.changeNote}
                       </p>
                     </div>
@@ -423,7 +424,7 @@ export function BrandEvolutionTab({
                         {milestone.tags.map((tag, tIdx) => (
                           <span
                             key={tIdx}
-                            className="inline-flex items-center gap-1 text-[9px] font-mono text-gray-500 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800/80 px-2 py-0.5 border border-gray-200 dark:border-zinc-700"
+                            className="inline-flex items-center gap-1 text-[9px] font-mono text-gray-500 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800/80 px-2 py-0.5 border border-gray-200 dark:border-gray-200 dark:border-zinc-700"
                           >
                             <Tag className="w-2.5 h-2.5" />
                             {tag}
@@ -433,14 +434,14 @@ export function BrandEvolutionTab({
                     )}
 
                     {/* Visual Asset Strip for this Version Snapshot */}
-                    <div className="p-4 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Logo Mark Thumbnail */}
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white dark:bg-white p-1 border border-gray-300 shrink-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-white dark:bg-white p-1 border border-gray-300 dark:border-gray-300 shrink-0 flex items-center justify-center">
                           <div
                             className="w-full h-full"
                             dangerouslySetInnerHTML={{
-                              __html: milestone.snapshot.logo.primaryLogoSvg,
+                              __html: sanitizeSvg(milestone.snapshot.logo.primaryLogoSvg),
                             }}
                           />
                         </div>
@@ -478,29 +479,29 @@ export function BrandEvolutionTab({
                         </div>
                         <div className="text-xs font-medium text-gray-800 dark:text-zinc-200 truncate">
                           <span className="font-bold">{milestone.snapshot.typography.headingFont}</span> +{' '}
-                          <span className="text-gray-500">{milestone.snapshot.typography.bodyFont}</span>
+                          <span className="text-gray-500 dark:text-gray-500">{milestone.snapshot.typography.bodyFont}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Expandable Extended Inspection */}
                     {isExpanded && (
-                      <div className="p-4 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 space-y-3 text-xs animate-in fade-in duration-200">
+                      <div className="p-4 bg-white dark:bg-zinc-950 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 text-xs animate-in fade-in duration-200">
                         <div>
                           <span className="font-bold text-gray-900 dark:text-[#F9F7F2]">Tagline: </span>
-                          <span className="italic text-gray-600 dark:text-zinc-400">
+                          <span className="italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                             "{milestone.snapshot.tagline}"
                           </span>
                         </div>
                         <div>
                           <span className="font-bold text-gray-900 dark:text-[#F9F7F2]">Mission: </span>
-                          <span className="text-gray-600 dark:text-zinc-400">
+                          <span className="text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                             {milestone.snapshot.mission}
                           </span>
                         </div>
                         <div>
                           <span className="font-bold text-gray-900 dark:text-[#F9F7F2]">Positioning: </span>
-                          <span className="text-gray-600 dark:text-zinc-400">
+                          <span className="text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                             {milestone.snapshot.positioningStatement}
                           </span>
                         </div>
@@ -521,7 +522,7 @@ export function BrandEvolutionTab({
 
                         <button
                           onClick={() => handleOpenDiff(milestone)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold border border-gray-300 dark:border-zinc-700 hover:border-gray-500 text-gray-800 dark:text-zinc-200 transition-all cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:border-gray-500 text-gray-800 dark:text-zinc-200 transition-all cursor-pointer"
                           title="Compare this milestone side-by-side with active version"
                         >
                           <Split className="w-3 h-3" />
@@ -549,7 +550,7 @@ export function BrandEvolutionTab({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleCopyJson(milestone)}
-                          className="p-1.5 text-gray-500 hover:text-black dark:hover:text-white border border-transparent hover:border-gray-200 dark:hover:border-zinc-800 cursor-pointer"
+                          className="p-1.5 text-gray-500 dark:text-gray-500 hover:text-black dark:hover:text-white border border-transparent hover:border-gray-200 dark:hover:border-gray-200 dark:hover:border-zinc-800 cursor-pointer"
                           title="Copy JSON snapshot"
                         >
                           {copiedId === milestone.id ? (
@@ -584,7 +585,7 @@ export function BrandEvolutionTab({
       {isCheckpointModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 w-full max-w-lg shadow-2xl p-6 space-y-6">
-            <div className="flex justify-between items-center border-b border-gray-200 dark:border-zinc-800 pb-3">
+            <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-3">
               <div>
                 <span className="text-[9px] uppercase tracking-widest font-black text-purple-600 dark:text-purple-400">
                   Version Control
@@ -595,7 +596,7 @@ export function BrandEvolutionTab({
               </div>
               <button
                 onClick={() => setIsCheckpointModalOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -612,7 +613,7 @@ export function BrandEvolutionTab({
                     placeholder={`e.g. v${(milestones.length * 0.1 + 1.0).toFixed(1)}`}
                     value={customVersion}
                     onChange={(e) => setCustomVersion(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -623,7 +624,7 @@ export function BrandEvolutionTab({
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value as MilestoneCategory)}
-                    className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
                   >
                     <option value="checkpoint">Checkpoint</option>
                     <option value="refinement">Refinement</option>
@@ -643,7 +644,7 @@ export function BrandEvolutionTab({
                   placeholder="e.g. Autumn Refresh: Dark Palette & Heading Weights"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
                 />
               </div>
 
@@ -656,7 +657,7 @@ export function BrandEvolutionTab({
                   placeholder="Describe the adjustments made to typography, colors, or positioning statements..."
                   value={newChangeNote}
                   onChange={(e) => setNewChangeNote(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
                 />
               </div>
 
@@ -669,15 +670,15 @@ export function BrandEvolutionTab({
                   placeholder="Typography, Dark Mode, Pitch Deck"
                   value={newTagsInput}
                   onChange={(e) => setNewTagsInput(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-white"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-zinc-800">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setIsCheckpointModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
                 >
                   Cancel
                 </button>
@@ -767,7 +768,7 @@ function DiffInspectorModal({
           </div>
 
           {/* Side by side comparison grid */}
-          <div className="grid grid-cols-2 gap-6 border-b border-gray-200 dark:border-zinc-800 pb-6">
+          <div className="grid grid-cols-2 gap-6 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-6">
             {/* Left Header */}
             <div className="space-y-1">
               <span className="text-[9px] uppercase tracking-widest font-black text-gray-400">
@@ -795,20 +796,20 @@ function DiffInspectorModal({
               1. Logomarks
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 flex items-center justify-center min-h-[120px]">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-center min-h-[120px]">
                 <div className="w-20 h-20 p-2 bg-white flex items-center justify-center">
                   <div
                     className="w-full h-full"
-                    dangerouslySetInnerHTML={{ __html: milestone.snapshot.logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(milestone.snapshot.logo.primaryLogoSvg) }}
                   />
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 flex items-center justify-center min-h-[120px]">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-center min-h-[120px]">
                 <div className="w-20 h-20 p-2 bg-white flex items-center justify-center">
                   <div
                     className="w-full h-full"
-                    dangerouslySetInnerHTML={{ __html: activeBrand.logo.primaryLogoSvg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(activeBrand.logo.primaryLogoSvg) }}
                   />
                 </div>
               </div>
@@ -822,7 +823,7 @@ function DiffInspectorModal({
             </div>
             <div className="grid grid-cols-2 gap-6">
               {/* Snapshot Palette */}
-              <div className="space-y-2 p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+              <div className="space-y-2 p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 {milestone.snapshot.palette.map((color, idx) => (
                   <div key={idx} className="flex items-center justify-between text-[11px]">
                     <div className="flex items-center gap-2">
@@ -832,13 +833,13 @@ function DiffInspectorModal({
                       />
                       <span>{color.role}</span>
                     </div>
-                    <span className="font-mono text-gray-500">{color.hex}</span>
+                    <span className="font-mono text-gray-500 dark:text-gray-500">{color.hex}</span>
                   </div>
                 ))}
               </div>
 
               {/* Active Palette */}
-              <div className="space-y-2 p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+              <div className="space-y-2 p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 {activeBrand.palette.map((color, idx) => {
                   const snapCol = milestone.snapshot.palette.find((c) => c.role === color.role);
                   const isChanged = snapCol && snapCol.hex.toLowerCase() !== color.hex.toLowerCase();
@@ -857,7 +858,7 @@ function DiffInspectorModal({
                         <span>{color.role}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-gray-500">{color.hex}</span>
+                        <span className="font-mono text-gray-500 dark:text-gray-500">{color.hex}</span>
                         {isChanged && (
                           <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400">
                             MODIFIED
@@ -877,7 +878,7 @@ function DiffInspectorModal({
               3. Typography Hierarchy
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 space-y-2">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-2">
                 <div>
                   <div className="text-[9px] text-gray-400 uppercase">Heading Font</div>
                   <div className="font-bold text-sm">{milestone.snapshot.typography.headingFont}</div>
@@ -888,7 +889,7 @@ function DiffInspectorModal({
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 space-y-2">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-2">
                 <div>
                   <div className="text-[9px] text-gray-400 uppercase">Heading Font</div>
                   <div className="font-bold text-sm flex items-center justify-between">
@@ -917,20 +918,20 @@ function DiffInspectorModal({
               4. Tagline & Positioning
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 space-y-2">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-2">
                 <div className="italic text-gray-700 dark:text-zinc-300">
                   "{milestone.snapshot.tagline}"
                 </div>
-                <div className="text-gray-500 pt-1 text-[11px]">
+                <div className="text-gray-500 dark:text-gray-500 pt-1 text-[11px]">
                   {milestone.snapshot.positioningStatement}
                 </div>
               </div>
 
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 space-y-2">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-2">
                 <div className="italic text-gray-700 dark:text-zinc-300">
                   "{activeBrand.tagline}"
                 </div>
-                <div className="text-gray-500 pt-1 text-[11px]">
+                <div className="text-gray-500 dark:text-gray-500 pt-1 text-[11px]">
                   {activeBrand.positioningStatement}
                 </div>
               </div>
@@ -939,10 +940,10 @@ function DiffInspectorModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-4 bg-gray-50 dark:bg-[#111110] border-t border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+        <div className="p-4 bg-gray-50 dark:bg-[#111110] border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
+            className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white"
           >
             Close Inspector
           </button>

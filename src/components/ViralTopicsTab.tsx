@@ -156,22 +156,22 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
               <span className="text-[9px] uppercase tracking-[0.3em] font-black bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] px-2 py-0.5">
                 Content Growth Engine
               </span>
-              <span className="text-[9px] uppercase tracking-widest font-mono text-gray-500">
+              <span className="text-[9px] uppercase tracking-widest font-mono text-gray-500 dark:text-gray-500">
                 Tailored for {brand.brandName}
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
               Eye-Catching Topic &amp; Viral Hook Lab
             </h2>
-            <p className="text-xs text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
+            <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
               Never run out of campaign ideas or high-performing social content. Generate provocative contrarian viewpoints, high-authority blueprints, and magnetic hooks that position <span className="font-bold text-black dark:text-white">{brand.brandName}</span> at the center of your industry conversation.
             </p>
           </div>
 
           {/* AI Specialist Persona Selector & Refresh */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-800/80 p-1 border border-gray-200 dark:border-zinc-700">
-              <span className="text-[8px] uppercase tracking-widest font-bold px-2 text-gray-500">
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-800/80 p-1 border border-gray-200 dark:border-gray-200 dark:border-zinc-700">
+              <span className="text-[8px] uppercase tracking-widest font-bold px-2 text-gray-500 dark:text-gray-500">
                 AI Persona:
               </span>
               {[
@@ -185,7 +185,7 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
                   className={`px-2.5 py-1 text-[8px] uppercase tracking-widest font-black transition-all cursor-pointer ${
                     aiEngine === engine.id
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   {engine.label}
@@ -212,7 +212,7 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
               className={`px-3 py-1 text-[9px] uppercase tracking-widest font-bold border transition-all cursor-pointer ${
                 selectedAngleFilter === 'all'
                   ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
-                  : 'bg-transparent text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                  : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400'
               }`}
             >
               All Angles ({hooks.length})
@@ -227,7 +227,7 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
                   className={`px-3 py-1 text-[9px] uppercase tracking-widest font-bold border transition-all cursor-pointer ${
                     selectedAngleFilter === key
                       ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
-                      : 'bg-transparent text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                      : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400'
                   }`}
                 >
                   {meta.label} ({count})
@@ -242,7 +242,7 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
               value={customGoal}
               onChange={(e) => setCustomGoal(e.target.value)}
               placeholder="Focus goal (e.g. Q3 product launch)..."
-              className="w-full bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-zinc-700 px-3 py-1.5 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 focus:outline-hidden focus:border-[#1A1A1A]"
+              className="w-full bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 px-3 py-1.5 text-xs text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 focus:outline-hidden focus:border-[#1A1A1A]"
             />
           </div>
         </div>
@@ -275,7 +275,7 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
                     <span>{hook.hookAngleLabel || meta.label}</span>
                   </span>
 
-                  <span className="text-[8px] uppercase tracking-widest font-mono font-bold bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-0.5 border border-gray-200 dark:border-zinc-700">
+                  <span className="text-[8px] uppercase tracking-widest font-mono font-bold bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-0.5 border border-gray-200 dark:border-gray-200 dark:border-zinc-700">
                     {hook.engagementPrediction}
                   </span>
                 </div>
@@ -286,7 +286,7 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
                 </h3>
 
                 {/* Pitch */}
-                <p className="text-xs text-gray-600 dark:text-zinc-400 font-sans leading-relaxed">
+                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-sans leading-relaxed">
                   {hook.pitch}
                 </p>
 
@@ -319,11 +319,11 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-dashed border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-3">
+              <div className="pt-4 border-t border-dashed border-gray-200 dark:border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => copyHookOutline(hook)}
-                  className="px-3 py-2 border border-gray-300 dark:border-zinc-700 text-[9px] uppercase tracking-widest font-bold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 cursor-pointer transition-all"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 text-[9px] uppercase tracking-widest font-bold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center gap-1.5 cursor-pointer transition-all"
                 >
                   {copiedId === hook.id ? (
                     <>

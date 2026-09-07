@@ -7,7 +7,8 @@ interface TypographyTabProps {
   brandName: string;
 }
 
-export function TypographyTab({ typography, brandName }: TypographyTabProps) {
+export function TypographyTab({ typography = {} as FontPairing, brandName }: TypographyTabProps) {
+  const fontsUrl = typography.googleFontsUrl || '#';
   const [sampleText, setSampleText] = useState(
     `${brandName} crafts extraordinary experiences through modern design & engineering.`
   );
@@ -44,7 +45,7 @@ export function TypographyTab({ typography, brandName }: TypographyTabProps) {
         </div>
         <div className="flex items-center gap-4 text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
           <a
-            href={typography.googleFontsUrl}
+            href={fontsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 hover:opacity-70 transition-opacity"

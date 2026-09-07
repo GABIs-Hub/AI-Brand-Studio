@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrandBible, SecondaryMark } from '../types';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import {
   FAVICON_SPECS,
   FaviconRenderOptions,
@@ -278,7 +279,7 @@ ${generateHtmlSnippet()}
               Production Ready
             </span>
           </div>
-          <p className="font-sans text-xs text-gray-600 dark:text-zinc-400 mt-1 max-w-xl">
+          <p className="font-sans text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 max-w-xl">
             Automatically extracts pixel-calibrated icons from {brand.brandName}'s marks and renders all standard browser tab, iOS, Android, and PWA sizes.
           </p>
         </div>
@@ -321,12 +322,12 @@ ${generateHtmlSnippet()}
                   className={`p-3 text-left border flex items-center gap-3 transition-all cursor-pointer ${
                     selectedMarkId === m.id
                       ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                      : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400'
                   }`}
                 >
                   <div
                     className="w-7 h-7 shrink-0 flex items-center justify-center p-1 rounded-none border border-current/20"
-                    dangerouslySetInnerHTML={{ __html: m.svg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(m.svg) }}
                   />
                   <div className="truncate">
                     <p className="text-[10px] font-bold leading-tight truncate">{m.title}</p>
@@ -362,7 +363,7 @@ ${generateHtmlSnippet()}
                   className={`p-2.5 text-left border transition-all cursor-pointer ${
                     renderOptions.background === bg.id
                       ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                      : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-gray-200 dark:border-zinc-800 hover:border-gray-400'
+                      : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400'
                   }`}
                 >
                   <span className="text-[9px] uppercase tracking-wider font-bold block truncate">{bg.label}</span>
@@ -401,7 +402,7 @@ ${generateHtmlSnippet()}
             </div>
 
             {renderOptions.background !== 'transparent' && (
-              <div className="pt-2 border-t border-gray-200 dark:border-zinc-800">
+              <div className="pt-2 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] mb-1.5">
                   <span>Tile Corner Radius</span>
                   <span className="font-mono">{renderOptions.borderRadiusPercent}%</span>
@@ -440,10 +441,10 @@ ${generateHtmlSnippet()}
             </label>
 
             {/* Desktop Browser Tab Mockup */}
-            <div className="border border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-[#111110] p-4 space-y-3">
+            <div className="border border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-[#111110] p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Globe className="w-3.5 h-3.5 text-gray-500" />
-                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-600 dark:text-zinc-400">
+                <Globe className="w-3.5 h-3.5 text-gray-500 dark:text-gray-500" />
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                   Desktop Browser Tab (Chrome / Safari / Edge)
                 </span>
               </div>
@@ -456,28 +457,28 @@ ${generateHtmlSnippet()}
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
                 </div>
                 {/* Active Tab */}
-                <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] px-3 py-1.5 rounded-t-md flex items-center gap-2 text-xs shadow-xs max-w-xs border-t border-x border-gray-300 dark:border-zinc-700">
+                <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] px-3 py-1.5 rounded-t-md flex items-center gap-2 text-xs shadow-xs max-w-xs border-t border-x border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                   {currentPreview32 ? (
                     <img src={currentPreview32} alt="Favicon" className="w-4 h-4 object-contain shrink-0" />
                   ) : (
                     <div className="w-4 h-4 bg-gray-300 animate-pulse" />
                   )}
                   <span className="font-medium truncate text-[11px]">{brand.brandName} — Official Site</span>
-                  <span className="text-[10px] text-gray-400 hover:text-gray-600 ml-auto">×</span>
+                  <span className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-600 ml-auto">×</span>
                 </div>
               </div>
             </div>
 
             {/* Mobile iOS Home Screen Icon Mockup */}
-            <div className="border border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-[#111110] p-4 space-y-3">
+            <div className="border border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-[#111110] p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Smartphone className="w-3.5 h-3.5 text-gray-500" />
-                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-600 dark:text-zinc-400">
+                <Smartphone className="w-3.5 h-3.5 text-gray-500 dark:text-gray-500" />
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                   Mobile Home Screen (Apple Touch Icon / Android Chrome PWA)
                 </span>
               </div>
 
-              <div className="flex items-center gap-6 p-4 bg-white dark:bg-zinc-900/60 border border-dashed border-gray-200 dark:border-zinc-800">
+              <div className="flex items-center gap-6 p-4 bg-white dark:bg-zinc-900/60 border border-dashed border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 {/* Mobile Icon Badge */}
                 <div className="flex flex-col items-center gap-1.5">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg border border-black/10 bg-white flex items-center justify-center p-1">
@@ -492,7 +493,7 @@ ${generateHtmlSnippet()}
                   </span>
                 </div>
 
-                <div className="text-xs space-y-1 text-gray-600 dark:text-zinc-400">
+                <div className="text-xs space-y-1 text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                   <p className="font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">180 × 180 & 192 × 192 px</p>
                   <p className="text-[11px] opacity-80">
                     High-resolution crisp retina icon calibrated for mobile bookmarks and standalone progressive web apps.
@@ -526,7 +527,7 @@ ${generateHtmlSnippet()}
                   Multi-size ICO (16, 32, 48)
                 </p>
               </div>
-              <div className="w-8 h-8 shrink-0 bg-white border border-gray-200 p-1 flex items-center justify-center">
+              <div className="w-8 h-8 shrink-0 bg-white border border-gray-200 dark:border-gray-200 p-1 flex items-center justify-center">
                 {currentPreview32 && <img src={currentPreview32} alt="ICO" className="w-6 h-6 object-contain" />}
               </div>
             </div>
@@ -546,7 +547,7 @@ ${generateHtmlSnippet()}
           {FAVICON_SPECS.map((spec) => (
             <div
               key={spec.name}
-              className="border border-gray-200 dark:border-zinc-800 p-4 bg-white dark:bg-[#141413] flex flex-col justify-between space-y-3 hover:border-gray-400 transition-colors"
+              className="border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-4 bg-white dark:bg-[#141413] flex flex-col justify-between space-y-3 hover:border-gray-400 transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -555,7 +556,7 @@ ${generateHtmlSnippet()}
                     {spec.label}
                   </p>
                 </div>
-                <div className="w-8 h-8 shrink-0 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 p-1 flex items-center justify-center">
+                <div className="w-8 h-8 shrink-0 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 p-1 flex items-center justify-center">
                   {previewUrls[spec.size] && (
                     <img src={previewUrls[spec.size]} alt={spec.name} className="w-full h-full object-contain" />
                   )}
@@ -591,7 +592,7 @@ ${generateHtmlSnippet()}
               <span>{copiedType === 'html' ? 'Copied' : 'Copy HTML'}</span>
             </button>
           </div>
-          <pre className="p-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-[10px] font-mono text-gray-800 dark:text-zinc-300 overflow-x-auto leading-relaxed">
+          <pre className="p-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 text-[10px] font-mono text-gray-800 dark:text-zinc-300 overflow-x-auto leading-relaxed">
             {generateHtmlSnippet()}
           </pre>
         </div>
@@ -611,7 +612,7 @@ ${generateHtmlSnippet()}
               <span>{copiedType === 'manifest' ? 'Copied' : 'Copy JSON'}</span>
             </button>
           </div>
-          <pre className="p-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 text-[10px] font-mono text-gray-800 dark:text-zinc-300 overflow-x-auto leading-relaxed">
+          <pre className="p-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 text-[10px] font-mono text-gray-800 dark:text-zinc-300 overflow-x-auto leading-relaxed">
             {generateManifestJson()}
           </pre>
         </div>

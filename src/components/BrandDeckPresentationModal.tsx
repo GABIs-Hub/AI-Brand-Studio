@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrandBible } from '../types';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import {
   X,
   ChevronLeft,
@@ -127,7 +128,7 @@ export function BrandDeckPresentationModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-auto">
             <div className="space-y-6">
-              <div className="p-6 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 shadow-sm">
+              <div className="p-6 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 shadow-sm">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block mb-2">
                   Mission Statement
                 </span>
@@ -136,7 +137,7 @@ export function BrandDeckPresentationModal({
                 </p>
               </div>
 
-              <div className="p-6 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 shadow-sm">
+              <div className="p-6 bg-white dark:bg-zinc-900 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 shadow-sm">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block mb-2">
                   Long-Term Vision
                 </span>
@@ -153,7 +154,7 @@ export function BrandDeckPresentationModal({
               {brand.values.map((v, i) => (
                 <div
                   key={'val-' + i}
-                  className="p-4 bg-white dark:bg-zinc-900 border-l-4 border-gray-300 dark:border-zinc-700 shadow-xs"
+                  className="p-4 bg-white dark:bg-zinc-900 border-l-4 border-gray-300 dark:border-gray-300 dark:border-zinc-700 shadow-xs"
                   style={{ borderLeftColor: brand.palette[i % brand.palette.length]?.hex || primaryColor }}
                 >
                   <h4 className="text-xs font-bold uppercase tracking-wider mb-1" style={{ fontFamily: `"${headingFont}", serif` }}>
@@ -186,29 +187,29 @@ export function BrandDeckPresentationModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center my-auto">
-            <div className="md:col-span-6 flex items-center justify-center p-12 bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-zinc-700 shadow-xl">
+            <div className="md:col-span-6 flex items-center justify-center p-12 bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-gray-300 dark:border-zinc-700 shadow-xl">
               <div
                 className="w-48 h-48 flex items-center justify-center"
-                dangerouslySetInnerHTML={{ __html: brand.logo.primaryLogoSvg }}
+                dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
               />
             </div>
 
             <div className="md:col-span-6 space-y-4">
-              <div className="p-4 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+              <div className="p-4 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block mb-1">
                   Design Concept
                 </span>
                 <p className="text-xs leading-relaxed opacity-90">{brand.logo.concept}</p>
               </div>
 
-              <div className="p-4 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+              <div className="p-4 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block mb-1">
                   Symbolism &amp; Rationale
                 </span>
                 <p className="text-xs leading-relaxed opacity-90 font-serif italic">{brand.logo.symbolism}</p>
               </div>
 
-              <div className="p-4 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+              <div className="p-4 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block mb-1">
                   Geometric Precision
                 </span>
@@ -271,17 +272,17 @@ export function BrandDeckPresentationModal({
 
             {/* Semantic Role Descriptions */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+              <div className="p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block">Dominant (60%)</span>
                 <p className="text-xs mt-1 font-bold">{brand.palette[0]?.name} ({brand.palette[0]?.hex})</p>
                 <p className="text-[11px] opacity-75 mt-0.5">{brand.palette[0]?.usage}</p>
               </div>
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+              <div className="p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block">Structural (30%)</span>
                 <p className="text-xs mt-1 font-bold">{brand.palette[1]?.name} ({brand.palette[1]?.hex})</p>
                 <p className="text-[11px] opacity-75 mt-0.5">{brand.palette[1]?.usage}</p>
               </div>
-              <div className="p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+              <div className="p-3 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block">Accent Focus (10%)</span>
                 <p className="text-xs mt-1 font-bold">{brand.palette[2]?.name} ({brand.palette[2]?.hex})</p>
                 <p className="text-[11px] opacity-75 mt-0.5">{brand.palette[2]?.usage}</p>
@@ -310,7 +311,7 @@ export function BrandDeckPresentationModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-auto">
-            <div className="p-6 bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-zinc-700 shadow-md space-y-4">
+            <div className="p-6 bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-gray-300 dark:border-zinc-700 shadow-md space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-60">Primary Display Font</span>
                 <span className="text-[9px] font-mono px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 font-bold">
@@ -327,7 +328,7 @@ export function BrandDeckPresentationModal({
               </p>
             </div>
 
-            <div className="p-6 bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-zinc-700 shadow-md space-y-4">
+            <div className="p-6 bg-white dark:bg-zinc-900 border-2 border-gray-300 dark:border-gray-300 dark:border-zinc-700 shadow-md space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-60">Body Text Font</span>
                 <span className="text-[9px] font-mono px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 font-bold">
@@ -419,6 +420,10 @@ export function BrandDeckPresentationModal({
             />
           ))}
         </div>
+
+        <span className="hidden sm:block text-[9px] uppercase tracking-[0.3em] font-bold opacity-50 font-serif italic whitespace-nowrap">
+          Created with GABI
+        </span>
 
         <div className="flex items-center gap-2">
           <button

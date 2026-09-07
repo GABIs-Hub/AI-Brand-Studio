@@ -36,7 +36,7 @@ export function LogoRenderSkeleton({
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
-            className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-zinc-800 p-6 flex flex-col justify-between space-y-4"
+            className="bg-white dark:bg-[#1C1C1A] border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-6 flex flex-col justify-between space-y-4"
           >
             {/* Top Bar Skeleton */}
             <div className="flex items-center justify-between">
@@ -46,7 +46,7 @@ export function LogoRenderSkeleton({
 
             {/* Center Canvas Wireframe */}
             <div className="h-36 bg-gray-100 dark:bg-zinc-900/60 flex items-center justify-center relative overflow-hidden">
-              <div className="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg flex items-center justify-center">
+              <div className="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-700 rounded-lg flex items-center justify-center">
                 <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-800" />
               </div>
               {/* Shimmer sweep */}

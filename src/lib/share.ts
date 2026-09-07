@@ -47,7 +47,8 @@ export function formatBrandSummarySnippet(brand: BrandBible): string {
     `⚖️ PERSONALITY SPECTRUM:`,
     traitsSummary,
     `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-    `Created with Brand Studio AI`,
+    `Created with GABI — Generate. Align. Build. Inspire.`,
+    `Turning brand ideas into complete, consistent identities.`,
   ].join('\n');
 }
 

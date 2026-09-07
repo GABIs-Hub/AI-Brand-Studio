@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BrandBible, LogoSpec, SecondaryMark } from '../types';
+import { sanitizeSvg } from '../utils/sanitizeSvg';
 import { FaviconGenerator } from './FaviconGenerator';
 import { LogoArchetypeStudio } from './LogoArchetypeStudio';
 import { CoTPromptRefinementStudio } from './CoTPromptRefinementStudio';
@@ -33,7 +34,7 @@ interface LogoTabProps {
   logo: LogoSpec;
   secondaryMarks: SecondaryMark[];
   brandName: string;
-  onGenerateLogoImage: (prompt: string, resolution: string) => Promise<string | void>;
+  onGenerateLogoImage: (prompt: string, resolution: string, provider?: string) => Promise<string | void>;
   onUpdatePrimaryLogo?: (svg: string, concept: string, symbolism: string, geometry: string) => void;
   generatedImageUrl?: string;
   generatedImageResolution?: string;
@@ -56,6 +57,7 @@ export function LogoTab({
   const [activeTabMode, setActiveTabMode] = useState<'main' | 'render3d' | 'styles' | 'favicons' | 'secondary'>('main');
   const [bgMode, setBgMode] = useState<'light' | 'dark' | 'brand'>('light');
   const [selectedResolution, setSelectedResolution] = useState<'1K' | '2K' | '4K'>('2K');
+  const [selectedProvider, setSelectedProvider] = useState<'auto' | 'openai' | 'gemini' | 'higgsfield'>('auto');
   const [customPrompt, setCustomPrompt] = useState(logo.aiImagePrompt || '');
   const [copiedSvg, setCopiedSvg] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -134,7 +136,7 @@ export function LogoTab({
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Sub-Header & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-zinc-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-4">
         <div>
           <h2 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
             Logo &amp; Brand Marks
@@ -162,7 +164,7 @@ export function LogoTab({
                 className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                   isActive
                     ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
-                    : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                    : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                 }`}
               >
                 <Icon className="w-3 h-3" />
@@ -187,15 +189,15 @@ export function LogoTab({
             <div className="bg-gray-50 dark:bg-[#151514] border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 px-6 py-3 flex flex-wrap items-center justify-between gap-4">
               {/* Background Color Switcher */}
               <div className="flex items-center gap-2">
-                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500">
+                <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500">
                   Preview Canvas:
                 </span>
-                <div className="inline-flex p-0.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700">
+                <div className="inline-flex p-0.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                   <button
                     type="button"
                     onClick={() => setBgMode('light')}
                     className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold flex items-center gap-1 cursor-pointer ${
-                      bgMode === 'light' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-zinc-400'
+                      bgMode === 'light' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400'
                     }`}
                   >
                     <Sun className="w-3 h-3" />
@@ -205,7 +207,7 @@ export function LogoTab({
                     type="button"
                     onClick={() => setBgMode('dark')}
                     className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold flex items-center gap-1 cursor-pointer ${
-                      bgMode === 'dark' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-zinc-400'
+                      bgMode === 'dark' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400'
                     }`}
                   >
                     <Moon className="w-3 h-3" />
@@ -215,7 +217,7 @@ export function LogoTab({
                     type="button"
                     onClick={() => setBgMode('brand')}
                     className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold flex items-center gap-1 cursor-pointer ${
-                      bgMode === 'brand' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-zinc-400'
+                      bgMode === 'brand' ? 'bg-[#1A1A1A] text-white' : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400'
                     }`}
                   >
                     <Palette className="w-3 h-3" />
@@ -229,7 +231,7 @@ export function LogoTab({
                 <button
                   type="button"
                   onClick={() => copySvgText(logo.primaryLogoSvg, 'primary')}
-                  className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   {copiedSvg === 'primary' ? (
                     <>
@@ -247,7 +249,7 @@ export function LogoTab({
                 <button
                   type="button"
                   onClick={() => downloadSvg(logo.primaryLogoSvg, `${brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-logo`)}
-                  className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:border-black dark:hover:border-white text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download SVG</span>
@@ -279,14 +281,14 @@ export function LogoTab({
                 className={`w-full max-w-[360px] h-32 flex items-center justify-center transition-transform hover:scale-105 duration-300 ${
                   bgMode === 'dark' ? 'drop-shadow-[0_4px_20px_rgba(255,255,255,0.05)]' : ''
                 }`}
-                dangerouslySetInnerHTML={{ __html: logo.primaryLogoSvg }}
+                dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
               />
             </div>
 
             {/* Concept & Symbolism Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 border-t border-[#1A1A1A] dark:border-[#F9F7F2]/20 bg-white dark:bg-[#1C1C1A]">
-              <div className="p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-zinc-800 space-y-2">
-                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 block">
+              <div className="p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-2">
+                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 dark:text-gray-500 block">
                   Core Concept
                 </span>
                 <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
@@ -294,8 +296,8 @@ export function LogoTab({
                 </p>
               </div>
 
-              <div className="p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-zinc-800 space-y-2">
-                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 block">
+              <div className="p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-2">
+                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 dark:text-gray-500 block">
                   Symbolism
                 </span>
                 <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
@@ -304,7 +306,7 @@ export function LogoTab({
               </div>
 
               <div className="p-6 space-y-2">
-                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 block">
+                <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 dark:text-gray-500 block">
                   Geometry
                 </span>
                 <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
@@ -315,7 +317,7 @@ export function LogoTab({
           </div>
 
           {/* Quick Style Switcher Callout Banner */}
-          <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h4 className="text-xs uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                 Want to try another logo style?
@@ -334,27 +336,27 @@ export function LogoTab({
           </div>
 
           {/* Collapsible Advanced 3D & AI Prompt Studio */}
-          <div className="border border-gray-200 dark:border-zinc-800">
+          <div className="border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
             <button
               type="button"
               onClick={() => setShowAdvancedTools(!showAdvancedTools)}
               className="w-full bg-gray-50 dark:bg-[#151514] px-6 py-4 flex items-center justify-between text-left cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-gray-500" />
+                <SlidersHorizontal className="w-4 h-4 text-gray-500 dark:text-gray-500" />
                 <span className="text-[10px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Advanced Studio Tools: 3D Renders &amp; AI Prompt Lab
                 </span>
               </div>
               {showAdvancedTools ? (
-                <ChevronUp className="w-4 h-4 text-gray-500" />
+                <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-500" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-gray-500" />
+                <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-500" />
               )}
             </button>
 
             {showAdvancedTools && (
-              <div className="p-6 space-y-8 bg-white dark:bg-[#1C1C1A] border-t border-gray-200 dark:border-zinc-800">
+              <div className="p-6 space-y-8 bg-white dark:bg-[#1C1C1A] border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 {/* Embedded 3D Photorealistic Render Studio */}
                 <Render3DStudio
                   brand={brand}
@@ -365,7 +367,7 @@ export function LogoTab({
                 />
 
                 {/* CoT Prompt Refinement Lab */}
-                <div className="pt-6 border-t border-gray-200 dark:border-zinc-800">
+                <div className="pt-6 border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                   <CoTPromptRefinementStudio
                     brand={brand}
                     onUpdatePrimaryLogo={(svg, concept, symbolism, geometry) => {
@@ -375,7 +377,7 @@ export function LogoTab({
                     }}
                     onSendTo3DRender={(refinedPrompt) => {
                       setCustomPrompt(refinedPrompt);
-                      onGenerateLogoImage(refinedPrompt, selectedResolution);
+                      onGenerateLogoImage(refinedPrompt, selectedResolution, selectedProvider);
                     }}
                   />
                 </div>
@@ -401,8 +403,8 @@ export function LogoTab({
       {/* 2. Explore Logo Styles */}
       {activeTabMode === 'styles' && (
         <div className="space-y-6">
-          <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 p-4 flex items-center justify-between">
-            <span className="text-xs font-serif italic text-gray-600 dark:text-zinc-400">
+          <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-4 flex items-center justify-between">
+            <span className="text-xs font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
               Click any style to preview and apply it as your primary logomark.
             </span>
             <button
@@ -436,7 +438,7 @@ export function LogoTab({
       {/* 4. Secondary Marks */}
       {activeTabMode === 'secondary' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-3">
+          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-3">
             <span className="text-[10px] uppercase tracking-[0.2em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
               Secondary Marks &amp; Badges ({secondaryMarks.length})
             </span>
@@ -473,12 +475,12 @@ export function LogoTab({
                 <div className="p-8 flex items-center justify-center min-h-[160px] bg-white dark:bg-zinc-900/40">
                   <div
                     className="w-24 h-24 flex items-center justify-center"
-                    dangerouslySetInnerHTML={{ __html: mark.svg }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(mark.svg) }}
                   />
                 </div>
 
-                <div className="border-t border-gray-200 dark:border-zinc-800 p-3">
-                  <p className="text-[11px] font-serif italic text-gray-600 dark:text-zinc-400">
+                <div className="border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-3">
+                  <p className="text-[11px] font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                     {mark.description}
                   </p>
                 </div>
