@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrandBible, UserStudioSettings } from '../types';
 import { sanitizeSvg } from '../utils/sanitizeSvg';
+import { sanitizeBrandBible } from '../lib/brandValidation';
 import { SessionUser } from '../lib/authClient';
 import { BrandComparisonDashboard } from './BrandComparisonDashboard';
 import {
@@ -35,6 +36,7 @@ import {
   SlidersHorizontal,
   Compass,
   ArrowLeftRight,
+  KeyRound,
 } from 'lucide-react';
 
 interface AccountModalProps {
@@ -51,6 +53,11 @@ interface AccountModalProps {
   onEmailLogin: (email: string, password: string) => void;
   onRegister: (email: string, password: string, name?: string) => void;
   onLogout: () => void;
+  onForgotPassword: (email: string) => void;
+  onResetPassword: (token: string, email: string, password: string) => void;
+  onResendVerification: () => void;
+  pendingReset: { token: string; email: string } | null;
+  onClearPendingReset: () => void;
   onRefreshCloudSync?: () => Promise<void>;
   studioSettings: UserStudioSettings;
   onUpdateStudioSettings: (settings: UserStudioSettings) => void;
@@ -82,6 +89,11 @@ export function AccountModal({
   onEmailLogin,
   onRegister,
   onLogout,
+  onForgotPassword,
+  onResetPassword,
+  onResendVerification,
+  pendingReset,
+  onClearPendingReset,
   onRefreshCloudSync,
   studioSettings,
   onUpdateStudioSettings,
@@ -99,7 +111,12 @@ export function AccountModal({
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const [forgotSent, setForgotSent] = useState<string | null>(null);
+  const [resetPw, setResetPw] = useState('');
+  const [resetConfirm, setResetConfirm] = useState('');
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
   const [brandPendingDeletion, setBrandPendingDeletion] = useState<BrandBible | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -112,6 +129,59 @@ export function AccountModal({
       setLocalSettings(studioSettings);
     }
   }, [studioSettings]);
+
+  // When the emailed reset link opens the modal, prime a clean form.
+  useEffect(() => {
+    if (pendingReset) {
+      setResetPw('');
+      setResetConfirm('');
+      setResetError(null);
+      setResetSubmitting(false);
+    }
+  }, [pendingReset]);
+
+  const switchAuthMode = () => {
+    setAuthMode(authMode === 'signup' ? 'signin' : authMode === 'forgot' ? 'signin' : 'signup');
+    setForgotSent(null);
+    setAuthPassword('');
+  };
+
+  // The auth panel renders inside the settings form, so it must NOT be its
+  // own <form> (nested forms break submit semantics in browsers). Trigger the
+  // same flow from explicit clicks / Enter presses instead.
+  const submitAuth = () => {
+    if (authMode === 'signup') {
+      if (!authName || !authEmail || !authPassword) return;
+      onRegister(authEmail, authPassword, authName || undefined);
+    } else if (authMode === 'forgot') {
+      if (!authEmail) return;
+      onForgotPassword(authEmail);
+      setForgotSent(authEmail);
+    } else {
+      if (!authEmail || !authPassword) return;
+      onEmailLogin(authEmail, authPassword);
+    }
+  };
+
+  const handleResetSubmit = async () => {
+    if (!pendingReset) return;
+    if (resetPw.length < 8) {
+      setResetError('Password must be at least 8 characters.');
+      return;
+    }
+    if (resetPw !== resetConfirm) {
+      setResetError('Passwords do not match.');
+      return;
+    }
+    setResetError(null);
+    setResetSubmitting(true);
+    try {
+      await onResetPassword(pendingReset.token, pendingReset.email, resetPw);
+    } catch (err: any) {
+      setResetError(err?.message || 'Could not reset your password. Please try again.');
+      setResetSubmitting(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -205,7 +275,10 @@ export function AccountModal({
     URL.revokeObjectURL(url);
   };
 
-  // Import Brand Bible JSON
+  // Import Brand Bible JSON (single bible or a bulk { brands: [...] } backup).
+  // Every candidate runs through the sanitizer: repairable gaps are filled
+  // with safe defaults; payloads that are not a brand at all are dropped with
+  // a visible count — a bad file can never crash the app or leak into library.
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setImportError(null);
     setImportSuccess(null);
@@ -216,32 +289,60 @@ export function AccountModal({
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
-        let brandToImport: BrandBible | null = null;
+        const isObject = parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed);
 
-        if (parsed.brandName && parsed.palette && parsed.typography) {
-          brandToImport = parsed as BrandBible;
-        } else if (parsed.brands && Array.isArray(parsed.brands) && parsed.brands.length > 0) {
-          // It's a bulk backup, import the first one or prompt
-          brandToImport = parsed.brands[0] as BrandBible;
-          parsed.brands.forEach((b: BrandBible) => {
-            if (b.brandName && b.palette && b.typography) {
-              onImportBrand(b);
+        // Bulk library backup
+        if (isObject && Array.isArray(parsed.brands)) {
+          let imported = 0;
+          let skipped = 0;
+          parsed.brands.forEach((raw: unknown) => {
+            const rec =
+              raw !== null && typeof raw === 'object' && !Array.isArray(raw)
+                ? (raw as Record<string, unknown>)
+                : null;
+            const candidate = {
+              ...(rec || {}),
+              id: typeof rec?.id === 'string' && rec.id ? rec.id : `imported_${Date.now()}_${imported}`,
+              createdAt:
+                typeof rec?.createdAt === 'string' && rec.createdAt ? rec.createdAt : new Date().toISOString(),
+            };
+            const clean = sanitizeBrandBible(candidate);
+            if (clean) {
+              onImportBrand(clean);
+              imported++;
+            } else {
+              skipped++;
             }
           });
-          setImportSuccess(`Imported ${parsed.brands.length} brand bibles into your library!`);
+          setImportSuccess(
+            imported > 0
+              ? `Imported ${imported} Brand Bible${imported === 1 ? '' : 's'} into your library${
+                  skipped ? ` — ${skipped} invalid entr${skipped === 1 ? 'y' : 'ies'} skipped` : ''
+                }!`
+              : 'No valid Brand Bibles found in that file.'
+          );
           if (fileInputRef.current) fileInputRef.current.value = '';
           return;
         }
 
-        if (brandToImport && brandToImport.brandName) {
-          // Ensure it has an ID and timestamp
-          if (!brandToImport.id) brandToImport.id = 'imported_' + Date.now();
-          if (!brandToImport.createdAt) brandToImport.createdAt = new Date().toISOString();
-          onImportBrand(brandToImport);
-          setImportSuccess(`"${brandToImport.brandName}" Brand Bible imported successfully!`);
+        // Single Brand Bible (an id/timestamp are fabricated when absent)
+        const candidate = {
+          ...(isObject ? parsed : {}),
+          id: typeof parsed?.id === 'string' && parsed.id ? parsed.id : 'imported_' + Date.now(),
+          createdAt:
+            typeof parsed?.createdAt === 'string' && parsed.createdAt
+              ? parsed.createdAt
+              : new Date().toISOString(),
+        };
+        const clean = sanitizeBrandBible(candidate);
+        if (clean) {
+          onImportBrand(clean);
+          setImportSuccess(`"${clean.brandName}" Brand Bible imported successfully!`);
           setTimeout(() => setImportSuccess(null), 3500);
         } else {
-          setImportError('Invalid Brand Bible JSON format. Required keys: brandName, palette, typography.');
+          setImportError(
+            'Invalid Brand Bible JSON — a valid bible needs a brand name (brandName) and an id.'
+          );
         }
       } catch (err: any) {
         setImportError('Could not parse JSON file: ' + (err.message || 'Unknown syntax error'));
@@ -327,6 +428,22 @@ export function AccountModal({
             </button>
           </div>
         </div>
+
+        {user && !user.emailVerified && (
+          <div className="flex items-center justify-between gap-3 px-6 py-2 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/40">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-amber-800 dark:text-amber-200 flex items-center gap-2">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              Your email hasn't been verified yet — verification protects your brand library.
+            </span>
+            <button
+              type="button"
+              onClick={onResendVerification}
+              className="shrink-0 text-[9px] uppercase tracking-widest font-black underline cursor-pointer text-amber-800 dark:text-amber-200 hover:opacity-75"
+            >
+              Resend verification email
+            </button>
+          </div>
+        )}
 
         {/* Tab Navigation Navigation Bar */}
         <div className="flex items-center border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 px-6 bg-[#F9F7F2] dark:bg-[#181816] overflow-x-auto no-scrollbar">
@@ -440,6 +557,65 @@ export function AccountModal({
 
         {/* Tab Contents Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {pendingReset ? (
+            <div className="max-w-md mx-auto w-full space-y-4 border border-amber-300 dark:border-amber-800 p-6 bg-amber-50/40 dark:bg-amber-950/10" id="reset-password-view">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-800 text-white dark:bg-amber-300 dark:text-amber-950 shrink-0">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-[#1A1A1A] dark:text-[#F9F7F2]">
+                    Choose a new password
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-zinc-400 leading-relaxed">
+                    Reset link verified for <strong className="text-[#1A1A1A] dark:text-[#F9F7F2]">{pendingReset.email}</strong>. Set a new password to continue.
+                  </p>
+                </div>
+              </div>
+              {resetError && (
+                <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  {resetError}
+                </div>
+              )}
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={resetPw}
+                onChange={(e) => setResetPw(e.target.value)}
+                placeholder="New password (8+ characters)"
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-800 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600"
+              />
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={resetConfirm}
+                onChange={(e) => setResetConfirm(e.target.value)}
+                placeholder="Confirm new password"
+                className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-800 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetSubmit}
+                  disabled={resetSubmitting}
+                  className="flex-1 px-3 py-2 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] font-bold uppercase text-[9px] tracking-wider cursor-pointer disabled:opacity-50"
+                >
+                  {resetSubmitting ? 'Updating Password…' : 'Update Password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={onClearPendingReset}
+                  className="px-3 py-2 text-[9px] uppercase tracking-wider underline cursor-pointer text-gray-500 dark:text-zinc-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
           {/* TAB 1: SAVED BRAND LIBRARY */}
           {activeTab === 'library' && (
             <div className="space-y-6" id="account-library-view">
@@ -886,13 +1062,13 @@ export function AccountModal({
                       <div className="text-[11px] text-amber-800 dark:text-amber-200 font-bold uppercase tracking-wider">
                         Sign in to sync your library across devices
                       </div>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          if (authMode === 'signup') {
-                            onRegister(authEmail, authPassword, authName || undefined);
-                          } else {
-                            onEmailLogin(authEmail, authPassword);
+                      <div
+                        role="form"
+                        aria-label="Account sign in or registration"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            submitAuth();
                           }
                         }}
                         className="space-y-2"
@@ -914,31 +1090,66 @@ export function AccountModal({
                           placeholder="Email address"
                           className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-800 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600"
                         />
-                        <input
-                          type="password"
-                          required
-                          minLength={8}
-                          value={authPassword}
-                          onChange={(e) => setAuthPassword(e.target.value)}
-                          placeholder="Password (8+ characters)"
-                          className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-800 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600"
-                        />
+                        {authMode !== 'forgot' && (
+                          <input
+                            type="password"
+                            required
+                            minLength={8}
+                            value={authPassword}
+                            onChange={(e) => setAuthPassword(e.target.value)}
+                            placeholder="Password (8+ characters)"
+                            className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-800 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600"
+                          />
+                        )}
+                        {authMode === 'signin' && (
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAuthMode('forgot');
+                                setForgotSent(null);
+                              }}
+                              className="text-[9px] uppercase tracking-wider underline cursor-pointer text-amber-700 dark:text-amber-300/80"
+                            >
+                              Forgot password?
+                            </button>
+                          </div>
+                        )}
+                        {authMode === 'forgot' && (
+                          <p className="text-[10px] leading-relaxed text-amber-700 dark:text-amber-300/80">
+                            Enter your account email and we will send a secure reset link (valid for one hour).
+                          </p>
+                        )}
+                        {forgotSent && authMode === 'forgot' && (
+                          <p className="text-[10px] leading-relaxed font-bold text-emerald-700 dark:text-emerald-400">
+                            If an account exists for {forgotSent}, a reset link is on its way.
+                          </p>
+                        )}
                         <div className="flex items-center gap-2">
                           <button
-                            type="submit"
+                            type="button"
+                            onClick={submitAuth}
                             className="flex-1 px-3 py-2 bg-amber-800 text-white dark:bg-amber-300 dark:text-amber-950 font-bold uppercase text-[9px] tracking-wider cursor-pointer"
                           >
-                            {authMode === 'signup' ? 'Create Account' : 'Sign In With Email'}
+                            {authMode === 'signup'
+                              ? 'Create Account'
+                              : authMode === 'forgot'
+                                ? 'Send Reset Link'
+                                : 'Sign In With Email'}
                           </button>
                           <button
                             type="button"
-                            onClick={() => setAuthMode(authMode === 'signup' ? 'signin' : 'signup')}
+                            onClick={switchAuthMode}
                             className="px-2 py-2 text-[9px] uppercase tracking-wider underline cursor-pointer text-amber-800 dark:text-amber-200"
                           >
-                            {authMode === 'signup' ? 'Have an account? Sign in' : 'New here? Create account'}
+                            {authMode === 'signup'
+                              ? 'Have an account? Sign in'
+                              : authMode === 'forgot'
+                                ? 'Back to sign in'
+                                : 'New here? Create account'}
                           </button>
                         </div>
-                      </form>
+                      </div>
                       <div className="flex items-center gap-2 text-[10px] text-amber-700 dark:text-amber-300/70">
                         <span className="flex-1 border-t border-amber-200 dark:border-amber-900/40" />
                         or
@@ -1103,6 +1314,8 @@ export function AccountModal({
                 </p>
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
 

@@ -163,7 +163,8 @@ export function BrandDashboard({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Inject Google Font Link Dynamically */}
-      <FontLoader url={brand.typography.googleFontsUrl} />
+      {/* Guard against partial/imported brands that lack a typography block. */}
+      <FontLoader url={brand.typography?.googleFontsUrl} />
 
       {/* Top Header & Experience Mode Switcher */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800">

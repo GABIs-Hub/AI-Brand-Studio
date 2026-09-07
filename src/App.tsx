@@ -22,10 +22,15 @@ import {
   saveBrandToCloud,
   deleteBrandFromCloud,
   uploadRenderedImage,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+  resendVerificationEmail,
   SessionUser,
 } from './lib/authClient';
 import { shareBrandBible } from './lib/share';
 import { createMilestoneCheckpoint } from './lib/evolution';
+import { sanitizeBrandBible, sanitizeBrandList } from './lib/brandValidation';
 
 // Storage keys — GABI-prefixed. Legacy brand_studio_* keys are still read as
 // a one-time migration fallback so existing users keep their libraries.
@@ -61,8 +66,12 @@ function sanitizeBrandForPersistence(brand: BrandBible): BrandBible {
 // Cloud-synced accounts persist the full library server-side (Neon Postgres).
 function writeSavedBrands(updated: BrandBible[]) {
   try {
-    localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(updated.map(sanitizeBrandForPersistence)));
-    sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(updated));
+    // Never persist a malformed doc: sanitize on the way out as well as in.
+    const clean = updated
+      .map(sanitizeBrandBible)
+      .filter((b): b is BrandBible => b !== null);
+    localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify(clean.map(sanitizeBrandForPersistence)));
+    sessionStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(clean));
   } catch (e) {
     console.warn('Storage write error:', e);
   }
@@ -89,10 +98,9 @@ function loadInitialSavedBrands(): BrandBible[] {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          parsed.forEach((b: BrandBible) => {
-            if (b && b.id && b.brandName) {
-              foundMap.set(b.id, b);
-            }
+          parsed.forEach((b: unknown) => {
+            const clean = sanitizeBrandBible(b);
+            if (clean) foundMap.set(clean.id, clean);
           });
         }
       }
@@ -107,10 +115,9 @@ function loadInitialSavedBrands(): BrandBible[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        parsed.forEach((b: BrandBible) => {
-          if (b && b.id && b.brandName) {
-            foundMap.set(b.id, b);
-          }
+        parsed.forEach((b: unknown) => {
+          const clean = sanitizeBrandBible(b);
+          if (clean) foundMap.set(clean.id, clean);
         });
       }
     }
@@ -195,6 +202,7 @@ export default function App() {
   const [isDeckOpen, setIsDeckOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
+  const [pendingReset, setPendingReset] = useState<{ token: string; email: string } | null>(null);
 
   // Check if first-time visitor should see the interactive tour
   useEffect(() => {
@@ -272,7 +280,7 @@ export default function App() {
           // Merge local and cloud brands so no user creation is lost
           const localBrands = loadInitialSavedBrands();
           const mergedMap = new Map<string, BrandBible>();
-          cloudBrands.forEach((b) => mergedMap.set(b.id, b));
+          sanitizeBrandList(cloudBrands).forEach((b) => mergedMap.set(b.id, b));
 
           // Backfill any local brand that hasn't been synced yet
           localBrands.forEach((b) => {
@@ -320,7 +328,7 @@ export default function App() {
     const cloudBrands = await fetchBrandLibrary();
     const localBrands = loadInitialSavedBrands();
     const mergedMap = new Map<string, BrandBible>();
-    cloudBrands.forEach((b) => mergedMap.set(b.id, b));
+    sanitizeBrandList(cloudBrands).forEach((b) => mergedMap.set(b.id, b));
     localBrands.forEach((b) => {
       if (!mergedMap.has(b.id)) {
         const owned = { ...b, userId: sessionUser.id };
@@ -367,8 +375,8 @@ export default function App() {
       const session = await signInWithEmail(email, password);
       if (session?.user) {
         setUser(session.user);
-        setShareToast('Account created — welcome to GABI!');
-        setTimeout(() => setShareToast(null), 3500);
+        setShareToast('Account created — welcome to GABI! Check your inbox for a verification link.');
+        setTimeout(() => setShareToast(null), 4500);
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'Could not create your account.');
@@ -393,6 +401,83 @@ export default function App() {
       console.warn('Logout notice:', err);
     }
   };
+
+  // ── Email verification & password reset ────────────────────────────────
+  const handleForgotPassword = async (email: string) => {
+    setErrorMessage(null);
+    try {
+      // Server always answers ok (no account enumeration); toast is generic.
+      await forgotPassword(email);
+      setShareToast('If an account exists for that email, a reset link is on its way.');
+      setTimeout(() => setShareToast(null), 4000);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Could not start the password reset.');
+    }
+  };
+
+  const handleResetPassword = async (token: string, email: string, password: string) => {
+    setErrorMessage(null);
+    try {
+      await resetPassword(token, email, password);
+      setPendingReset(null);
+      // Sign the user in with the new password for a seamless continuation.
+      const session = await signInWithEmail(email, password);
+      if (session?.user) {
+        setUser(session.user);
+        await syncLocalLibraryAfterLogin(session.user);
+      }
+      setShareToast('Password updated — you are signed in.');
+      setTimeout(() => setShareToast(null), 3500);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Could not reset your password.');
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setErrorMessage(null);
+    try {
+      await resendVerificationEmail();
+      setShareToast(`Verification email sent to ${user?.email || 'your inbox'} — check spam too.`);
+      setTimeout(() => setShareToast(null), 4500);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Could not resend the verification email.');
+    }
+  };
+
+  // Consume emailed auth links (?verify=…&email=… / ?reset=…&email=…) once on
+  // load, then strip the parameters so the URL stays clean.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verifyToken = params.get('verify');
+    const resetToken = params.get('reset');
+    const email = (params.get('email') || '').trim().toLowerCase();
+    if (!email) return;
+    const strip = () => {
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch {
+        // ignore
+      }
+    };
+    if (verifyToken) {
+      strip();
+      (async () => {
+        try {
+          await verifyEmail(verifyToken, email);
+          setShareToast('Email verified — your GABI account is fully protected.');
+          const session = await getSession(true);
+          setUser(session?.user || null);
+        } catch (err: any) {
+          setErrorMessage(err?.message || 'This verification link is invalid or has expired.');
+        }
+        setTimeout(() => setShareToast(null), 5000);
+      })();
+    } else if (resetToken) {
+      strip();
+      setPendingReset({ token: resetToken, email });
+      setIsAccountOpen(true);
+    }
+  }, []);
 
   // Handle Brand Bible Generation / Upgrade
   const handleGenerateBrand = async (req: GenerateBrandRequest) => {
@@ -426,7 +511,11 @@ export default function App() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      const newBrand: BrandBible = data;
+      // Defense in depth: never let a partial engine response into the app.
+      const newBrand = sanitizeBrandBible(data);
+      if (!newBrand) {
+        throw new Error('The engine returned an incomplete Brand Bible — please try again.');
+      }
 
       // Record Milestone in Brand Evolution
       if (req.isExistingBrandRefresh) {
@@ -625,7 +714,13 @@ export default function App() {
 
   // Handle Importing a Brand Bible (JSON)
   const handleImportBrand = async (brandToImport: BrandBible) => {
-    const brandWithOwnership = { ...brandToImport };
+    const clean = sanitizeBrandBible(brandToImport);
+    if (!clean) {
+      setShareToast('Import failed — that file is not a valid Brand Bible.');
+      setTimeout(() => setShareToast(null), 3500);
+      return;
+    }
+    const brandWithOwnership = { ...clean };
     if (user?.id) {
       brandWithOwnership.userId = user.id;
       try {
@@ -817,6 +912,11 @@ export default function App() {
         onEmailLogin={handleEmailLogin}
         onRegister={handleRegister}
         onLogout={handleLogout}
+        onForgotPassword={handleForgotPassword}
+        onResetPassword={handleResetPassword}
+        onResendVerification={handleResendVerification}
+        pendingReset={pendingReset}
+        onClearPendingReset={() => setPendingReset(null)}
         onRefreshCloudSync={handleRefreshCloudSync}
         studioSettings={studioSettings}
         onUpdateStudioSettings={handleUpdateStudioSettings}

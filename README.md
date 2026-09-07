@@ -46,9 +46,10 @@ Everything is optional: with **no** env vars at all, the app runs fully procedur
 
 See `.env.example` for the complete annotated list:
 
-- **Server** — `APP_URL` (used for the same-origin API guard).
-- **Database** — `DATABASE_URL` (Neon connection string). Required for accounts and cloud brand sync. The schema lives in [`db/schema.sql`](db/schema.sql).
-- **Auth** — `AUTH_SECRET` (generate with `openssl rand -base64 32`); `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (optional).
+- **Server** — `APP_URL` (used for the same-origin API guard + emailed links); `TRUST_PROXY` (set to `1` when deployed behind a hosting proxy so rate limiting and secure cookies see the real client).
+- **Database** — `DATABASE_URL` (Neon connection string). Required for accounts and cloud brand sync. The schema lives in [`db/schema.sql`](db/schema.sql) and is applied with `npm run db:migrate` (see [Database setup](#database)).
+- **Auth** — `AUTH_SECRET` (generate with `openssl rand -base64 32`; **required in production** — the server refuses to boot without it); `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (optional, see [Google sign-in](#google-sign-in)).
+- **Mail** — `RESEND_API_KEY` / `RESEND_FROM` (optional — powers email verification and password reset; with no key, emailed links print to the server console instead).
 - **AI** — `GEMINI_API_KEY`, `OPENAI_API_KEY` (+ optional `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`), `ANTHROPIC_API_KEY` (+ `ANTHROPIC_MODEL`), `HF_CREDENTIALS` (Higgsfield `KEY_ID:KEY_SECRET`, + optional `HIGGSFIELD_ENDPOINT`).
 - **Images** — `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, optional `R2_PUBLIC_BASE_URL`.
 
@@ -61,6 +62,10 @@ See `.env.example` for the complete annotated list:
 | `npm start` | Run the production server (`node dist/server.cjs`) |
 | `npm run lint` | Typecheck (`tsc --noEmit`) |
 | `npm test` | Run the Vitest unit test suite |
+| `npm run db:migrate` | Apply `db/schema.sql` to Neon (idempotent, no psql needed) |
+| `npm run db:verify` | Check the Neon connection and list tables |
+| `npm run db:backup` | Dump all tables to `db/backups/gabi-backup-<timestamp>.json` |
+| `npm run db:restore -- <file> [--force]` | Restore a backup (refuses to overwrite non-empty DBs without `--force`) |
 | `npm run clean` | Remove build artifacts |
 
 ## API
@@ -71,7 +76,11 @@ The server exposes a JSON API under `/api`. Auth-protected routes require a sess
 | --- | --- | --- | --- |
 | `/api/health` | GET | — | Liveness check |
 | `/api/auth/*` | — | — | Auth.js routes (sign in / sign out / session / OAuth callbacks) |
-| `/api/auth/register` | POST | — | Create an email/password account |
+| `/api/auth/register` | POST | — | Create an email/password account (sends a verification email) |
+| `/api/auth/verify-email` | POST | — | Confirm an emailed verification token |
+| `/api/auth/forgot-password` | POST | — | Email a one-hour password-reset link (generic response, no account enumeration) |
+| `/api/auth/reset-password` | POST | — | Consume the reset token and set a new password |
+| `/api/auth/resend-verification` | POST | ✓ | Re-send the verification email to the signed-in user |
 | `/api/generate-brand` | POST | — | Generate a full Brand Bible (AI → procedural fallback) |
 | `/api/generate-logo-variations` | POST | — | 6 archetype logo variations for a brand |
 | `/api/refine-logo-prompt` | POST | — | Chain-of-thought prompt refinement |
@@ -95,7 +104,9 @@ src/
 ├── server/                  # Express backend (bundled separately for prod)
 │   ├── index.ts             # App entry: routes, middleware, static hosting
 │   ├── aiGateway.ts         # Multi-provider text/image cascade + circuit breakers
-│   ├── auth.ts              # Auth.js config, Neon adapter, register endpoint
+│   ├── auth.ts              # Auth.js config, Neon adapter, register endpoint,
+│   │                        #   AUTH_SECRET enforcement, verification tokens
+│   ├── mail.ts              # Transactional email (Resend REST + console fallback)
 │   ├── db.ts                # Neon client + brands CRUD
 │   ├── imageStore.ts        # Cloudflare R2 uploads
 │   └── proceduralBrands.ts  # Deterministic offline brand synthesis engine
@@ -107,7 +118,12 @@ src/
 ├── App.tsx                  # App shell: auth, persistence, mode switching
 └── types.ts                 # Shared domain model (BrandBible, …)
 db/
-└── schema.sql               # Postgres schema (brands table + indexes)
+├── schema.sql               # Postgres schema (Auth.js tables + brands)
+├── migrate.ts               # Idempotent schema applier (+ FK drift self-heal)
+├── verify.ts                # Connection + table listing
+├── backup.ts                # Full logical backup → db/backups/*.json
+├── restore.ts               # Restore a backup (FK-safe, guarded)
+└── backups/                 # Generated backups (gitignored)
 ```
 
 The server is a single Express app that also serves the built client from `dist/` in production, so one deployable unit runs the whole product. Brand assets live in `public/` (favicon, social card).
@@ -123,20 +139,46 @@ The server is a single Express app that also serves the built client from `dist/
 
 ## Database
 
-```sql
--- db/schema.sql (abridged)
-CREATE TABLE brands (
-  id          TEXT PRIMARY KEY,
-  user_id     TEXT NOT NULL,
-  data        JSONB NOT NULL,        -- full BrandBible document
-  name        TEXT,                  -- denormalized for listing
-  created_at  TIMESTAMPTZ DEFAULT now(),
-  updated_at  TIMESTAMPTZ DEFAULT now()
-);
-CREATE INDEX brands_user_id_idx ON brands (user_id);
+The schema in [`db/schema.sql`](db/schema.sql) defines the Auth.js adapter tables (`users`, `accounts`, `sessions`, `verification_token`) plus the `brands` library table. It is applied with an idempotent Node script — **no `psql` required**:
+
+```bash
+npm run db:migrate   # creates all tables + indexes (safe to re-run)
+npm run db:verify    # confirms the connection and lists tables
 ```
 
-Apply it once with `psql $DATABASE_URL -f db/schema.sql`.
+Setup steps:
+
+1. Create a project at [neon.tech](https://neon.tech) and copy its connection string.
+2. Put it in `.env` as `DATABASE_URL` (see `.env.example`).
+3. Run `npm run db:migrate`.
+4. Start the app and check the API: `curl http://localhost:3000/api/health` should report `"db": "connected"`.
+
+**Backups & restores** (no `psql` required):
+
+```bash
+npm run db:backup                          # → db/backups/gabi-backup-<timestamp>.json
+npm run db:restore -- db/backups/gabi-backup-<timestamp>.json
+npm run db:restore -- db/backups/gabi-backup-<timestamp>.json --force  # replace a non-empty DB
+```
+
+Neon's native **branching / point-in-time restore** (in the Neon console or `neonctl`) is the recommended first-line disaster recovery; the backup script provides portable, inspectable exports you can move between projects.
+
+> **Schema contract:** the Auth.js tables use the quoted camelCase columns the `@auth/neon-adapter` requires (`"emailVerified"`, `"userId"`, `"providerAccountId"`, `"sessionToken"`). Don't rename them to snake_case — Google OAuth and session flows depend on the exact names. The `brands` table is ours and intentionally uses `snake_case`.
+
+## Google sign-in
+
+1. Create an **OAuth Client ID** (Web application) at [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials).
+2. Add the authorized redirect URI `{APP_URL}/api/auth/callback/google` — for local development: `http://localhost:3000/api/auth/callback/google`.
+3. Paste the Client ID and Secret into `.env` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+4. Restart the server. "Continue With Google" in the Account Hub then completes the real consent flow, creating the user + account rows in Neon.
+
+Google-verified accounts are automatically marked email-verified on first sign-in.
+
+## Email verification & password reset
+
+Email/password accounts start **unverified**: sign-in is allowed, and the Account Hub shows a "verify your email" banner (with a resend action) until the link is confirmed. Password recovery is available via the "Forgot password?" link on the sign-in form.
+
+Both flows use single-use Auth.js verification tokens stored in the `verification_token` table (1-hour expiry for resets, 24-hour for verification) and are delivered through the mail module — Resend when `RESEND_API_KEY` is set, otherwise the link is printed to the server console. Emailed links look like `{APP_URL}/?verify=…&email=…` and `{APP_URL}/?reset=…&email=…`; the app consumes them on load and cleans the URL.
 
 ## Contributing
 

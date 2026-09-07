@@ -1,4 +1,5 @@
 import { BrandBible } from '../types';
+import { sanitizeBrandList } from './brandValidation';
 
 // Browser-side client for Auth.js (Express) REST endpoints + the app's
 // brand library and image upload APIs. No Firebase, no database credentials
@@ -9,6 +10,8 @@ export interface SessionUser {
   name?: string | null;
   email?: string | null;
   image?: string | null;
+  /** ISO timestamp when the email was verified; null/undefined = unverified. */
+  emailVerified?: string | null;
 }
 
 export interface Session {
@@ -79,9 +82,83 @@ export async function registerAccount(
   return data.user;
 }
 
-/** Google OAuth requires a full-page redirect flow. */
-export function signInWithGoogle(): void {
-  window.location.href = '/api/auth/signin/google';
+/**
+ * Google OAuth requires a full-page CSRF-protected POST (this Auth.js build
+ * rejects plain GETs to /api/auth/signin/google with UnknownAction). The form
+ * submit keeps cookies flowing and bounces the user through Google's consent.
+ */
+export async function signInWithGoogle(): Promise<void> {
+  const csrfToken = await getCsrfToken();
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/api/auth/signin/google';
+  form.style.display = 'none';
+  const csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'csrfToken';
+  csrfInput.value = csrfToken;
+  form.appendChild(csrfInput);
+  document.body.appendChild(form);
+  form.submit();
+}
+
+// ── Email verification & password reset ─────────────────────────────────
+// All responses are generic by design — the server never reveals whether an
+// email has an account (prevents account enumeration).
+
+export async function forgotPassword(email: string): Promise<void> {
+  const res = await fetch('/api/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+    credentials: 'same-origin',
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error || 'Could not start the password reset.');
+  }
+}
+
+export async function resetPassword(
+  token: string,
+  email: string,
+  password: string
+): Promise<void> {
+  const res = await fetch('/api/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, email, password }),
+    credentials: 'same-origin',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || 'This reset link is invalid or has expired.');
+  }
+}
+
+export async function verifyEmail(token: string, email: string): Promise<void> {
+  const res = await fetch('/api/auth/verify-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, email }),
+    credentials: 'same-origin',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || 'This verification link is invalid or has expired.');
+  }
+}
+
+export async function resendVerificationEmail(): Promise<void> {
+  const res = await fetch('/api/auth/resend-verification', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error || 'Could not resend the verification email.');
+  }
 }
 
 export async function signOut(): Promise<void> {
@@ -106,7 +183,9 @@ export async function fetchBrandLibrary(): Promise<BrandBible[]> {
   if (res.status === 401) return [];
   if (!res.ok) throw new Error('Failed to load your brand library.');
   const data = await res.json();
-  return data.brands || [];
+  // Sanitize cloud rows so a malformed/partial brand can never crash the app
+  // or leak into the library (bad rows are dropped, never throw).
+  return sanitizeBrandList(data.brands);
 }
 
 export async function saveBrandToCloud(brand: BrandBible): Promise<void> {

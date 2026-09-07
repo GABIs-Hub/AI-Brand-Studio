@@ -1,13 +1,16 @@
 -- GABI — Generate. Align. Build. Inspire. — Neon (Postgres) schema
--- Auth.js adapter tables (users, accounts, sessions, verification_tokens) + brand library.
--- Run this against your Neon database once (psql "DATABASE_URL" -f db/schema.sql).
+-- Auth.js adapter tables (users, accounts, sessions, verification_token) + brand library.
+-- Apply with:  npm run db:migrate     (or: tsx db/migrate.ts)
+-- NOTE: the quoted camelCase columns ("emailVerified", "userId", "providerAccountId",
+-- "sessionToken") are REQUIRED by @auth/neon-adapter — do not rename them.
+-- The `brands` table is our own and intentionally uses snake_case.
 
 -- ── Auth.js (Neon adapter) core tables ─────────────────────────────
 create table if not exists users (
   id text primary key,
   name text,
   email text unique,
-  email_verified timestamp with time zone,
+  "emailVerified" timestamp with time zone,
   image text,
   password_hash text,
   created_at timestamp with time zone default now()
@@ -15,10 +18,10 @@ create table if not exists users (
 
 create table if not exists accounts (
   id text primary key,
-  user_id text not null references users(id) on delete cascade,
+  "userId" text not null references users(id) on delete cascade,
   type text not null,
   provider text not null,
-  provider_account_id text not null,
+  "providerAccountId" text not null,
   refresh_token text,
   access_token text,
   expires_at bigint,
@@ -26,17 +29,17 @@ create table if not exists accounts (
   scope text,
   id_token text,
   session_state text,
-  unique (provider, provider_account_id)
+  unique (provider, "providerAccountId")
 );
 
 create table if not exists sessions (
   id text primary key,
-  session_token text unique not null,
-  user_id text not null references users(id) on delete cascade,
+  "sessionToken" text unique not null,
+  "userId" text not null references users(id) on delete cascade,
   expires timestamp with time zone not null
 );
 
-create table if not exists verification_tokens (
+create table if not exists verification_token (
   identifier text,
   token text,
   expires timestamp with time zone not null,

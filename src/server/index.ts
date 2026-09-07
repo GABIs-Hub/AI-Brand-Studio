@@ -1,21 +1,35 @@
+import "./env"; // MUST be first: loads .env before other modules evaluate
 import express from "express";
 import path from "path";
 import { Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
-import dotenv from "dotenv";
 import { generateText, generateImage, ImageProvider, TextProvider } from "./aiGateway";
 import { generateProceduralLogoVariations, synthesizeProceduralBrand } from "./proceduralBrands";
-import { authMiddleware, registerUser } from "./auth";
-import { getBrandsByUser, upsertBrand, deleteBrand, isDbConfigured } from "./db";
+import { getSession } from "@auth/express";
+import {
+  authConfig,
+  authMiddleware,
+  registerUser,
+  createAuthToken,
+  consumeAuthToken,
+} from "./auth";
+import { buildResetEmail, buildVerifyEmail, makeResetLink, makeVerifyLink, sendMail } from "./mail";
+import { hash } from "bcryptjs";
+import { getBrandsByUser, upsertBrand, deleteBrand, getSql, isDbConfigured } from "./db";
 import { uploadImageToStore, isImageStoreConfigured } from "./imageStore";
 import { applyLogoHistoryToEras, getLogoHistory, matchImagesToEras } from "./logoHistory";
-
-dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: "10mb" }));
+
+// Behind a hosting proxy (Render / Fly / Railway), trust the first hop so
+// req.ip (rate limiting) and protocol detection (secure cookies) reflect the
+// real client. Off locally — set TRUST_PROXY=1 when deployed.
+if (process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true") {
+  app.set("trust proxy", 1);
+}
 
 // ---------------------------------------------------------------------------
 // API protection: origin enforcement + in-memory sliding-window rate limiting
@@ -65,6 +79,8 @@ function createRateLimiter(maxRequests: number, label: string) {
 const apiRateLimiter = createRateLimiter(30, "AI requests");
 // Expensive image-generation endpoints: 6 requests/min per IP.
 const imageRateLimiter = createRateLimiter(6, "image generation");
+// Account-security actions (password reset, email verification): 10/min per IP.
+const authRateLimiter = createRateLimiter(10, "account security");
 
 // Periodically prune stale rate-limit buckets so memory stays bounded.
 const rateLimitPruner = setInterval(() => {
@@ -91,14 +107,152 @@ app.post("/api/auth/register", async (req, res) => {
   try {
     const { email, password, name } = req.body || {};
     const user = await registerUser({ email, password, name });
+    // Issue an email-verification token and send the link (best-effort —
+    // registration still succeeds if mail fails; the signed-in banner offers
+    // a resend). With no mail provider configured the link prints to console.
+    try {
+      const token = await createAuthToken(`verify:${user.email}`, VERIFY_TOKEN_TTL_MS);
+      await sendMail(buildVerifyEmail(user.email, makeVerifyLink(user.email, token)));
+    } catch (err: any) {
+      console.warn("[Auth API] Could not send verification email:", err?.message || err);
+    }
     return res.status(201).json({ user });
   } catch (err: any) {
     return res.status(400).json({ error: err?.message || "Registration failed." });
   }
 });
 
+// ── Email verification & password reset (Auth.js verification tokens) ──────
+// Mounted before ExpressAuth so these routes win for /api/auth/*.
+const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Request a password reset. Always answers ok — never reveals whether an
+// account exists (no account enumeration).
+app.post("/api/auth/forgot-password", authRateLimiter, async (req, res) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "Please enter a valid email address." });
+  }
+  try {
+    const db = getSql();
+    if (db) {
+      const rows = await db`select id from users where lower(email) = ${email}`;
+      if (rows?.length) {
+        const token = await createAuthToken(`reset:${email}`, RESET_TOKEN_TTL_MS);
+        await sendMail(buildResetEmail(email, makeResetLink(email, token)));
+      }
+    }
+  } catch (err: any) {
+    console.warn("[Auth API] Password-reset flow failed:", err?.message || err);
+  }
+  return res.json({ ok: true });
+});
+
+// Consume the emailed token and set a new password.
+app.post("/api/auth/reset-password", authRateLimiter, async (req, res) => {
+  const { token, password } = req.body || {};
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  if (!token || typeof token !== "string") {
+    return res.status(400).json({
+      error: "This reset link is invalid or has expired. Please request a new one.",
+    });
+  }
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "Please enter a valid email address." });
+  }
+  if (!password || String(password).length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters." });
+  }
+  const db = getSql();
+  if (!db) {
+    return res.status(500).json({ error: "Accounts are not configured on this server." });
+  }
+  const consumed = await consumeAuthToken(`reset:${email}`, token);
+  if (!consumed) {
+    return res.status(400).json({
+      error: "This reset link is invalid or has expired. Please request a new one.",
+    });
+  }
+  try {
+    const users = await db`select id from users where lower(email) = ${email}`;
+    if (!users?.length) {
+      return res.status(400).json({ error: "No account matches this reset request." });
+    }
+    const passwordHash = await hash(String(password), 10);
+    await db`update users set password_hash = ${passwordHash} where id = ${users[0].id}`;
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[Auth API] Password reset failed:", err);
+    return res.status(500).json({ error: "Failed to reset your password. Please try again." });
+  }
+});
+
+// Consume the emailed token and mark the account email-verified.
+app.post("/api/auth/verify-email", authRateLimiter, async (req, res) => {
+  const { token } = req.body || {};
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  if (!token || typeof token !== "string" || !EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "This verification link is invalid or has expired." });
+  }
+  const db = getSql();
+  if (!db) {
+    return res.status(500).json({ error: "Accounts are not configured on this server." });
+  }
+  const consumed = await consumeAuthToken(`verify:${email}`, token);
+  if (!consumed) {
+    return res.status(400).json({
+      error: "This verification link is invalid or has expired. Please request a new one.",
+    });
+  }
+  try {
+    await db`update users set "emailVerified" = now() where lower(email) = ${email}`;
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error("[Auth API] Email verification failed:", err);
+    return res.status(500).json({ error: "Failed to verify your email. Please try again." });
+  }
+});
+
+// Re-send the verification email to the signed-in user.
+app.post("/api/auth/resend-verification", authRateLimiter, async (req: any, res) => {
+  try {
+    const session = await getSession(req, authConfig);
+    const uid = session?.user?.id;
+    if (!uid) {
+      return res.status(401).json({ error: "Authentication required." });
+    }
+    const db = getSql();
+    const rows = db ? await db`select email from users where id = ${uid}` : [];
+    const email = rows?.[0]?.email;
+    if (!email) {
+      return res.status(404).json({ error: "Account not found." });
+    }
+    const token = await createAuthToken(`verify:${email}`, VERIFY_TOKEN_TTL_MS);
+    await sendMail(buildVerifyEmail(email, makeVerifyLink(email, token)));
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.warn("[Auth API] Resend verification failed:", err?.message || err);
+    return res.status(500).json({ error: "Failed to resend the verification email." });
+  }
+});
+
 // Auth.js handles sign-in/sign-out/session for Credentials + Google.
 app.use("/api/auth", authMiddleware());
+
+// Populate req.auth with the current session for every API route so protected
+// endpoints (brands, images) can authorize. @auth/express only serves the
+// /api/auth routes — it does not attach req.auth elsewhere — so we fetch the
+// session explicitly with getSession (returns null when signed out).
+app.use("/api", async (req: any, _res, next) => {
+  try {
+    req.auth = await getSession(req, authConfig);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Require an authenticated session and attach the user id.
 function requireAuth(req: any, res: any, next: any) {
@@ -161,9 +315,20 @@ app.post("/api/images", requireAuth, async (req: any, res) => {
   }
 });
 
-// 1. Health check endpoint
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
+// 1. Health check endpoint (also reports live database connectivity)
+app.get("/api/health", async (_req, res) => {
+  let db: "not-configured" | "connected" | "error" = "not-configured";
+  if (isDbConfigured()) {
+    try {
+      const sql = getSql();
+      await sql`select 1`;
+      db = "connected";
+    } catch (err) {
+      console.error("[Health] Database probe failed:", err);
+      db = "error";
+    }
+  }
+  res.json({ status: "ok", time: new Date().toISOString(), db });
 });
 
 // 2. Generate Brand Bible Endpoint (Handles both new ventures and existing brand refreshes / upgrades)
