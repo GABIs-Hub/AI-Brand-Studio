@@ -11,12 +11,16 @@ export interface EnvFile {
   keys: string[];
   keySet: Set<string>;
   values: Record<string, string>;
+  /** Keys that appear more than once — dotenv would silently keep only the last value. */
+  duplicateKeys: string[];
 }
 
 /** Parses a dotenv-style file: # comments, KEY=value lines, optional quotes. */
 export function parseEnvFile(text: string): EnvFile {
   const keys: string[] = [];
   const values: Record<string, string> = {};
+  const seen = new Set<string>();
+  const duplicates: string[] = [];
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) continue;
@@ -31,10 +35,20 @@ export function parseEnvFile(text: string): EnvFile {
     ) {
       value = value.slice(1, -1);
     }
-    if (!(key in values)) keys.push(key);
+    if (!seen.has(key)) {
+      seen.add(key);
+      keys.push(key);
+    } else if (!duplicates.includes(key)) {
+      duplicates.push(key);
+    }
     values[key] = value;
   }
-  return { keys, keySet: new Set(keys), values };
+  return { keys, keySet: new Set(keys), values, duplicateKeys: duplicates };
+}
+
+/** Keys defined more than once in the file (later definition silently wins). */
+export function findDuplicateKeys(env: EnvFile): string[] {
+  return env.duplicateKeys;
 }
 
 /**

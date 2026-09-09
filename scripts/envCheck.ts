@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  findDuplicateKeys,
   findLeftoverPlaceholders,
   findSecretValues,
   keySetDiff,
@@ -28,6 +29,14 @@ if (!fs.existsSync(TEMPLATE_PATH)) {
 
 const template = parseEnvFile(fs.readFileSync(TEMPLATE_PATH, "utf8"));
 
+// (a0) Duplicated keys silently shadow each other (dotenv keeps the last value).
+const dupes = findDuplicateKeys(template);
+if (dupes.length) {
+  warn(
+    `.env.example defines keys more than once (only the last value applies): ${dupes.join(", ")}`
+  );
+}
+
 // (a) The tracked template must never carry a real secret.
 const leaked = findSecretValues(template);
 if (leaked.length) {
@@ -44,6 +53,10 @@ if (!fs.existsSync(ENV_PATH)) {
   );
 } else {
   const env = parseEnvFile(fs.readFileSync(ENV_PATH, "utf8"));
+  const envDupes = findDuplicateKeys(env);
+  if (envDupes.length) {
+    warn(`.env defines keys more than once (only the last value applies): ${envDupes.join(", ")}`);
+  }
   const { missingFromEnv, extraInEnv } = keySetDiff(template, env);
   if (missingFromEnv.length) {
     fail(`.env is missing keys from .env.example: ${missingFromEnv.join(", ")}`);

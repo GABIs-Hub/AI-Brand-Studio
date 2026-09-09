@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  findDuplicateKeys,
   findLeftoverPlaceholders,
   findSecretValues,
   keySetDiff,
@@ -25,6 +26,19 @@ describe("parseEnvFile", () => {
   it("keeps the last value for duplicate keys", () => {
     const env = parseEnvFile('K="first"\nK="second"');
     expect(env.values.K).toBe("second");
+  });
+
+  it("reports duplicated keys exactly once, in first-seen order", () => {
+    const env = parseEnvFile('B="1"\nA="x"\nB="2"\nA="y"\nB="3"\nC="ok"');
+    expect(findDuplicateKeys(env)).toEqual(["B", "A"]);
+    expect(env.values.B).toBe("3");
+    expect(env.values.A).toBe("y");
+    expect(env.keys).toEqual(["B", "A", "C"]);
+  });
+
+  it("reports no duplicates for unique keys", () => {
+    const env = parseEnvFile('A="1"\nB="2"');
+    expect(findDuplicateKeys(env)).toEqual([]);
   });
 
   it("ignores malformed lines that are not KEY=value", () => {
