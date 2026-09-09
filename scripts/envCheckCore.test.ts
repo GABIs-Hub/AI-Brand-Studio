@@ -99,6 +99,25 @@ describe("findSecretValues", () => {
     );
   });
 
+  it("flags Google API keys and every supported GitHub token prefix", () => {
+    const env = parseEnvFile(
+      [
+        "GOOGLE_API_KEY=AIza0123456789abcdefghijklmn",
+        "GH_OAUTH=gho_0123456789abcdefghijklmn",
+        "GH_USER=ghu_0123456789abcdefghijklmn",
+        "GH_SERVER=ghs_0123456789abcdefghijklmn",
+        "GH_REFRESH=ghr_0123456789abcdefghijklmn",
+      ].join("\n")
+    );
+    expect(findSecretValues(env)).toEqual([
+      "GOOGLE_API_KEY",
+      "GH_OAUTH",
+      "GH_USER",
+      "GH_SERVER",
+      "GH_REFRESH",
+    ]);
+  });
+
   it("ignores placeholders, empties and safe defaults", () => {
     const env = parseEnvFile(
       [

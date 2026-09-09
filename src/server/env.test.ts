@@ -75,6 +75,7 @@ describe("server environment file discovery", () => {
 
     await import("./env");
 
-    expect(dotenvConfig).not.toHaveBeenCalled();
+    expect(config).not.toHaveBeenCalled();
+    expect(console.log).not.toHaveBeenCalled();
   });
 });
