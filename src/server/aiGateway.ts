@@ -63,21 +63,29 @@ function classifyError(message: string): 'quota' | 'busy' | null {
 // ── Lazy client factories ─────────────────────────────────────────────────
 let openaiClient: OpenAI | null = null;
 function getOpenAI(): OpenAI | null {
-  if (!process.env.OPENAI_API_KEY) return null;
-  if (!openaiClient) openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const rawKey = process.env.OPENAI_API_KEY?.trim();
+  const key = rawKey ? rawKey.replace(/^["']|["']$/g, '') : undefined;
+  if (!key) return null;
+  if (!openaiClient) openaiClient = new OpenAI({ apiKey: key });
   return openaiClient;
 }
 
 let anthropicClient: Anthropic | null = null;
 function getAnthropic(): Anthropic | null {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
-  if (!anthropicClient) anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const rawKey = process.env.ANTHROPIC_API_KEY?.trim();
+  const key = rawKey ? rawKey.replace(/^["']|["']$/g, '') : undefined;
+  if (!key) return null;
+  if (!anthropicClient) anthropicClient = new Anthropic({ apiKey: key });
   return anthropicClient;
 }
 
 let geminiClient: GoogleGenAI | null | undefined;
+let geminiKeyInvalid = false;
+
 export function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
+  if (geminiKeyInvalid) return null;
+  const rawKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = rawKey ? rawKey.replace(/^["']|["']$/g, '') : undefined;
   if (!apiKey) return null;
   if (geminiClient !== undefined) return geminiClient;
   try {
@@ -98,9 +106,9 @@ let higgsfieldConfigured = false;
 function ensureHiggsfieldConfig() {
   if (higgsfieldConfigured) return;
   const creds =
-    process.env.HF_CREDENTIALS ||
-    (process.env.HF_API_KEY && process.env.HF_API_SECRET
-      ? `${process.env.HF_API_KEY}:${process.env.HF_API_SECRET}`
+    process.env.HF_CREDENTIALS?.trim() ||
+    (process.env.HF_API_KEY?.trim() && process.env.HF_API_SECRET?.trim()
+      ? `${process.env.HF_API_KEY.trim()}:${process.env.HF_API_SECRET.trim()}`
       : '');
   if (creds) {
     try {
@@ -167,6 +175,14 @@ export async function generateContentWithFallback(
           console.log(`[Gemini API] Model ${model} remains busy. Cooldown set. Cascading.`);
           break;
         }
+        
+        if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
+          console.log(`[Gemini API] Fatal error for ${model}: API Key is invalid. Aborting provider permanently.`);
+          geminiKeyInvalid = true;
+          geminiClient = null;
+          throw error;
+        }
+
         console.log(`[Gemini API] Notice for ${model}: ${errMsg.slice(0, 100)}... Cascading.`);
         break;
       }
@@ -197,19 +213,35 @@ function textOrder(preferred?: TextProvider): TextProvider[] {
 
 export async function generateText(req: TextGenerationRequest): Promise<string> {
   let lastError: any = null;
-  for (const provider of textOrder(req.preferred)) {
+  const order = textOrder(req.preferred);
+  for (let i = 0; i < order.length; i++) {
+    const provider = order[i];
     const key = `text:${provider}`;
-    if (onCooldown(key)) continue;
+    if (onCooldown(key)) {
+      console.log(`[Telemetry] Skipping text provider ${provider} (circuit breaker active).`);
+      continue;
+    }
     try {
-      const text = await callTextProvider(provider, req);
-      if (text) return text;
+      // 12 second timeout for text generation to prevent UI hanging
+      const fetchPromise = callTextProvider(provider, req);
+      const timeoutPromise = new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error(`ETIMEDOUT: ${provider} text request timed out after 12s`)), 12000)
+      );
+      
+      const text = await Promise.race([fetchPromise, timeoutPromise]);
+      if (text) {
+        if (i > 0) {
+          console.log(`[Telemetry] Successfully fell back to ${provider} for text generation.`);
+        }
+        return text;
+      }
     } catch (err: any) {
       lastError = err;
       const msg = err?.message || String(err);
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
-      console.warn(`[AI Gateway] ${provider} text failed: ${msg.slice(0, 140)}`);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
+      console.log(`[Telemetry] AI Circuit Breaker tripped for ${provider} (text). Error: ${msg.slice(0, 140)}`);
     }
   }
   throw lastError || new Error('All AI text providers are unavailable.');
@@ -331,19 +363,35 @@ export async function generateImage(
   req: ImageGenerationRequest
 ): Promise<ImageGenerationResult> {
   let lastError: any = null;
-  for (const provider of imageOrder(req.preferred)) {
+  const order = imageOrder(req.preferred);
+  for (let i = 0; i < order.length; i++) {
+    const provider = order[i];
     const key = `image:${provider}`;
-    if (onCooldown(key)) continue;
+    if (onCooldown(key)) {
+      console.log(`[Telemetry] Skipping image provider ${provider} (circuit breaker active).`);
+      continue;
+    }
     try {
-      const result = await callImageProvider(provider, req);
-      if (result) return result;
+      // 25 second timeout for image generation
+      const fetchPromise = callImageProvider(provider, req);
+      const timeoutPromise = new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error(`ETIMEDOUT: ${provider} image request timed out after 25s`)), 25000)
+      );
+      
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      if (result) {
+        if (i > 0) {
+          console.log(`[Telemetry] Successfully fell back to ${provider} for image generation.`);
+        }
+        return result;
+      }
     } catch (err: any) {
       lastError = err;
       const msg = err?.message || String(err);
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
-      console.warn(`[AI Gateway] ${provider} image failed: ${msg.slice(0, 140)}`);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
+      console.log(`[Telemetry] AI Circuit Breaker tripped for ${provider} (image). Error: ${msg.slice(0, 140)}`);
     }
   }
   throw lastError || new Error('All AI image providers are unavailable.');
@@ -420,6 +468,12 @@ async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenera
       }
     } catch (err: any) {
       const msg = err?.message || String(err);
+      if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+        console.log(`[Gemini API] Fatal error for ${model}: API Key is invalid. Aborting provider permanently.`);
+        geminiKeyInvalid = true;
+        geminiClient = null;
+        throw err;
+      }
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
       else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);

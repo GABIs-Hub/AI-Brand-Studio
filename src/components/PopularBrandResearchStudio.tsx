@@ -193,6 +193,10 @@ export function PopularBrandResearchStudio({
           throw new Error('Unexpected response format from server.');
         }
       }
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
 
       if (!response.ok) {
         throw new Error(responseData?.error || 'Failed to research brand.');

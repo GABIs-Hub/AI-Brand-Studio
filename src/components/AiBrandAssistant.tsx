@@ -84,6 +84,10 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
         }),
       });
 
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
       if (!response.ok) {
         let errText = 'Failed to receive chat response.';
         try {

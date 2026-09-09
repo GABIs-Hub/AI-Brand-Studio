@@ -187,6 +187,10 @@ export function CoTPromptRefinementStudio({
           throw new Error('Chain-of-Thought service returned invalid response format.');
         }
       }
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
 
       if (!response.ok || !data) {
         throw new Error((data as any)?.error || 'Chain-of-Thought prompt refinement could not be completed.');

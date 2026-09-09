@@ -29,6 +29,23 @@ interface ExportModalProps {
 }
 
 // Convert Hex string to RGB numbers for jsPDF fill styling
+
+const convertSvgToPngDataUrl = async (svgString: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    const encodedSvg = encodeURIComponent(svgString);
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0, 800, 600);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.src = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+  });
+};
+
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
@@ -195,6 +212,18 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
       doc.setFontSize(10);
       doc.text(`INDUSTRY: ${brand.industry.toUpperCase()}`, 297.64, 195, { align: 'center' });
       doc.text(`GENERATED ON: ${new Date().toLocaleDateString()}`, 297.64, 210, { align: 'center' });
+
+      // Add Logo Image if available
+      if (brand.logo?.primaryLogoSvg) {
+        try {
+          const pngDataUrl = await convertSvgToPngDataUrl(brand.logo.primaryLogoSvg);
+          // Center the image (Image is 800x600 aspect ratio)
+          doc.addImage(pngDataUrl, 'PNG', 197.64, 250, 200, 150);
+        } catch (e) {
+          console.error("Could not add logo to PDF:", e);
+        }
+      }
+
 
       // Logo Frame
       doc.setDrawColor(26, 26, 26);

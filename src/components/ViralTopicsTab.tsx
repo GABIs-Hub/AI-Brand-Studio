@@ -108,6 +108,10 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
           throw new Error('Viral topics service returned an unexpected response format.');
         }
       }
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
 
       if (!response.ok || !data) {
         throw new Error(data?.error || 'Failed to generate viral topics.');

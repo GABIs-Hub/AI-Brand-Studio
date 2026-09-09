@@ -496,6 +496,12 @@ export default function App() {
         body: JSON.stringify(req),
       });
 
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
+      
+
       if (!res.ok) {
         let errorDetail = 'Failed to generate brand identity.';
         try {
@@ -554,6 +560,24 @@ export default function App() {
   };
 
   // Handle Delete Brand
+  
+  const handleUpdateBrand = async (updatedBrand: BrandBible) => {
+    setActiveBrand(updatedBrand);
+    setSavedBrands((prev) => {
+      const updated = prev.map((b) => (b.id === updatedBrand.id ? updatedBrand : b));
+      writeSavedBrands(updated);
+      return updated;
+    });
+    
+    if (user && updatedBrand.userId === user.id) {
+      try {
+        await saveBrandToCloud(updatedBrand);
+      } catch (e) {
+        console.warn('Could not save updated brand to cloud:', e);
+      }
+    }
+  };
+
   const handleDeleteBrand = async (id: string) => {
     try {
       if (user?.id) {
@@ -597,6 +621,12 @@ export default function App() {
           typography: activeBrand.typography,
         }),
       });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
+      
 
       if (!res.ok) {
         let errorDetail = 'Failed to generate AI logo rendering.';
@@ -838,7 +868,7 @@ export default function App() {
             onGenerateLogoImage={handleGenerateLogoImage}
             isGeneratingLogoImage={isGeneratingLogoImage}
             savedBrands={savedBrands}
-            onSelectBrand={(b) => setActiveBrand(b)}
+            onSelectBrand={handleUpdateBrand}
             onDeleteBrand={handleDeleteBrand}
             onUpgradeBrand={handleTriggerUpgrade}
             user={user}

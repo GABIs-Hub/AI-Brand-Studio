@@ -42,6 +42,10 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
         }),
       });
 
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
       if (!response.ok) {
         throw new Error('Failed to complete brand audit.');
       }
