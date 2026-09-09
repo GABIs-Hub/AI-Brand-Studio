@@ -14,6 +14,11 @@ const TEMPLATE_PATH = path.join(process.cwd(), ".env.example");
 const ENV_PATH = path.join(process.cwd(), ".env");
 
 let failures = 0;
+/**
+ * Reports a validation failure and increments the failure count.
+ *
+ * @param msg - The failure message to report
+ */
 function fail(msg: string) {
   console.error(`[env:check] FAIL ${msg}`);
   failures += 1;

@@ -15,7 +15,15 @@ export interface EnvFile {
   duplicateKeys: string[];
 }
 
-/** Parses a dotenv-style file: # comments, KEY=value lines, optional quotes. */
+/**
+ * Parses dotenv-style content into environment keys, values, and duplicate-key metadata.
+ *
+ * Blank lines, comments, malformed lines, and invalid identifiers are ignored. Keys retain
+ * their first-seen order, while repeated keys use their last value.
+ *
+ * @param text - The dotenv-style content to parse
+ * @returns Parsed keys, values, key set, and duplicate keys
+ */
 export function parseEnvFile(text: string): EnvFile {
   const keys: string[] = [];
   const values: Record<string, string> = {};
@@ -70,7 +78,12 @@ export function findSecretValues(env: EnvFile): string[] {
   return env.keys.filter((k) => REAL_SECRET_PATTERNS.some((re) => re.test(env.values[k])));
 }
 
-/** Keys whose value is a leftover "<...>" template token (unconfigured). */
+/**
+ * Identifies environment keys whose values remain placeholder tokens.
+ *
+ * @param env - The parsed environment data
+ * @returns Keys whose values start with `<` and end with `>`
+ */
 export function findLeftoverPlaceholders(env: EnvFile): string[] {
   return env.keys.filter((k) => {
     const v = env.values[k];
@@ -78,7 +91,13 @@ export function findLeftoverPlaceholders(env: EnvFile): string[] {
   });
 }
 
-/** Keys present in one file but not the other. Order is template order. */
+/**
+ * Compares the keys in a template and environment file.
+ *
+ * @param template - The template environment file
+ * @param env - The environment file to compare
+ * @returns Keys missing from the environment file and keys absent from the template, each in source-file order
+ */
 export function keySetDiff(
   template: EnvFile,
   env: EnvFile

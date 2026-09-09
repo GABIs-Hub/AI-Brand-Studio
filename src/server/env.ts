@@ -15,7 +15,11 @@ import { fileURLToPath } from "node:url";
 // works both in dev (src/server/index.ts -> repo root) and in the bundled
 // server (dist/server.js -> repo root) — then walk up from cwd as a last
 // resort. The bundle is emitted as ESM, so import.meta.url is always a real
-// file URL here (the old CJS bundle emptied import.meta — that's gone).
+/**
+ * Gets the directory containing the current ES module.
+ *
+ * @returns The module directory, or `undefined` when the module URL cannot be converted to a filesystem path.
+ */
 function moduleDirOf(): string | undefined {
   try {
     return path.dirname(fileURLToPath(import.meta.url));
@@ -24,6 +28,11 @@ function moduleDirOf(): string | undefined {
   }
 }
 
+/**
+ * Locates the first existing `.env` file among the working directory, module-relative paths, and its parent directories.
+ *
+ * @returns The path to the first existing `.env` file, or `undefined` if none is found.
+ */
 function findEnvFile(): string | undefined {
   const candidates = new Set<string>([path.join(process.cwd(), ".env")]);
 

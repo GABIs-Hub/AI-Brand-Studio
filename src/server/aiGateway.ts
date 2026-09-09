@@ -44,9 +44,13 @@ export function parseModelList(value: string | undefined): string[] {
 }
 
 /**
- * Models to try for a task tier, strongest first. `envLadder` (already parsed)
- * replaces the default ladder entirely; `singularEnvModel` (legacy single-model
- * env) replaces the first rung. Always returns at least one model.
+ * Selects the models to try for a task tier, ordered by preference.
+ *
+ * @param defaults - Default model ladder ordered from strongest to cheapest
+ * @param tier - Task tier determining how many models to include
+ * @param envLadder - Parsed environment override ladder that replaces `defaults` when provided
+ * @param singularEnvModel - Legacy model override pinned to the front of the ladder
+ * @returns The deduplicated models selected for the requested tier
  */
 export function pickModelsForTier(
   defaults: string[],
@@ -72,9 +76,21 @@ export function pickModelsForTier(
 
 // Per-model circuit breakers (shared by every provider's ladder walk).
 const modelCooldowns = new Map<string, number>();
+/**
+ * Determines whether a model is currently subject to a cooldown.
+ *
+ * @param key - The model cooldown key
+ * @returns `true` if the cooldown is active, `false` otherwise.
+ */
 function onModelCooldown(key: string): boolean {
   return Date.now() < (modelCooldowns.get(key) || 0);
 }
+/**
+ * Sets the expiration time for a model cooldown.
+ *
+ * @param key - The model cooldown key
+ * @param ms - The cooldown duration in milliseconds
+ */
 function setModelCooldown(key: string, ms: number) {
   modelCooldowns.set(key, Date.now() + ms);
 }
@@ -85,7 +101,12 @@ function tierMaxTokens(tier: TaskTier | undefined, requested?: number): number {
   return tier === 'max' ? 8192 : 4096;
 }
 
-/** Auth/credential failures — a smaller model won't help, give up on the provider. */
+/**
+ * Determines whether an error message indicates an authentication or credential failure.
+ *
+ * @param message - The error message to classify
+ * @returns `true` if the message indicates an authentication or credential failure, `false` otherwise.
+ */
 function isAuthError(message: string): boolean {
   return (
     /\b401\b/.test(message) ||
@@ -168,6 +189,9 @@ export function getGeminiClient(): GoogleGenAI | null {
 }
 
 let higgsfieldConfigured = false;
+/**
+ * Configures the Higgsfield client from available environment credentials.
+ */
 function ensureHiggsfieldConfig() {
   if (higgsfieldConfigured) return;
   const creds =
@@ -185,7 +209,14 @@ function ensureHiggsfieldConfig() {
   }
 }
 
-// ── Gemini helper (moved from server.ts, kept for compatibility) ──────────
+/**
+ * Generates content using Gemini models in order with retry and cooldown-based fallback.
+ *
+ * @param params - The content and optional generation configuration for the request.
+ * @param models - The Gemini models to try, in fallback order.
+ * @returns The first response containing generated text.
+ * @throws The last encountered error when all models fail.
+ */
 
 export async function generateContentWithFallback(
   ai: GoogleGenAI,
@@ -266,6 +297,12 @@ export interface TextGenerationRequest {
   tier?: TaskTier;
 }
 
+/**
+ * Determines the text provider order, prioritizing the requested provider when specified.
+ *
+ * @param preferred - The provider to prioritize; `auto` or an unsupported value uses the default order.
+ * @returns The ordered list of text providers.
+ */
 function textOrder(preferred?: TextProvider): TextProvider[] {
   const order: TextProvider[] = ['openai', 'anthropic', 'gemini'];
   if (preferred && preferred !== 'auto' && (order as string[]).includes(preferred)) {
@@ -307,6 +344,13 @@ async function callTextProvider(provider: TextProvider, req: TextGenerationReque
   }
 }
 
+/**
+ * Generates text through OpenAI using the configured model fallback ladder.
+ *
+ * @param req - Text generation request, including the prompt and optional output constraints.
+ * @returns The generated text, or `null` when OpenAI is not configured.
+ * @throws The last model error when all configured OpenAI models fail.
+ */
 async function callOpenAIText(req: TextGenerationRequest): Promise<string | null> {
   const client = getOpenAI();
   if (!client) return null;
@@ -377,6 +421,12 @@ async function callOpenAIText(req: TextGenerationRequest): Promise<string | null
   throw lastError || new Error('All OpenAI text models were unavailable.');
 }
 
+/**
+ * Generates text with Anthropic using the configured model ladder and task tier.
+ *
+ * @param req - The text generation request, including the prompt and optional JSON requirements
+ * @returns The generated text, or `null` when Anthropic is unavailable
+ */
 async function callAnthropicText(req: TextGenerationRequest): Promise<string | null> {
   const client = getAnthropic();
   if (!client) return null;
@@ -434,6 +484,12 @@ async function callAnthropicText(req: TextGenerationRequest): Promise<string | n
   throw lastError || new Error('All Claude text models were unavailable.');
 }
 
+/**
+ * Generates text with Gemini using the requested task tier and output format.
+ *
+ * @param req - The text generation request, including the prompt and optional JSON configuration.
+ * @returns The generated text, or `null` when the Gemini client is unavailable or no text is returned.
+ */
 async function callGeminiText(req: TextGenerationRequest): Promise<string | null> {
   const ai = getGeminiClient();
   if (!ai) return null;
@@ -545,6 +601,12 @@ async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenera
   return null;
 }
 
+/**
+ * Generates an image with Gemini using the configured image models and aspect ratio.
+ *
+ * @param req - The image generation request, including the prompt and optional size
+ * @returns The generated image as a data URL, or `null` when no image is available
+ */
 async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenerationResult | null> {
   const ai = getGeminiClient();
   if (!ai) return null;
