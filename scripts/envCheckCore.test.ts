@@ -45,6 +45,21 @@ describe("parseEnvFile", () => {
     const env = parseEnvFile('A="1"\n=novalue\n1BAD="x"\nB="2"');
     expect(env.keys).toEqual(["A", "B"]);
   });
+
+  it("preserves equals signs inside values and accepts whitespace around keys", () => {
+    const env = parseEnvFile('  TOKEN = "header=payload=signature"  ');
+    expect(env.keys).toEqual(["TOKEN"]);
+    expect(env.values.TOKEN).toBe("header=payload=signature");
+  });
+
+  it("only removes matching outer quotes", () => {
+    const env = parseEnvFile(["SINGLE='value'", 'UNBALANCED="value', 'MIXED="value\''].join("\n"));
+    expect(env.values).toEqual({
+      SINGLE: "value",
+      UNBALANCED: '"value',
+      MIXED: '"value\'',
+    });
+  });
 });
 
 describe("findSecretValues", () => {
@@ -68,6 +83,25 @@ describe("findSecretValues", () => {
         "GH_TOKEN",
       ])
     );
+  });
+
+  it("flags Google API keys and every supported GitHub token prefix", () => {
+    const env = parseEnvFile(
+      [
+        "GOOGLE_API_KEY=AIza0123456789abcdefghijklmn",
+        "GH_OAUTH=gho_0123456789abcdefghijklmn",
+        "GH_USER=ghu_0123456789abcdefghijklmn",
+        "GH_SERVER=ghs_0123456789abcdefghijklmn",
+        "GH_REFRESH=ghr_0123456789abcdefghijklmn",
+      ].join("\n")
+    );
+    expect(findSecretValues(env)).toEqual([
+      "GOOGLE_API_KEY",
+      "GH_OAUTH",
+      "GH_USER",
+      "GH_SERVER",
+      "GH_REFRESH",
+    ]);
   });
 
   it("ignores placeholders, empties and safe defaults", () => {
@@ -106,6 +140,11 @@ describe("findLeftoverPlaceholders", () => {
     );
     expect(findLeftoverPlaceholders(env)).toEqual([]);
   });
+
+  it("detects quoted placeholders after surrounding whitespace is removed", () => {
+    const env = parseEnvFile('API_KEY = "<replace me>"');
+    expect(findLeftoverPlaceholders(env)).toEqual(["API_KEY"]);
+  });
 });
 
 describe("keySetDiff", () => {
@@ -124,6 +163,15 @@ describe("keySetDiff", () => {
     expect(keySetDiff(template, env)).toEqual({
       missingFromEnv: [],
       extraInEnv: [],
+    });
+  });
+
+  it("reports differences in each source file's original order", () => {
+    const template = parseEnvFile('Z="1"\nA="2"\nM="3"');
+    const env = parseEnvFile('X="1"\nM="3"\nB="2"');
+    expect(keySetDiff(template, env)).toEqual({
+      missingFromEnv: ["Z", "A"],
+      extraInEnv: ["X", "B"],
     });
   });
 });
