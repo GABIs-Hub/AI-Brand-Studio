@@ -8,10 +8,11 @@
   },
   "scripts": {
     "dev": "tsx src/server/index.ts",
-    "build": "vite build && esbuild src/server/index.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
+    "build": "vite build && esbuild src/server/index.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js",
+    "start": "node dist/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
+    "env:check": "tsx scripts/envCheck.ts",
     "db:migrate": "tsx db/migrate.ts",
     "db:verify": "tsx db/verify.ts",
     "db:backup": "tsx db/backup.ts",

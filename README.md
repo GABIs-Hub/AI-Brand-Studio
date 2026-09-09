@@ -59,7 +59,7 @@ See `.env.example` for the complete annotated list:
 | --- | --- |
 | `npm run dev` | Dev server (Express + Vite middleware) with HMR |
 | `npm run build` | Vite client build + esbuild server bundle → `dist/` |
-| `npm start` | Run the production server (`node dist/server.cjs`) |
+| `npm start` | Run the production server (`node dist/server.js`) |
 | `npm run lint` | Typecheck (`tsc --noEmit`) |
 | `npm test` | Run the Vitest unit test suite |
 | `npm run db:migrate` | Apply `db/schema.sql` to Neon (idempotent, no psql needed) |
@@ -67,6 +67,7 @@ See `.env.example` for the complete annotated list:
 | `npm run db:backup` | Dump all tables to `db/backups/gabi-backup-<timestamp>.json` |
 | `npm run db:restore -- <file> [--force]` | Restore a backup (refuses to overwrite non-empty DBs without `--force`) |
 | `npm run clean` | Remove build artifacts |
+| `npm run env:check` | Guard: fails if `.env.example` carries a secret-shaped value, `.env` key set diverges from the template, or `.env` still holds `<...>` placeholders |
 
 ## API
 
