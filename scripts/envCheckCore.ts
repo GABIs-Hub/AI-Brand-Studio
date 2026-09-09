@@ -54,7 +54,12 @@ export function parseEnvFile(text: string): EnvFile {
   return { keys, keySet: new Set(keys), values, duplicateKeys: duplicates };
 }
 
-/** Keys defined more than once in the file (later definition silently wins). */
+/**
+ * Identifies keys defined more than once in an environment file.
+ *
+ * @param env - The parsed environment file
+ * @returns The duplicated keys, listed once each
+ */
 export function findDuplicateKeys(env: EnvFile): string[] {
   return env.duplicateKeys;
 }
@@ -73,7 +78,11 @@ export const REAL_SECRET_PATTERNS: RegExp[] = [
   /postgres(ql)?:\/\/[^:\/\s]+:[^@\s]+@/, // postgres URL with an embedded password
 ];
 
-/** Keys whose value in the given file looks like a real secret. */
+/**
+ * Identifies environment keys whose values resemble recognizable real secrets.
+ *
+ * @returns Keys whose values match a known secret pattern
+ */
 export function findSecretValues(env: EnvFile): string[] {
   return env.keys.filter((k) => REAL_SECRET_PATTERNS.some((re) => re.test(env.values[k])));
 }

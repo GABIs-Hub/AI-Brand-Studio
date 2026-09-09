@@ -34,7 +34,12 @@ const HIGGSFIELD_ENDPOINT =
   process.env.HIGGSFIELD_ENDPOINT || 'flux-pro/kontext/max/text-to-image';
 const GEMINI_IMAGE_MODELS = ['gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image'];
 
-/** Parses a comma-separated env model list; returns [] when unset/empty. */
+/**
+ * Parses a comma-separated model list.
+ *
+ * @param value - The model list to parse.
+ * @returns The trimmed, non-empty model names, or an empty array when `value` is unset or empty.
+ */
 export function parseModelList(value: string | undefined): string[] {
   if (!value) return [];
   return value
@@ -95,7 +100,13 @@ function setModelCooldown(key: string, ms: number) {
   modelCooldowns.set(key, Date.now() + ms);
 }
 
-/** Token budget per tier when the caller doesn't specify one. */
+/**
+ * Selects the token budget for a text-generation request.
+ *
+ * @param tier - The requested task tier.
+ * @param requested - An optional positive token budget that takes precedence.
+ * @returns The requested budget when positive; otherwise, 8192 for the `max` tier or 4096 for other tiers.
+ */
 function tierMaxTokens(tier: TaskTier | undefined, requested?: number): number {
   if (requested && requested > 0) return requested;
   return tier === 'max' ? 8192 : 4096;
@@ -170,6 +181,11 @@ function getAnthropic(): Anthropic | null {
 }
 
 let geminiClient: GoogleGenAI | null | undefined;
+/**
+ * Gets the configured Gemini API client.
+ *
+ * @returns The cached Gemini client, or `null` when no API key is configured or client initialization fails.
+ */
 export function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -331,6 +347,13 @@ export async function generateText(req: TextGenerationRequest): Promise<string> 
   throw lastError || new Error('All AI text providers are unavailable.');
 }
 
+/**
+ * Generates text using the selected provider.
+ *
+ * @param provider - The text-generation provider to use
+ * @param req - The text-generation request
+ * @returns The generated text, or `null` when the provider is unsupported
+ */
 async function callTextProvider(provider: TextProvider, req: TextGenerationRequest): Promise<string | null> {
   switch (provider) {
     case 'openai':
@@ -345,7 +368,7 @@ async function callTextProvider(provider: TextProvider, req: TextGenerationReque
 }
 
 /**
- * Generates text through OpenAI using the configured model fallback ladder.
+ * Generates text with OpenAI using the configured model fallback ladder.
  *
  * @param req - Text generation request, including the prompt and optional output constraints.
  * @returns The generated text, or `null` when OpenAI is not configured.
@@ -422,10 +445,11 @@ async function callOpenAIText(req: TextGenerationRequest): Promise<string | null
 }
 
 /**
- * Generates text with Anthropic using the configured model ladder and task tier.
+ * Generates text with Anthropic using the model ladder selected for the request tier.
  *
- * @param req - The text generation request, including the prompt and optional JSON requirements
- * @returns The generated text, or `null` when Anthropic is unavailable
+ * @param req - The text generation request, including the prompt and optional JSON response requirements
+ * @returns The generated text, or `null` if Anthropic is unavailable or produces no text
+ * @throws Throws when all configured Anthropic models fail
  */
 async function callAnthropicText(req: TextGenerationRequest): Promise<string | null> {
   const client = getAnthropic();
@@ -577,6 +601,12 @@ async function callImageProvider(
   }
 }
 
+/**
+ * Generates an image with OpenAI using the requested prompt and aspect ratio.
+ *
+ * @param req - The image generation request containing the prompt and optional aspect ratio
+ * @returns The generated image as a data URL or hosted URL, or `null` when OpenAI is unavailable or returns no image
+ */
 async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenerationResult | null> {
   const client = getOpenAI();
   if (!client) return null;

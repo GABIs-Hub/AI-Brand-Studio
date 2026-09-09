@@ -23,6 +23,11 @@ function fail(msg: string) {
   console.error(`[env:check] FAIL ${msg}`);
   failures += 1;
 }
+/**
+ * Reports a non-fatal environment validation warning.
+ *
+ * @param msg - The warning message to display
+ */
 function warn(msg: string) {
   console.warn(`[env:check] warn ${msg}`);
 }
