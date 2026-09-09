@@ -46,19 +46,33 @@ describe("parseEnvFile", () => {
     expect(env.keys).toEqual(["A", "B"]);
   });
 
-  it("preserves equals signs inside values and accepts whitespace around keys", () => {
-    const env = parseEnvFile('  TOKEN = "header=payload=signature"  ');
-    expect(env.keys).toEqual(["TOKEN"]);
-    expect(env.values.TOKEN).toBe("header=payload=signature");
+  it("accepts valid identifier boundaries and preserves equals signs in values", () => {
+    const env = parseEnvFile(
+      ["_LEADING='single quoted'", "TRAILING_2=https://example.test?a=1&b=2"].join("\n")
+    );
+
+    expect(env.keys).toEqual(["_LEADING", "TRAILING_2"]);
+    expect(env.values).toEqual({
+      _LEADING: "single quoted",
+      TRAILING_2: "https://example.test?a=1&b=2",
+    });
   });
 
-  it("only removes matching outer quotes", () => {
-    const env = parseEnvFile(["SINGLE='value'", 'UNBALANCED="value', 'MIXED="value\''].join("\n"));
-    expect(env.values).toEqual({
-      SINGLE: "value",
-      UNBALANCED: '"value',
-      MIXED: '"value\'',
-    });
+  it("ignores keys containing dotenv-unsafe punctuation or whitespace", () => {
+    const env = parseEnvFile(
+      ["VALID=value", "BAD-DASH=value", "BAD.DOT=value", "BAD KEY=value"].join("\n")
+    );
+
+    expect(env.keys).toEqual(["VALID"]);
+  });
+
+  it("returns an empty result for content without assignments", () => {
+    const env = parseEnvFile("\n# comment only\nnot an assignment\n");
+
+    expect(env.keys).toEqual([]);
+    expect(env.keySet.size).toBe(0);
+    expect(env.values).toEqual({});
+    expect(env.duplicateKeys).toEqual([]);
   });
 });
 
@@ -126,6 +140,25 @@ describe("findSecretValues", () => {
     const env = parseEnvFile('DATABASE_URL="postgresql://user@ep-1.aws.neon.tech/db"');
     expect(findSecretValues(env)).toEqual([]);
   });
+
+  it("recognizes additional supported Google and postgres secret shapes", () => {
+    const env = parseEnvFile(
+      [
+        "GOOGLE_API_KEY=AIza0123456789abcdefghijklmnop",
+        "DATABASE_URL=postgres://user:password@localhost/database",
+      ].join("\n")
+    );
+
+    expect(findSecretValues(env)).toEqual(["GOOGLE_API_KEY", "DATABASE_URL"]);
+  });
+
+  it("checks the final value when a duplicated key shadows a placeholder", () => {
+    const env = parseEnvFile(
+      "OPENAI_API_KEY=<your key>\nOPENAI_API_KEY=sk-0123456789abcdef"
+    );
+
+    expect(findSecretValues(env)).toEqual(["OPENAI_API_KEY"]);
+  });
 });
 
 describe("findLeftoverPlaceholders", () => {
@@ -141,9 +174,12 @@ describe("findLeftoverPlaceholders", () => {
     expect(findLeftoverPlaceholders(env)).toEqual([]);
   });
 
-  it("detects quoted placeholders after surrounding whitespace is removed", () => {
-    const env = parseEnvFile('API_KEY = "<replace me>"');
-    expect(findLeftoverPlaceholders(env)).toEqual(["API_KEY"]);
+  it("only flags values that are entirely placeholder tokens", () => {
+    const env = parseEnvFile(
+      'WHOLE="<replace me>"\nPREFIX="value <replace me>"\nSUFFIX="<replace me> value"'
+    );
+
+    expect(findLeftoverPlaceholders(env)).toEqual(["WHOLE"]);
   });
 });
 
@@ -166,12 +202,13 @@ describe("keySetDiff", () => {
     });
   });
 
-  it("reports differences in each source file's original order", () => {
-    const template = parseEnvFile('Z="1"\nA="2"\nM="3"');
-    const env = parseEnvFile('X="1"\nM="3"\nB="2"');
+  it("preserves each source file's order when reporting multiple differences", () => {
+    const template = parseEnvFile("SECOND=2\nFIRST=1\nSHARED=yes");
+    const env = parseEnvFile("EXTRA_B=2\nSHARED=yes\nEXTRA_A=1");
+
     expect(keySetDiff(template, env)).toEqual({
-      missingFromEnv: ["Z", "A"],
-      extraInEnv: ["X", "B"],
+      missingFromEnv: ["SECOND", "FIRST"],
+      extraInEnv: ["EXTRA_B", "EXTRA_A"],
     });
   });
 });

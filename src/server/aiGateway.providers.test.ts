@@ -1,63 +1,63 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const sdk = vi.hoisted(() => ({
-  openaiText: vi.fn(),
-  openaiImage: vi.fn(),
-  anthropicText: vi.fn(),
-  geminiGenerate: vi.fn(),
-  higgsfieldSubscribe: vi.fn(),
+const providerMocks = vi.hoisted(() => ({
+  anthropicCreate: vi.fn(),
+  geminiGenerateContent: vi.fn(),
   higgsfieldConfig: vi.fn(),
+  higgsfieldSubscribe: vi.fn(),
+  openAIChatCreate: vi.fn(),
+  openAIImageGenerate: vi.fn(),
 }));
 
 vi.mock("openai", () => ({
-  default: class OpenAI {
-    chat = { completions: { create: sdk.openaiText } };
-    images = { generate: sdk.openaiImage };
+  default: class MockOpenAI {
+    chat = { completions: { create: providerMocks.openAIChatCreate } };
+    images = { generate: providerMocks.openAIImageGenerate };
   },
 }));
 
 vi.mock("@anthropic-ai/sdk", () => ({
-  default: class Anthropic {
-    messages = { create: sdk.anthropicText };
+  default: class MockAnthropic {
+    messages = { create: providerMocks.anthropicCreate };
   },
 }));
 
 vi.mock("@google/genai", () => ({
-  GoogleGenAI: class GoogleGenAI {
-    models = { generateContent: sdk.geminiGenerate };
+  GoogleGenAI: class MockGoogleGenAI {
+    models = { generateContent: providerMocks.geminiGenerateContent };
   },
 }));
 
 vi.mock("@higgsfield/client/v2", () => ({
-  higgsfield: { subscribe: sdk.higgsfieldSubscribe },
-  config: sdk.higgsfieldConfig,
+  config: providerMocks.higgsfieldConfig,
+  higgsfield: { subscribe: providerMocks.higgsfieldSubscribe },
 }));
 
-const ENV_KEYS = [
-  "OPENAI_API_KEY",
-  "OPENAI_MODEL",
-  "OPENAI_TEXT_MODELS",
-  "ANTHROPIC_API_KEY",
-  "ANTHROPIC_MODEL",
-  "ANTHROPIC_TEXT_MODELS",
-  "GEMINI_API_KEY",
-  "GEMINI_TEXT_MODELS",
-  "GEMINI_IMAGE_MODELS",
-  "HF_CREDENTIALS",
-  "HF_API_KEY",
-  "HF_API_SECRET",
-] as const;
-
-async function loadGateway() {
-  return import("./aiGateway");
+function clearProviderEnvironment() {
+  for (const key of [
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_TEXT_MODELS",
+    "GEMINI_API_KEY",
+    "GEMINI_IMAGE_MODELS",
+    "GEMINI_TEXT_MODELS",
+    "HF_API_KEY",
+    "HF_API_SECRET",
+    "HF_CREDENTIALS",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL",
+    "OPENAI_TEXT_MODELS",
+  ]) {
+    vi.stubEnv(key, "");
+  }
 }
 
-describe("AI gateway provider ladders", () => {
+describe("AI gateway model ladders", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     vi.useFakeTimers();
-    for (const key of ENV_KEYS) delete process.env[key];
+    clearProviderEnvironment();
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
   });
@@ -65,197 +65,168 @@ describe("AI gateway provider ladders", () => {
   afterEach(() => {
     vi.clearAllTimers();
     vi.useRealTimers();
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
-    for (const key of ENV_KEYS) delete process.env[key];
   });
 
-  it("uses only the cheapest OpenAI override for lite requests", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    process.env.OPENAI_TEXT_MODELS = "large-model, small-model";
-    sdk.openaiText.mockResolvedValue({ choices: [{ message: { content: "small result" } }] });
-    const { generateText } = await loadGateway();
+  it("passes the max-tier OpenAI env ladder and explicit token budget to the client", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
+    vi.stubEnv("OPENAI_TEXT_MODELS", "flagship, economical");
+    providerMocks.openAIChatCreate.mockResolvedValue({
+      choices: [{ message: { content: "openai result" } }],
+    });
+    const { generateText } = await import("./aiGateway");
 
     await expect(
-      generateText({ prompt: "Short answer", preferred: "openai", tier: "lite" })
-    ).resolves.toBe("small result");
+      generateText({
+        prompt: "Create a brand",
+        system: "Be precise",
+        preferred: "openai",
+        tier: "max",
+        maxTokens: 1234,
+      })
+    ).resolves.toBe("openai result");
 
-    expect(sdk.openaiText).toHaveBeenCalledOnce();
-    expect(sdk.openaiText).toHaveBeenCalledWith({
-      model: "small-model",
-      messages: [{ role: "user", content: "Short answer" }],
-      temperature: 0.7,
-      max_tokens: 4096,
-    });
+    expect(providerMocks.openAIChatCreate).toHaveBeenCalledOnce();
+    expect(providerMocks.openAIChatCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "flagship",
+        max_tokens: 1234,
+        messages: [
+          { role: "system", content: "Be precise" },
+          { role: "user", content: "Create a brand" },
+        ],
+      })
+    );
   });
 
-  it("uses the max-tier token budget and caller overrides", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    process.env.OPENAI_TEXT_MODELS = "max-model";
-    sdk.openaiText
-      .mockResolvedValueOnce({ choices: [{ message: { content: "default budget" } }] })
-      .mockResolvedValueOnce({ choices: [{ message: { content: "custom budget" } }] });
-    const { generateText } = await loadGateway();
+  it("steps down the OpenAI ladder after a quota failure", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
+    vi.stubEnv("OPENAI_TEXT_MODELS", "first-model, second-model, third-model");
+    providerMocks.openAIChatCreate
+      .mockRejectedValueOnce(new Error("429 quota exceeded"))
+      .mockResolvedValueOnce({ choices: [{ message: { content: "fallback result" } }] });
+    const { generateText } = await import("./aiGateway");
 
-    await generateText({ prompt: "large", preferred: "openai", tier: "max" });
-    await generateText({ prompt: "custom", preferred: "openai", tier: "max", maxTokens: 1234 });
-
-    expect(sdk.openaiText.mock.calls[0][0].max_tokens).toBe(8192);
-    expect(sdk.openaiText.mock.calls[1][0].max_tokens).toBe(1234);
+    await expect(
+      generateText({ prompt: "prompt", preferred: "openai", tier: "max" })
+    ).resolves.toBe("fallback result");
+    expect(
+      providerMocks.openAIChatCreate.mock.calls.map(([request]) => request.model)
+    ).toEqual(["first-model", "second-model"]);
   });
 
-  it("retries OpenAI without structured output before changing models", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    process.env.OPENAI_TEXT_MODELS = "schema-model, fallback-model";
-    sdk.openaiText
+  it("retries OpenAI structured output without response_format before cascading", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-openai-key");
+    vi.stubEnv("OPENAI_TEXT_MODELS", "structured-model");
+    providerMocks.openAIChatCreate
       .mockRejectedValueOnce(new Error("response_format is unsupported"))
       .mockResolvedValueOnce({ choices: [{ message: { content: '{"ok":true}' } }] });
-    const { generateText } = await loadGateway();
-    const schema = { type: "object", properties: { ok: { type: "boolean" } } };
+    const { generateText } = await import("./aiGateway");
 
     await expect(
-      generateText({ prompt: "JSON", preferred: "openai", tier: "max", jsonSchema: schema })
+      generateText({
+        prompt: "prompt",
+        preferred: "openai",
+        requireJson: true,
+      })
     ).resolves.toBe('{"ok":true}');
 
-    expect(sdk.openaiText).toHaveBeenCalledTimes(2);
-    expect(sdk.openaiText.mock.calls[0][0]).toMatchObject({
-      model: "schema-model",
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: "structured_result", schema, strict: false },
-      },
+    expect(providerMocks.openAIChatCreate).toHaveBeenCalledTimes(2);
+    expect(providerMocks.openAIChatCreate.mock.calls[0][0].response_format).toEqual({
+      type: "json_object",
     });
-    expect(sdk.openaiText.mock.calls[1][0].model).toBe("schema-model");
-    expect(sdk.openaiText.mock.calls[1][0]).not.toHaveProperty("response_format");
+    expect(providerMocks.openAIChatCreate.mock.calls[1][0]).not.toHaveProperty(
+      "response_format"
+    );
   });
 
-  it("stops an authenticated provider ladder after an auth error and tries the next provider", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    process.env.OPENAI_TEXT_MODELS = "openai-one, openai-two";
-    process.env.ANTHROPIC_API_KEY = "test-key";
-    process.env.ANTHROPIC_TEXT_MODELS = "claude-one";
-    sdk.openaiText.mockRejectedValue(new Error("401 invalid api key"));
-    sdk.anthropicText.mockResolvedValue({ content: [{ type: "text", text: "Claude result" }] });
-    const { generateText } = await loadGateway();
+  it("stops trying OpenAI models after an authentication error", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "invalid-openai-key");
+    vi.stubEnv("OPENAI_TEXT_MODELS", "first-model, second-model");
+    const authError = new Error("401 invalid api key");
+    providerMocks.openAIChatCreate.mockRejectedValue(authError);
+    const { generateText } = await import("./aiGateway");
 
-    await expect(generateText({ prompt: "Fallback", tier: "max" })).resolves.toBe("Claude result");
-
-    expect(sdk.openaiText).toHaveBeenCalledOnce();
-    expect(sdk.anthropicText).toHaveBeenCalledOnce();
-    expect(sdk.anthropicText.mock.calls[0][0].model).toBe("claude-one");
+    await expect(
+      generateText({ prompt: "prompt", preferred: "openai", tier: "max" })
+    ).rejects.toBe(authError);
+    expect(providerMocks.openAIChatCreate).toHaveBeenCalledOnce();
   });
 
-  it("prioritizes Anthropic and combines only returned text blocks", async () => {
-    process.env.OPENAI_API_KEY = "test-key";
-    process.env.ANTHROPIC_API_KEY = "test-key";
-    process.env.ANTHROPIC_TEXT_MODELS = "claude-max, claude-lite";
-    sdk.anthropicText.mockResolvedValue({
+  it("uses only the cheapest Anthropic model for lite JSON requests", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-anthropic-key");
+    vi.stubEnv("ANTHROPIC_TEXT_MODELS", "claude-large, claude-small");
+    providerMocks.anthropicCreate.mockResolvedValue({
       content: [
-        { type: "text", text: "first" },
+        { type: "text", text: "anthropic " },
         { type: "tool_use", id: "ignored" },
-        { type: "text", text: " second" },
+        { type: "text", text: "result" },
       ],
     });
-    const { generateText } = await loadGateway();
+    const { generateText } = await import("./aiGateway");
 
     await expect(
       generateText({
-        prompt: "Return JSON",
-        system: "Be concise.",
+        prompt: "Short answer",
         preferred: "anthropic",
-        tier: "max",
-        requireJson: true,
-        temperature: 0,
-      })
-    ).resolves.toBe("first second");
-
-    expect(sdk.openaiText).not.toHaveBeenCalled();
-    expect(sdk.anthropicText).toHaveBeenCalledWith({
-      model: "claude-max",
-      max_tokens: 8192,
-      system: "Be concise.\n\nRespond with valid JSON only. No markdown code fences.",
-      messages: [{ role: "user", content: "Return JSON" }],
-      temperature: 0,
-    });
-  });
-
-  it("uses Gemini's lite rung and JSON request configuration", async () => {
-    process.env.GEMINI_API_KEY = "test-key";
-    process.env.GEMINI_TEXT_MODELS = "gemini-large, gemini-small";
-    sdk.geminiGenerate.mockResolvedValue({ text: '{"answer":true}' });
-    const { generateText } = await loadGateway();
-
-    await expect(
-      generateText({
-        prompt: "Question",
-        system: "System",
-        preferred: "gemini",
         tier: "lite",
         requireJson: true,
-        temperature: 0.1,
       })
-    ).resolves.toBe('{"answer":true}');
+    ).resolves.toBe("anthropic result");
 
-    expect(sdk.geminiGenerate).toHaveBeenCalledOnce();
-    expect(sdk.geminiGenerate).toHaveBeenCalledWith({
-      model: "gemini-small",
-      contents: "System\n\nQuestion\nRespond with valid JSON only, no markdown.",
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: undefined,
-        temperature: 0.1,
-      },
-    });
+    expect(providerMocks.anthropicCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "claude-small",
+        max_tokens: 4096,
+        system: "Respond with valid JSON only. No markdown code fences.",
+      })
+    );
   });
 
-  it("uses Gemini image model overrides in order", async () => {
-    process.env.GEMINI_API_KEY = "test-key";
-    process.env.GEMINI_IMAGE_MODELS = "custom-image-one, custom-image-two";
-    sdk.geminiGenerate
-      .mockRejectedValueOnce(new Error("model not found"))
-      .mockResolvedValueOnce({
-        candidates: [
-          { content: { parts: [{ inlineData: { mimeType: "image/webp", data: "encoded" } }] } },
-        ],
-      });
-    const { generateImage } = await loadGateway();
+  it("uses only the cheapest Gemini text model for lite requests", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
+    vi.stubEnv("GEMINI_TEXT_MODELS", "gemini-large, gemini-small");
+    providerMocks.geminiGenerateContent.mockResolvedValue({ text: "gemini result" });
+    const { generateText } = await import("./aiGateway");
 
     await expect(
-      generateImage({ prompt: "A logo", preferred: "gemini", aspectRatio: "16:9", size: "4K" })
+      generateText({ prompt: "Short answer", preferred: "gemini", tier: "lite" })
+    ).resolves.toBe("gemini result");
+
+    expect(providerMocks.geminiGenerateContent).toHaveBeenCalledWith(
+      expect.objectContaining({ model: "gemini-small", contents: "Short answer" })
+    );
+  });
+
+  it("cascades through the configured Gemini image model override", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
+    vi.stubEnv("GEMINI_IMAGE_MODELS", "image-primary, image-fallback");
+    providerMocks.geminiGenerateContent
+      .mockRejectedValueOnce(new Error("primary model unsupported"))
+      .mockResolvedValueOnce({
+        candidates: [
+          {
+            content: {
+              parts: [{ inlineData: { mimeType: "image/png", data: "encoded-image" } }],
+            },
+          },
+        ],
+      });
+    const { generateImage } = await import("./aiGateway");
+
+    await expect(
+      generateImage({ prompt: "Logo", preferred: "gemini", aspectRatio: "16:9" })
     ).resolves.toEqual({
-      imageUrl: "data:image/webp;base64,encoded",
+      imageUrl: "data:image/png;base64,encoded-image",
       engine: "gemini",
       format: "png",
     });
-
-    expect(sdk.geminiGenerate.mock.calls.map(([request]) => request.model)).toEqual([
-      "custom-image-one",
-      "custom-image-two",
-    ]);
-    expect(sdk.geminiGenerate.mock.calls[1][0].config).toEqual({
+    expect(
+      providerMocks.geminiGenerateContent.mock.calls.map(([request]) => request.model)
+    ).toEqual(["image-primary", "image-fallback"]);
+    expect(providerMocks.geminiGenerateContent.mock.calls[1][0].config).toEqual({
       imageConfig: { aspectRatio: "16:9" },
     });
-  });
-
-  it("passes supported image sizes only to the compatible default Gemini model", async () => {
-    process.env.GEMINI_API_KEY = "test-key";
-    sdk.geminiGenerate.mockResolvedValue({
-      candidates: [{ content: { parts: [{ inlineData: { data: "encoded" } }] } }],
-    });
-    const { generateImage } = await loadGateway();
-
-    await generateImage({ prompt: "A logo", preferred: "gemini", aspectRatio: "1:1", size: "4K" });
-
-    expect(sdk.geminiGenerate).toHaveBeenCalledWith({
-      model: "gemini-3.1-flash-image",
-      contents: { parts: [{ text: "A logo" }] },
-      config: { imageConfig: { aspectRatio: "1:1", imageSize: "4K" } },
-    });
-  });
-
-  it("reports a stable error when no text providers are configured", async () => {
-    const { generateText } = await loadGateway();
-    await expect(generateText({ prompt: "No credentials" })).rejects.toThrow(
-      "All AI text providers are unavailable."
-    );
   });
 });

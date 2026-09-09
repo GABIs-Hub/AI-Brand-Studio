@@ -1,64 +1,76 @@
-import dotenv from "dotenv";
-import fs from "node:fs";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const { dotenvConfig, existsSync } = vi.hoisted(() => ({
+  dotenvConfig: vi.fn(),
+  existsSync: vi.fn(),
+}));
 
 vi.mock("dotenv", () => ({
-  default: { config: vi.fn() },
+  default: { config: dotenvConfig },
 }));
 
 vi.mock("node:fs", () => ({
-  default: { existsSync: vi.fn() },
+  default: { existsSync },
 }));
 
-const config = vi.mocked(dotenv.config);
-const existsSync = vi.mocked(fs.existsSync);
-
-describe("server environment loading", () => {
+describe("server environment file discovery", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.resetAllMocks();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.clearAllMocks();
   });
 
-  it("prefers .env in the current working directory", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue("/work/current");
-    existsSync.mockImplementation((file) => String(file) === "/work/current/.env");
+  it("loads .env from the current working directory first", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue("/workspace/project");
+    existsSync.mockImplementation((candidate) => candidate === "/workspace/project/.env");
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     await import("./env");
 
-    expect(config).toHaveBeenCalledOnce();
-    expect(config).toHaveBeenCalledWith({ path: "/work/current/.env" });
-    expect(console.log).not.toHaveBeenCalled();
+    expect(dotenvConfig).toHaveBeenCalledOnce();
+    expect(dotenvConfig).toHaveBeenCalledWith({ path: "/workspace/project/.env" });
+    expect(existsSync).toHaveBeenCalledWith("/workspace/project/.env");
+    expect(log).not.toHaveBeenCalled();
   });
 
-  it("falls back to the project-relative file when launched elsewhere", async () => {
-    const projectEnv = path.join(path.resolve("."), ".env");
-    vi.spyOn(process, "cwd").mockReturnValue("/outside/project");
-    existsSync.mockImplementation((file) => String(file) === projectEnv);
+  it("walks up parent directories when the working directory has no .env", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue("/workspace/project/apps/web");
+    existsSync.mockImplementation((candidate) => candidate === "/workspace/project/.env");
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     await import("./env");
 
-    expect(config).toHaveBeenCalledWith({ path: projectEnv });
-    expect(console.log).toHaveBeenCalledWith(`[env] loading environment from ${projectEnv}`);
+    expect(dotenvConfig).toHaveBeenCalledOnce();
+    expect(dotenvConfig).toHaveBeenCalledWith({ path: "/workspace/project/.env" });
+    expect(log).toHaveBeenCalledWith(
+      "[env] loading environment from /workspace/project/.env"
+    );
   });
 
-  it("walks up from a nested working directory to find .env", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue("/project/apps/server/deep");
-    existsSync.mockImplementation((file) => String(file) === "/project/.env");
+  it("loads the source-module-relative project .env when started elsewhere", async () => {
+    const projectEnv = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "..",
+      ".env"
+    );
+    vi.spyOn(process, "cwd").mockReturnValue("/outside/launch-directory");
+    existsSync.mockImplementation((candidate) => candidate === projectEnv);
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     await import("./env");
 
-    expect(config).toHaveBeenCalledWith({ path: "/project/.env" });
-    expect(console.log).toHaveBeenCalledWith("[env] loading environment from /project/.env");
+    expect(dotenvConfig).toHaveBeenCalledWith({ path: projectEnv });
+    expect(log).toHaveBeenCalledWith(`[env] loading environment from ${projectEnv}`);
   });
 
   it("does not invoke dotenv when no candidate exists", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue("/without/env");
+    vi.spyOn(process, "cwd").mockReturnValue("/workspace/project/apps/web");
     existsSync.mockReturnValue(false);
 
     await import("./env");

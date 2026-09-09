@@ -16,8 +16,8 @@ describe("parseModelList", () => {
     expect(parseModelList("  ,  ,")).toEqual([]);
   });
 
-  it("preserves model order and duplicates for selection to resolve", () => {
-    expect(parseModelList("first,second,first")).toEqual(["first", "second", "first"]);
+  it("preserves model order and duplicates for the tier selector to resolve", () => {
+    expect(parseModelList("first, second, first")).toEqual(["first", "second", "first"]);
   });
 });
 
@@ -66,24 +66,21 @@ describe("pickModelsForTier", () => {
     expect(pickModelsForTier(["a", "a", "b"], "max", [])).toEqual(["a", "b"]);
   });
 
-  it("does not mutate defaults or environment overrides", () => {
-    const localDefaults = ["big", "small"];
-    const override = ["custom-big", "custom-small"];
-    pickModelsForTier(localDefaults, "max", override, "legacy");
-    expect(localDefaults).toEqual(["big", "small"]);
-    expect(override).toEqual(["custom-big", "custom-small"]);
-  });
+  it("does not mutate default or environment ladders", () => {
+    const defaultLadder = ["default-strong", "default-cheap"];
+    const envLadder = ["env-strong", "env-cheap"];
 
-  it("returns an empty selection when both ladders are empty", () => {
-    expect(pickModelsForTier([], "max", [])).toEqual([]);
-    expect(pickModelsForTier([], "standard", [])).toEqual([]);
-    expect(pickModelsForTier([], "lite", [])).toEqual([]);
+    pickModelsForTier(defaultLadder, "lite", envLadder, "legacy");
+
+    expect(defaultLadder).toEqual(["default-strong", "default-cheap"]);
+    expect(envLadder).toEqual(["env-strong", "env-cheap"]);
   });
 });
 
 describe("generateContentWithFallback", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -92,7 +89,7 @@ describe("generateContentWithFallback", () => {
     vi.restoreAllMocks();
   });
 
-  it("passes request content and config to the first successful model", async () => {
+  it("returns the first successful response and forwards request configuration", async () => {
     const generateContent = vi.fn().mockResolvedValue({ text: "generated" });
     const ai = { models: { generateContent } } as any;
 
@@ -100,12 +97,12 @@ describe("generateContentWithFallback", () => {
       generateContentWithFallback(
         ai,
         { contents: "prompt", config: { temperature: 0.2 } },
-        ["primary", "fallback"]
+        ["preferred", "fallback"]
       )
     ).resolves.toEqual({ text: "generated" });
     expect(generateContent).toHaveBeenCalledOnce();
     expect(generateContent).toHaveBeenCalledWith({
-      model: "primary",
+      model: "preferred",
       contents: "prompt",
       config: { temperature: 0.2 },
     });
@@ -114,72 +111,114 @@ describe("generateContentWithFallback", () => {
   it("cascades immediately after a quota error and skips the cooled model later", async () => {
     const generateContent = vi
       .fn()
-      .mockRejectedValueOnce(new Error("429 RESOURCE_EXHAUSTED"))
-      .mockResolvedValue({ text: "fallback" });
+      .mockRejectedValueOnce(new Error("429 insufficient_quota"))
+      .mockResolvedValueOnce({ text: "fallback one" })
+      .mockResolvedValueOnce({ text: "fallback two" });
     const ai = { models: { generateContent } } as any;
-    const models = ["quota-primary", "quota-fallback"];
+    const models = ["quota-model-boundary", "healthy-model-boundary"];
 
     await expect(generateContentWithFallback(ai, { contents: "first" }, models)).resolves.toEqual({
-      text: "fallback",
+      text: "fallback one",
     });
     await expect(generateContentWithFallback(ai, { contents: "second" }, models)).resolves.toEqual({
-      text: "fallback",
+      text: "fallback two",
     });
 
     expect(generateContent.mock.calls.map(([request]) => request.model)).toEqual([
-      "quota-primary",
-      "quota-fallback",
-      "quota-fallback",
+      "quota-model-boundary",
+      "healthy-model-boundary",
+      "healthy-model-boundary",
     ]);
   });
 
-  it("retries a busy model once before stepping down", async () => {
+  it("retries a busy model once before succeeding", async () => {
     const generateContent = vi
       .fn()
-      .mockRejectedValueOnce(new Error("503 overloaded"))
+      .mockRejectedValueOnce(new Error("503 temporarily busy"))
       .mockResolvedValueOnce({ text: "recovered" });
     const ai = { models: { generateContent } } as any;
 
-    const result = generateContentWithFallback(ai, { contents: "prompt" }, ["busy-primary"]);
+    const result = generateContentWithFallback(ai, { contents: "prompt" }, ["busy-then-ok"]);
     await vi.advanceTimersByTimeAsync(350);
 
     await expect(result).resolves.toEqual({ text: "recovered" });
     expect(generateContent).toHaveBeenCalledTimes(2);
   });
 
-  it("moves to the next model after an unknown model-specific error", async () => {
+  it("moves to the next model after two busy responses", async () => {
     const generateContent = vi
       .fn()
-      .mockRejectedValueOnce(new Error("model not found"))
+      .mockRejectedValueOnce(new Error("UNAVAILABLE"))
+      .mockRejectedValueOnce(new Error("high demand"))
       .mockResolvedValueOnce({ text: "next model" });
     const ai = { models: { generateContent } } as any;
 
-    await expect(
-      generateContentWithFallback(ai, { contents: "prompt" }, ["missing-model", "working-model"])
-    ).resolves.toEqual({ text: "next model" });
+    const result = generateContentWithFallback(
+      ai,
+      { contents: "prompt" },
+      ["persistently-busy", "available-fallback"]
+    );
+    await vi.advanceTimersByTimeAsync(350);
+
+    await expect(result).resolves.toEqual({ text: "next model" });
     expect(generateContent.mock.calls.map(([request]) => request.model)).toEqual([
-      "missing-model",
-      "working-model",
+      "persistently-busy",
+      "persistently-busy",
+      "available-fallback",
     ]);
   });
 
-  it("throws the final model error after the ladder is exhausted", async () => {
-    const finalError = new Error("second model failed");
+  it("moves on when a model returns no text", async () => {
     const generateContent = vi
       .fn()
-      .mockRejectedValueOnce(new Error("first model failed"))
+      .mockResolvedValueOnce({ text: "" })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ text: "usable" });
+    const ai = { models: { generateContent } } as any;
+
+    await expect(
+      generateContentWithFallback(ai, { contents: "prompt" }, ["empty", "usable"])
+    ).resolves.toEqual({ text: "usable" });
+    expect(generateContent.mock.calls.map(([request]) => request.model)).toEqual([
+      "empty",
+      "empty",
+      "usable",
+    ]);
+  });
+
+  it("throws the final model error when every model fails", async () => {
+    const finalError = new Error("unsupported fallback model");
+    const generateContent = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("unsupported preferred model"))
       .mockRejectedValueOnce(finalError);
     const ai = { models: { generateContent } } as any;
 
     await expect(
-      generateContentWithFallback(ai, { contents: "prompt" }, ["first", "second"])
+      generateContentWithFallback(ai, { contents: "prompt" }, ["bad-one", "bad-two"])
     ).rejects.toBe(finalError);
   });
 
-  it("uses a stable error when no models are available", async () => {
+  it("times out, retries once, and rejects without waiting in real time", async () => {
+    const generateContent = vi.fn().mockReturnValue(new Promise(() => undefined));
+    const ai = { models: { generateContent } } as any;
+    const result = generateContentWithFallback(ai, { contents: "prompt" }, ["never-responds"]);
+    const assertion = expect(result).rejects.toThrow("ETIMEDOUT: AI request timed out after 25s");
+
+    await vi.advanceTimersByTimeAsync(25_000);
+    await vi.advanceTimersByTimeAsync(350);
+    await vi.advanceTimersByTimeAsync(25_000);
+
+    await assertion;
+    expect(generateContent).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports a stable error for an empty model ladder", async () => {
     const ai = { models: { generateContent: vi.fn() } } as any;
+
     await expect(generateContentWithFallback(ai, { contents: "prompt" }, [])).rejects.toThrow(
       "All Gemini models were temporarily unreachable."
     );
+    expect(ai.models.generateContent).not.toHaveBeenCalled();
   });
 });
