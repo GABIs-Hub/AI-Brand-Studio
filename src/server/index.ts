@@ -394,6 +394,7 @@ REQUIREMENTS:
         const responseText = await generateText({
           prompt,
           preferred: req.body?.provider,
+          tier: "max",
           jsonSchema: {
               type: Type.OBJECT,
               properties: {
@@ -1739,6 +1740,7 @@ Typography: Heading: ${brandContext.typography?.headingFont}, Body: ${brandConte
           prompt: `${transcript}\n\nAssistant:`,
           system: systemInstruction,
           preferred: provider || "auto",
+          tier: "lite",
         });
         if (responseText) {
           return res.json({ reply: responseText });

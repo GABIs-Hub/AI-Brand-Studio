@@ -50,7 +50,7 @@ See `.env.example` for the complete annotated list:
 - **Database** — `DATABASE_URL` (Neon connection string). Required for accounts and cloud brand sync. The schema lives in [`db/schema.sql`](db/schema.sql) and is applied with `npm run db:migrate` (see [Database setup](#database)).
 - **Auth** — `AUTH_SECRET` (generate with `openssl rand -base64 32`; **required in production** — the server refuses to boot without it); `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (optional, see [Google sign-in](#google-sign-in)).
 - **Mail** — `RESEND_API_KEY` / `RESEND_FROM` (optional — powers email verification and password reset; with no key, emailed links print to the server console instead).
-- **AI** — `GEMINI_API_KEY`, `OPENAI_API_KEY` (+ optional `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`), `ANTHROPIC_API_KEY` (+ `ANTHROPIC_MODEL`), `HF_CREDENTIALS` (Higgsfield `KEY_ID:KEY_SECRET`, + optional `HIGGSFIELD_ENDPOINT`).
+- **AI** — `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `HF_CREDENTIALS` (Higgsfield `KEY_ID:KEY_SECRET`, + optional `HIGGSFIELD_ENDPOINT`). Text providers use **model ladders**: the strongest model is tried first and the gateway steps down when a model is quota-limited or busy, so light requests never wait behind flagships. Brand-Bible generation runs the whole ladder (`max` tier); chat runs the cheapest rung (`lite`). Override per provider with comma-separated `GEMINI_TEXT_MODELS` / `OPENAI_TEXT_MODELS` / `ANTHROPIC_TEXT_MODELS` (strongest first), image models with `GEMINI_IMAGE_MODELS` / `OPENAI_IMAGE_MODEL`. The legacy singular `OPENAI_MODEL` / `ANTHROPIC_MODEL` still work — they pin their model to the front of the ladder.
 - **Images** — `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, optional `R2_PUBLIC_BASE_URL`.
 
 ## Scripts
@@ -59,7 +59,7 @@ See `.env.example` for the complete annotated list:
 | --- | --- |
 | `npm run dev` | Dev server (Express + Vite middleware) with HMR |
 | `npm run build` | Vite client build + esbuild server bundle → `dist/` |
-| `npm start` | Run the production server (`node dist/server.cjs`) |
+| `npm start` | Run the production server (`node dist/server.js`) |
 | `npm run lint` | Typecheck (`tsc --noEmit`) |
 | `npm test` | Run the Vitest unit test suite |
 | `npm run db:migrate` | Apply `db/schema.sql` to Neon (idempotent, no psql needed) |
@@ -67,6 +67,7 @@ See `.env.example` for the complete annotated list:
 | `npm run db:backup` | Dump all tables to `db/backups/gabi-backup-<timestamp>.json` |
 | `npm run db:restore -- <file> [--force]` | Restore a backup (refuses to overwrite non-empty DBs without `--force`) |
 | `npm run clean` | Remove build artifacts |
+| `npm run env:check` | Guard: fails if `.env.example` carries a secret-shaped value, `.env` key set diverges from the template, or `.env` still holds `<...>` placeholders; warns on duplicated keys (dotenv silently keeps the last value) |
 
 ## API
 
