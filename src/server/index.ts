@@ -604,7 +604,7 @@ app.post("/api/generate-logo-variations", apiRateLimiter, async (req, res) => {
     const { brandName, industry, mission, palette, typography, archetypeFilter, stylePrompt } = req.body;
 
     if (!brandName) {
-      return res.status(400).json({ error: "Brand name is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "Brand name is required.");
     }
 
     const pColor = palette?.[0]?.hex || "#1A1A1A";
@@ -973,7 +973,7 @@ app.post("/api/refine-logo-prompt", apiRateLimiter, async (req, res) => {
     } = req.body;
 
     if (!brandName) {
-      return res.status(400).json({ error: "Brand name is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "Brand name is required.");
     }
 
     const pColor = palette?.[0]?.hex || "#1A1A1A";
@@ -1103,7 +1103,7 @@ app.post("/api/generate-viral-topics", apiRateLimiter, async (req, res) => {
     const { brandName, industry, mission, targetAudience, toneStyle, goal } = req.body;
 
     if (!brandName) {
-      return res.status(400).json({ error: "Brand name is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "Brand name is required.");
     }
 
     try {
@@ -1264,7 +1264,7 @@ app.post("/api/audit-brand", apiRateLimiter, async (req, res) => {
     const { brandName, industry, currentMission, palette, typography, toneStyle } = req.body;
 
     if (!brandName) {
-      return res.status(400).json({ error: "Brand name is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "Brand name is required.");
     }
 
     try {
@@ -1393,7 +1393,7 @@ app.post("/api/generate-logo-image", imageRateLimiter, async (req, res) => {
     const { prompt, resolution, brandName, industry, palette, logoSvg, tagline, typography } = req.body;
 
     if (!prompt || typeof prompt !== "string") {
-      return res.status(400).json({ error: "Image prompt is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "Image prompt is required.");
     }
 
     const validResolution = ["512px", "1K", "2K", "4K"].includes(resolution)
@@ -1729,7 +1729,7 @@ app.post("/api/chat", apiRateLimiter, async (req, res) => {
     const { messages, brandContext, model, provider } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: "Messages array is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "Messages array is required.");
     }
 
     const lastUserMsg = messages[messages.length - 1]?.text || "";
@@ -1804,7 +1804,7 @@ app.post("/api/generate-social-post", apiRateLimiter, async (req, res) => {
     const { brand, postType, platform, topicPrompt } = req.body;
 
     if (!brand || !brand.brandName) {
-      return res.status(400).json({ error: "Brand Bible context is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "Brand Bible context is required.");
     }
 
     const selectedType = postType || "thought_leadership";
@@ -1989,7 +1989,7 @@ app.post("/api/generate-social-image", imageRateLimiter, async (req, res) => {
     const { prompt, aspectRatio } = req.body;
 
     if (!prompt || typeof prompt !== "string") {
-      return res.status(400).json({ error: "Image prompt is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "Image prompt is required.");
     }
 
     const validAspectRatio = ["1:1", "9:16", "4:3", "16:9", "3:4"].includes(aspectRatio)
@@ -2047,7 +2047,7 @@ app.post("/api/generate-social-image", imageRateLimiter, async (req, res) => {
 app.get("/api/brand-logo-history", apiRateLimiter, async (req, res) => {
   const brand = String(req.query.brand || "").trim();
   if (!brand) {
-    return res.status(400).json({ error: "brand query parameter is required." });
+    return sendApiError(res, 400, "VALIDATION_ERROR", "brand query parameter is required.");
   }
   try {
     const history = await getLogoHistory(brand);
@@ -2075,7 +2075,7 @@ app.get("/api/brand-logo-history", apiRateLimiter, async (req, res) => {
     });
   } catch (error: any) {
     console.warn("Error in /api/brand-logo-history:", error?.message || error);
-    return res.status(502).json({ error: "Archival logo lookup failed." });
+    return sendApiError(res, 502, "PROVIDER_ERROR", "Archival logo lookup failed.");
   }
 });
 
@@ -2083,7 +2083,7 @@ app.post("/api/brand-case-study", apiRateLimiter, async (req, res) => {
   try {
     const { brandQuery } = req.body;
     if (!brandQuery || typeof brandQuery !== "string" || !brandQuery.trim()) {
-      return res.status(400).json({ error: "brandQuery is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "brandQuery is required.");
     }
 
     const systemPrompt = `You are a world-class brand strategist, design historian, and identity researcher.

@@ -6,27 +6,10 @@ import { hash, compare } from 'bcryptjs';
 import { Pool } from '@neondatabase/serverless';
 import { randomBytes } from 'node:crypto';
 import { getSql, isDbConfigured } from './db';
+import { resolveAuthSecret } from './authSecret';
+export { AUTH_SECRET_MIN_LENGTH, resolveAuthSecret } from './authSecret';
 
 // ── AUTH_SECRET enforcement ─────────────────────────────────────────────
-// Every runtime must provide an explicit secret. A predictable fallback would
-// allow JWT cookies to be forged in staging, preview, or another deployment
-// whose environment was misclassified as development.
-export const AUTH_SECRET_MIN_LENGTH = 32;
-
-export function resolveAuthSecret(
-  nodeEnv: string | undefined,
-  envSecret: string | undefined
-): string {
-  if (!envSecret || envSecret.length < AUTH_SECRET_MIN_LENGTH) {
-    const environment = nodeEnv || 'unknown';
-    throw new Error(
-      `AUTH_SECRET is required in ${environment} and must be at least ${AUTH_SECRET_MIN_LENGTH} characters ` +
-        '(generate with: openssl rand -base64 32). Refusing to start without it.'
-    );
-  }
-  return envSecret;
-}
-
 const authSecret = resolveAuthSecret(process.env.NODE_ENV, process.env.AUTH_SECRET);
 
 // ── Database adapter (shared so tokens/brands use one pool) ──────────────

@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { resolveAuthSecret, AUTH_SECRET_MIN_LENGTH } from './auth';
+import { describe, expect, it } from 'vitest';
+import { AUTH_SECRET_MIN_LENGTH, resolveAuthSecret } from './authSecret';
 
 describe('resolveAuthSecret', () => {
   it('fails in explicit local development when the secret is missing', () => {
