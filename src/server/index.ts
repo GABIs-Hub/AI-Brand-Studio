@@ -18,10 +18,18 @@ import { hash } from "bcryptjs";
 import { getBrandsByUser, upsertBrand, deleteBrand, getSql, isDbConfigured } from "./db";
 import { uploadImageToStore, isImageStoreConfigured } from "./imageStore";
 import { applyLogoHistoryToEras, getLogoHistory, matchImagesToEras } from "./logoHistory";
+import { isAllowedOrigin } from "./security/originPolicy";
+import {
+  apiErrorMiddleware,
+  requestIdMiddleware,
+  sendApiError,
+  sendInternalApiError,
+} from "./security/requestSecurity";
 
 const app = express();
 const PORT = 3000;
 
+app.use(requestIdMiddleware);
 app.use(express.json({ limit: "10mb" }));
 
 // Behind a hosting proxy (Render / Fly / Railway), trust the first hop so
@@ -42,8 +50,13 @@ const APP_URL = (process.env.APP_URL || "").replace(/\/+$/, "");
 app.use("/api", (req, res, next) => {
   if (APP_URL) {
     const origin = req.headers.origin;
-    if (origin && !origin.startsWith(APP_URL)) {
-      return res.status(403).json({ error: "Cross-origin API requests are not allowed." });
+    if (!isAllowedOrigin(origin, [APP_URL])) {
+      return sendApiError(
+        res,
+        403,
+        "AUTHORIZATION_ERROR",
+        "Cross-origin API requests are not allowed."
+      );
     }
   }
   next();
@@ -118,7 +131,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
     return res.status(201).json({ user });
   } catch (err: any) {
-    return res.status(400).json({ error: err?.message || "Registration failed." });
+    return sendApiError(res, 400, "BAD_REQUEST", "Registration failed.");
   }
 });
 
@@ -133,7 +146,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 app.post("/api/auth/forgot-password", authRateLimiter, async (req, res) => {
   const email = String(req.body?.email || "").trim().toLowerCase();
   if (!EMAIL_RE.test(email)) {
-    return res.status(400).json({ error: "Please enter a valid email address." });
+    return sendApiError(res, 400, "VALIDATION_ERROR", "Please enter a valid email address.");
   }
   try {
     const db = getSql();
@@ -155,19 +168,22 @@ app.post("/api/auth/reset-password", authRateLimiter, async (req, res) => {
   const { token, password } = req.body || {};
   const email = String(req.body?.email || "").trim().toLowerCase();
   if (!token || typeof token !== "string") {
-    return res.status(400).json({
-      error: "This reset link is invalid or has expired. Please request a new one.",
-    });
+    return sendApiError(
+      res,
+      400,
+      "VALIDATION_ERROR",
+      "This reset link is invalid or has expired. Please request a new one."
+    );
   }
   if (!EMAIL_RE.test(email)) {
-    return res.status(400).json({ error: "Please enter a valid email address." });
+    return sendApiError(res, 400, "VALIDATION_ERROR", "Please enter a valid email address.");
   }
   if (!password || String(password).length < 8) {
-    return res.status(400).json({ error: "Password must be at least 8 characters." });
+    return sendApiError(res, 400, "VALIDATION_ERROR", "Password must be at least 8 characters.");
   }
   const db = getSql();
   if (!db) {
-    return res.status(500).json({ error: "Accounts are not configured on this server." });
+    return sendApiError(res, 500, "DATABASE_ERROR", "Accounts are not configured on this server.");
   }
   const consumed = await consumeAuthToken(`reset:${email}`, token);
   if (!consumed) {
@@ -178,14 +194,14 @@ app.post("/api/auth/reset-password", authRateLimiter, async (req, res) => {
   try {
     const users = await db`select id from users where lower(email) = ${email}`;
     if (!users?.length) {
-      return res.status(400).json({ error: "No account matches this reset request." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "No account matches this reset request.");
     }
     const passwordHash = await hash(String(password), 10);
     await db`update users set password_hash = ${passwordHash} where id = ${users[0].id}`;
     return res.json({ ok: true });
   } catch (err: any) {
     console.error("[Auth API] Password reset failed:", err);
-    return res.status(500).json({ error: "Failed to reset your password. Please try again." });
+    return sendInternalApiError(res, err, "Failed to reset your password. Please try again.");
   }
 });
 
@@ -194,24 +210,27 @@ app.post("/api/auth/verify-email", authRateLimiter, async (req, res) => {
   const { token } = req.body || {};
   const email = String(req.body?.email || "").trim().toLowerCase();
   if (!token || typeof token !== "string" || !EMAIL_RE.test(email)) {
-    return res.status(400).json({ error: "This verification link is invalid or has expired." });
+    return sendApiError(res, 400, "VALIDATION_ERROR", "This verification link is invalid or has expired.");
   }
   const db = getSql();
   if (!db) {
-    return res.status(500).json({ error: "Accounts are not configured on this server." });
+    return sendApiError(res, 500, "DATABASE_ERROR", "Accounts are not configured on this server.");
   }
   const consumed = await consumeAuthToken(`verify:${email}`, token);
   if (!consumed) {
-    return res.status(400).json({
-      error: "This verification link is invalid or has expired. Please request a new one.",
-    });
+    return sendApiError(
+      res,
+      400,
+      "VALIDATION_ERROR",
+      "This verification link is invalid or has expired. Please request a new one."
+    );
   }
   try {
     await db`update users set "emailVerified" = now() where lower(email) = ${email}`;
     return res.json({ ok: true });
   } catch (err: any) {
     console.error("[Auth API] Email verification failed:", err);
-    return res.status(500).json({ error: "Failed to verify your email. Please try again." });
+    return sendInternalApiError(res, err, "Failed to verify your email. Please try again.");
   }
 });
 
@@ -221,20 +240,20 @@ app.post("/api/auth/resend-verification", authRateLimiter, async (req: any, res)
     const session = await getSession(req, authConfig);
     const uid = session?.user?.id;
     if (!uid) {
-      return res.status(401).json({ error: "Authentication required." });
+      return sendApiError(res, 401, "AUTHENTICATION_REQUIRED", "Authentication required.");
     }
     const db = getSql();
     const rows = db ? await db`select email from users where id = ${uid}` : [];
     const email = rows?.[0]?.email;
     if (!email) {
-      return res.status(404).json({ error: "Account not found." });
+      return sendApiError(res, 404, "NOT_FOUND", "Account not found.");
     }
     const token = await createAuthToken(`verify:${email}`, VERIFY_TOKEN_TTL_MS);
     await sendMail(buildVerifyEmail(email, makeVerifyLink(email, token)));
     return res.json({ ok: true });
   } catch (err: any) {
     console.warn("[Auth API] Resend verification failed:", err?.message || err);
-    return res.status(500).json({ error: "Failed to resend the verification email." });
+    return sendInternalApiError(res, err, "Failed to resend the verification email.");
   }
 });
 
@@ -259,7 +278,7 @@ function requireAuth(req: any, res: any, next: any) {
   const session = req.auth;
   const userId = session?.user?.id;
   if (!userId) {
-    return res.status(401).json({ error: "Authentication required." });
+    return sendApiError(res, 401, "AUTHENTICATION_REQUIRED", "Authentication required.");
   }
   req.userId = userId;
   next();
@@ -272,7 +291,7 @@ app.get("/api/brands", requireAuth, async (req: any, res) => {
     return res.json({ brands });
   } catch (err: any) {
     console.error("[Brands API] List failed:", err);
-    return res.status(500).json({ error: "Failed to load your brand library." });
+    return sendInternalApiError(res, err, "Failed to load your brand library.");
   }
 });
 
@@ -280,13 +299,13 @@ app.put("/api/brands/:id", requireAuth, async (req: any, res) => {
   try {
     const brand = req.body;
     if (!brand || !brand.id || !brand.brandName) {
-      return res.status(400).json({ error: "A valid brand is required." });
+      return sendApiError(res, 400, "VALIDATION_ERROR", "A valid brand is required.");
     }
     await upsertBrand(req.userId, brand);
     return res.json({ ok: true });
   } catch (err: any) {
     console.error("[Brands API] Save failed:", err);
-    return res.status(500).json({ error: "Failed to save your brand." });
+    return sendInternalApiError(res, err, "Failed to save your brand.");
   }
 });
 
@@ -296,7 +315,7 @@ app.delete("/api/brands/:id", requireAuth, async (req: any, res) => {
     return res.json({ ok: true });
   } catch (err: any) {
     console.error("[Brands API] Delete failed:", err);
-    return res.status(500).json({ error: "Failed to delete your brand." });
+    return sendInternalApiError(res, err, "Failed to delete your brand.");
   }
 });
 
@@ -304,14 +323,14 @@ app.delete("/api/brands/:id", requireAuth, async (req: any, res) => {
 app.post("/api/images", requireAuth, async (req: any, res) => {
   const { dataUrl, brandId } = req.body || {};
   if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
-    return res.status(400).json({ error: "A valid image data URL is required." });
+    return sendApiError(res, 400, "VALIDATION_ERROR", "A valid image data URL is required.");
   }
   try {
     const url = await uploadImageToStore(dataUrl, `brand-renders/${req.userId}/${brandId || "general"}`);
     return res.json({ url });
   } catch (err: any) {
     console.warn("[Images API] Upload failed:", err?.message || err);
-    return res.status(500).json({ error: "Failed to store image." });
+    return sendInternalApiError(res, err, "Failed to store image.");
   }
 });
 
@@ -348,7 +367,12 @@ app.post("/api/generate-brand", apiRateLimiter, async (req, res) => {
     } = req.body;
 
     if (!mission || typeof mission !== "string" || mission.trim().length === 0) {
-      return res.status(400).json({ error: "Mission statement or current company core is required." });
+      return sendApiError(
+        res,
+        400,
+        "VALIDATION_ERROR",
+        "Mission statement or current company core is required."
+      );
     }
 
     // Attempt AI generation across the provider gateway (OpenAI → Claude → Gemini)
@@ -570,9 +594,7 @@ REQUIREMENTS:
     return res.json(synthesized);
   } catch (error: any) {
     console.error("Critical error in /api/generate-brand:", error);
-    return res.status(500).json({
-      error: error.message || "Failed to generate brand bible identity.",
-    });
+    return sendInternalApiError(res, error, "Failed to generate brand bible identity.");
   }
 });
 
@@ -682,7 +704,7 @@ Return strict JSON schema with an array of variations.
     return res.json({ variations: proceduralVariations });
   } catch (error: any) {
     console.error("Error in /api/generate-logo-variations:", error);
-    return res.status(500).json({ error: error.message || "Failed to generate logo variations." });
+    return sendInternalApiError(res, error, "Failed to generate logo variations.");
   }
 });
 
@@ -1071,7 +1093,7 @@ Return strict JSON adhering to the schema.
     return res.json(proceduralCoT);
   } catch (error: any) {
     console.error("Error in /api/refine-logo-prompt:", error);
-    return res.status(500).json({ error: error.message || "Failed to refine logo prompt." });
+    return sendInternalApiError(res, error, "Failed to refine logo prompt.");
   }
 });
 
@@ -1232,7 +1254,7 @@ Generate structured JSON matching the schema for 6 diverse hook angles:
     return res.json({ hooks: fallbackHooks });
   } catch (error: any) {
     console.error("Error generating viral topics:", error);
-    return res.status(500).json({ error: error.message || "Failed to generate viral topic hooks." });
+    return sendInternalApiError(res, error, "Failed to generate viral topic hooks.");
   }
 });
 
@@ -1361,7 +1383,7 @@ Generate a comprehensive audit that:
     return res.json(fallbackAudit);
   } catch (error: any) {
     console.error("Error auditing brand:", error);
-    return res.status(500).json({ error: error.message || "Failed to complete brand audit." });
+    return sendInternalApiError(res, error, "Failed to complete brand audit.");
   }
 });
 
@@ -1696,7 +1718,7 @@ app.post("/api/generate-logo-image", imageRateLimiter, async (req, res) => {
   } catch (error: any) {
     console.error("Error generating logo image:", error);
     return res.status(500).json({
-      error: error.message || "Failed to generate AI logo image.",
+      error: "Failed to generate AI logo image.",
     });
   }
 });
@@ -1772,7 +1794,7 @@ Typography: Heading: ${brandContext.typography?.headingFont}, Body: ${brandConte
     return res.json({ reply: proceduralReply });
   } catch (error: any) {
     console.error("Error in chat endpoint:", error);
-    return res.status(500).json({ error: error.message || "Failed to complete chat response." });
+    return sendInternalApiError(res, error, "Failed to complete chat response.");
   }
 });
 
@@ -1957,7 +1979,7 @@ Generate structured JSON matching the schema:
     return res.json(postData);
   } catch (error: any) {
     console.error("Error generating social post:", error);
-    return res.status(500).json({ error: error.message || "Failed to generate social post template." });
+    return sendInternalApiError(res, error, "Failed to generate social post template.");
   }
 });
 
@@ -2015,7 +2037,7 @@ app.post("/api/generate-social-image", imageRateLimiter, async (req, res) => {
     return res.json({ imageUrl: fallbackBgUrl });
   } catch (error: any) {
     console.error("Error generating social visual image:", error);
-    return res.status(500).json({ error: error.message || "Failed to generate AI social post artwork." });
+    return sendInternalApiError(res, error, "Failed to generate AI social post artwork.");
   }
 });
 
@@ -2268,14 +2290,18 @@ Ensure high analytical rigor, historical accuracy, deep semiotic insight into th
     return res.json({ ...fallbackCaseStudy, logoEvolution });
   } catch (error: any) {
     console.error("Error in /api/brand-case-study:", error);
-    return res.status(500).json({ error: error.message || "Failed to compile brand case study intelligence." });
+    return sendInternalApiError(res, error, "Failed to compile brand case study intelligence.");
   }
 });
 
 // Global API 404 handler for unmatched /api/* requests (must return JSON, never HTML!)
 app.all("/api/*", (_req, res) => {
-  res.status(404).json({ error: "API endpoint not found." });
+  sendApiError(res, 404, "NOT_FOUND", "API endpoint not found.");
 });
+
+// Express JSON parser and uncaught API failures must return stable JSON
+// without leaking parser, filesystem, database, or provider details.
+app.use(apiErrorMiddleware);
 
 // Vite Middleware & Static Server
 async function startServer() {

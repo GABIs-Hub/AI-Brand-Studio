@@ -8,25 +8,23 @@ import { randomBytes } from 'node:crypto';
 import { getSql, isDbConfigured } from './db';
 
 // ── AUTH_SECRET enforcement ─────────────────────────────────────────────
-// A fixed dev-only secret keeps local development friction-free, but in
-// production the app MUST boot with a real secret (>= 32 chars) — otherwise
-// JWT cookies would be signed with a predictable key. We fail fast at boot
-// instead of logging a warning and running insecure.
+// Every runtime must provide an explicit secret. A predictable fallback would
+// allow JWT cookies to be forged in staging, preview, or another deployment
+// whose environment was misclassified as development.
 export const AUTH_SECRET_MIN_LENGTH = 32;
-const DEV_SECRET = 'gabi-dev-only-secret-change-me';
 
 export function resolveAuthSecret(
   nodeEnv: string | undefined,
   envSecret: string | undefined
 ): string {
-  const isProd = nodeEnv === 'production';
-  if (isProd && (!envSecret || envSecret.length < AUTH_SECRET_MIN_LENGTH)) {
+  if (!envSecret || envSecret.length < AUTH_SECRET_MIN_LENGTH) {
+    const environment = nodeEnv || 'unknown';
     throw new Error(
-      `AUTH_SECRET is required in production and must be at least ${AUTH_SECRET_MIN_LENGTH} characters ` +
+      `AUTH_SECRET is required in ${environment} and must be at least ${AUTH_SECRET_MIN_LENGTH} characters ` +
         '(generate with: openssl rand -base64 32). Refusing to start without it.'
     );
   }
-  return envSecret && envSecret.length > 0 ? envSecret : DEV_SECRET;
+  return envSecret;
 }
 
 const authSecret = resolveAuthSecret(process.env.NODE_ENV, process.env.AUTH_SECRET);
