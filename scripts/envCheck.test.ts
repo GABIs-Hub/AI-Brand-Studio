@@ -1,106 +1,62 @@
-import fs from "node:fs";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from 'vitest';
+import path from 'node:path';
+import { EnvCheckIo, runEnvCheck } from './envCheckRunner';
 
-vi.mock("node:fs", () => ({
-  default: {
-    existsSync: vi.fn(),
-    readFileSync: vi.fn(),
-  },
-}));
+function makeIo(template?: string, env?: string) {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const logs: string[] = [];
+  const io: EnvCheckIo = {
+    cwd: () => '/project',
+    existsSync: (file) => (template !== undefined && file === path.join('/project', '.env.example')) || (file === path.join('/project', '.env') && env !== undefined),
+    readFileSync: (file) => {
+      if (file === path.join('/project', '.env.example') && template !== undefined) return template;
+      if (file === path.join('/project', '.env') && env !== undefined) return env;
+      throw new Error(`Unexpected read: ${file}`);
+    },
+    error: (message) => errors.push(message),
+    warn: (message) => warnings.push(message),
+    log: (message) => logs.push(message),
+    exit: ((code: number) => { throw new Error(`process.exit:${code}`); }) as never,
+  };
+  return { io, errors, warnings, logs };
+}
 
-const existsSync = vi.mocked(fs.existsSync);
-const readFileSync = vi.mocked(fs.readFileSync);
-
-describe("env:check command", () => {
-  beforeEach(() => {
-    vi.resetModules();
-    vi.spyOn(process, "cwd").mockReturnValue("/project");
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
-      throw new Error(`process.exit:${code}`);
-    }) as never);
+describe('env:check command', () => {
+  it('fails fast with a useful error when the template is missing', () => {
+    const { io, errors } = makeIo();
+    expect(() => runEnvCheck(io)).toThrow('process.exit:1');
+    expect(errors).toEqual(['[env:check] .env.example not found — run from the repo root (npm run env:check).']);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.clearAllMocks();
+  it('allows a scrubbed template when no local environment file exists', () => {
+    const { io, errors, warnings, logs } = makeIo('API_KEY="<your key>"\nAPP_URL="http://localhost:3000"');
+    runEnvCheck(io);
+    expect(errors).toEqual([]);
+    expect(warnings).toEqual(['[env:check] warn no .env found — copy the template and fill in real values: cp .env.example .env']);
+    expect(logs).toEqual(['[env:check] OK — .env.example is scrubbed (no .env present).']);
   });
 
-  function provideFiles(template: string, env?: string) {
-    existsSync.mockImplementation((file) => {
-      const path = String(file);
-      return path === "/project/.env.example" || (env !== undefined && path === "/project/.env");
-    });
-    readFileSync.mockImplementation((file) => {
-      if (String(file) === "/project/.env.example") return template;
-      if (String(file) === "/project/.env" && env !== undefined) return env;
-      throw new Error(`Unexpected read: ${String(file)}`);
-    });
-  }
-
-  it("fails fast with a useful error when the template is missing", async () => {
-    existsSync.mockReturnValue(false);
-
-    await expect(import("./envCheck")).rejects.toThrow("process.exit:1");
-    expect(process.exit).toHaveBeenCalledWith(1);
-    expect(console.error).toHaveBeenCalledWith(
-      "[env:check] .env.example not found — run from the repo root (npm run env:check)."
-    );
-    expect(readFileSync).not.toHaveBeenCalled();
+  it('accepts matching key sets and warns once for duplicate definitions', () => {
+    const { io, errors, warnings, logs } = makeIo('A="<replace>"\nB="safe"\nB="safe-last"', 'B="real"\nA="real"\nA="last"');
+    runEnvCheck(io);
+    expect(errors).toEqual([]);
+    expect(warnings).toEqual([
+      '[env:check] warn .env.example defines keys more than once (only the last value applies): B',
+      '[env:check] warn .env defines keys more than once (only the last value applies): A',
+    ]);
+    expect(logs).toEqual(['[env:check] OK — .env.example is scrubbed and .env matches the template.']);
   });
 
-  it("allows a scrubbed template when no local environment file exists", async () => {
-    provideFiles('API_KEY="<your key>"\nAPP_URL="http://localhost:3000"');
-
-    await import("./envCheck");
-
-    expect(process.exit).not.toHaveBeenCalled();
-    expect(console.warn).toHaveBeenCalledWith(
-      "[env:check] warn no .env found — copy the template and fill in real values: cp .env.example .env"
-    );
-    expect(console.log).toHaveBeenCalledWith(
-      "[env:check] OK — .env.example is scrubbed (no .env present)."
-    );
-  });
-
-  it("accepts matching key sets and warns once for duplicate definitions", async () => {
-    provideFiles('A="<replace>"\nB="safe"\nB="safe-last"', 'B="real"\nA="real"\nA="last"');
-
-    await import("./envCheck");
-
-    expect(process.exit).not.toHaveBeenCalled();
-    expect(console.warn).toHaveBeenCalledTimes(2);
-    expect(console.warn).toHaveBeenCalledWith(
-      "[env:check] warn .env.example defines keys more than once (only the last value applies): B"
-    );
-    expect(console.warn).toHaveBeenCalledWith(
-      "[env:check] warn .env defines keys more than once (only the last value applies): A"
-    );
-    expect(console.log).toHaveBeenCalledWith(
-      "[env:check] OK — .env.example is scrubbed and .env matches the template."
-    );
-  });
-
-  it("aggregates leaks, key-set divergence, and placeholders without printing values", async () => {
-    const leakedValue = "sk-0123456789abcdef";
-    provideFiles(`API_KEY=${leakedValue}\nA="<replace>"`, 'A="<replace>"\nEXTRA="private"');
-
-    await expect(import("./envCheck")).rejects.toThrow("process.exit:1");
-
-    expect(console.error).toHaveBeenCalledWith("[env:check] 4 problem(s) found.");
-    expect(process.exit).toHaveBeenCalledOnce();
-    const output = [
-      ...vi.mocked(console.error).mock.calls,
-      ...vi.mocked(console.warn).mock.calls,
-      ...vi.mocked(console.log).mock.calls,
-    ]
-      .flat()
-      .join("\n");
-    expect(output).toContain("API_KEY");
-    expect(output).toContain("EXTRA");
+  it('aggregates leaks, key-set divergence, and placeholders without printing values', () => {
+    const leakedValue = 'sk-0123456789abcdef';
+    const { io, errors, warnings, logs } = makeIo(`API_KEY=${leakedValue}\nA="<replace>"`, 'A="<replace>"\nEXTRA="private"');
+    expect(() => runEnvCheck(io)).toThrow('process.exit:1');
+    expect(errors).toContain('[env:check] 4 problem(s) found.');
+    const output = [...errors, ...warnings, ...logs].join('\n');
+    expect(output).toContain('API_KEY');
+    expect(output).toContain('EXTRA');
     expect(output).not.toContain(leakedValue);
-    expect(output).not.toContain("private");
+    expect(output).not.toContain('private');
   });
 });

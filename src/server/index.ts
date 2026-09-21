@@ -18,6 +18,7 @@ import { hash } from "bcryptjs";
 import { getBrandsByUser, upsertBrand, deleteBrand, getSql, isDbConfigured } from "./db";
 import { uploadImageToStore, isImageStoreConfigured } from "./imageStore";
 import { applyLogoHistoryToEras, getLogoHistory, matchImagesToEras } from "./logoHistory";
+import { prepareBrandForPersistence } from "./brandPayload";
 import { isAllowedOrigin } from "./security/originPolicy";
 import {
   apiErrorMiddleware,
@@ -297,8 +298,8 @@ app.get("/api/brands", requireAuth, async (req: any, res) => {
 
 app.put("/api/brands/:id", requireAuth, async (req: any, res) => {
   try {
-    const brand = req.body;
-    if (!brand || !brand.id || !brand.brandName) {
+    const brand = prepareBrandForPersistence(req.body, req.params.id, req.userId);
+    if (!brand) {
       return sendApiError(res, 400, "VALIDATION_ERROR", "A valid brand is required.");
     }
     await upsertBrand(req.userId, brand);

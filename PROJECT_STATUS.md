@@ -5,7 +5,7 @@
 
 ## 1 · One-paragraph status
 
-GABI (formerly *AI Brand Studio*) is functionally complete as a brand-identity generator: a React 19 + Vite client, an Express/Auth.js server, and a Neon Postgres database, with multi-provider AI (OpenAI, Claude, Gemini, Higgsfield), procedural offline fallbacks, and a full brand-library with cloud sync. The working tree is **clean — everything shipped is committed**. What remains is a short tail of finishing work (server-side sanitization, end-to-end Google proof, consent-screen rebrand) plus two of your actions: **rotating the credentials that were historically committed to `.env.example`** (the tracked file itself is now scrubbed — §7.1) and **recreating `.env` locally** from the new template (it is absent from the current checkout).
+GABI (formerly *AI Brand Studio*) is functionally complete as a brand-identity generator: a React 19 + Vite client, an Express/Auth.js server, and a Neon Postgres database, with multi-provider AI (OpenAI, Claude, Gemini, Higgsfield), procedural offline fallbacks, and a full brand-library with cloud sync. The working tree has the current WP-02 changes in progress. What remains is a short tail of finishing work (end-to-end Google proof, consent-screen rebrand) plus two of your actions: **rotating the credentials that were historically committed to `.env.example`** (the tracked file itself is now scrubbed — §7.1) and **recreating `.env` locally** from the new template (it is absent from the current checkout).
 
 ## 2 · What is implemented ✅ (why it's there)
 
@@ -27,8 +27,8 @@ GABI (formerly *AI Brand Studio*) is functionally complete as a brand-identity g
 **3.1 Google sign-in end-to-end proof — blocked on one human click.**
 Code is done and verified *up to the consent screen*: real `GOOGLE_CLIENT_ID/SECRET` are in `.env`, `/api/auth/providers` lists Google, the UI click now POSTs a CSRF-protected form (this Auth.js build **throws on GET provider sign-ins** — that bug is fixed), and the chain reaches Google's real login page. *Remaining:* type a Google account into the live preview, then confirm `users` + `accounts` rows land in Neon and the library works under the Google session. **Why:** proves OAuth + Neon + the auto-verify stamping together. **Blocked on:** your Google credentials + a fresh dev server/preview (processes died in restarts) — and `.env` must first be recreated from the new template (§7.1).
 
-**3.2 Server-side brand sanitization — sanitizer exists, not applied at the API.**
-`brandValidation.ts` guards every **client** entry point, but `PUT /api/brands/:id` (index.ts:279) writes whatever it receives straight into Neon. **Why implement:** a malformed row saved from another client (cURL, a future mobile app, a buggy front-end build) re-creates the boot-crash class server-side, and garbage rows pollute the shared library. Small, safe change: reuse the same pure sanitizer at the route.
+**3.2 Server-side brand sanitization — ✅ implemented (WP-02).**
+`PUT /api/brands/:id` now passes request data through the canonical `sanitizeBrandBible()` boundary before persistence, rejects malformed documents and URL/body id mismatches, and derives `userId` from the authenticated session. Focused regression coverage lives in `src/server/brandPayload.test.ts`. **Why:** malformed rows from another client (cURL, a future mobile app, or a buggy front-end build) must not re-create the boot-crash class server-side or pollute the shared library.
 
 **3.3 Google OAuth consent-screen rebrand — external console work.**
 The sign-in page currently says *"Sign in with Google · to continue to **AI Brand Studio**"*. Google Cloud Console → OAuth consent screen → edit app name to **GABI**, add logo + support email. **Why:** the identity leak you'll see on every Google login. Low friction: we only request openid/email/profile, so renaming does **not** trigger Google's app-verification review.
@@ -83,11 +83,10 @@ README line 11 has the exact steps (Settings → rename; GitHub auto-redirects o
 ## 8 · Suggested priority order
 
 1. **§5.1 — rotate the leaked Google client secret + Resend key** (security — today; the template scrub itself is done)
-2. **§3.2 — server-side sanitization on `PUT /api/brands/:id`**
-3. **§7.1 — recreate `.env` from the new template** (you; unblocks §3.1)
-4. **§3.1 — finish Google proof in the preview** (needs you)
-5. **§3.3 / §3.4 — consent-screen + repo rename** (needs you)
-6. **§4.3 — theme/simple-vs-studio QA audit**
+2. **§7.1 — recreate `.env` from the new template** (you; unblocks §3.1)
+3. **§3.1 — finish Google proof in the preview** (needs you)
+4. **§3.3 / §3.4 — consent-screen + repo rename** (needs you)
+5. **§4.3 — theme/simple-vs-studio QA audit**
 
 ---
 

@@ -8,17 +8,17 @@ const { dotenvConfig, existsSync } = vi.hoisted(() => ({
 }));
 
 vi.mock("dotenv", () => ({
-  default: { config: dotenvConfig },
+  default: { config: (...args: Parameters<typeof dotenvConfig>) => dotenvConfig(...args) },
 }));
-
 vi.mock("node:fs", () => ({
-  default: { existsSync },
+  default: { existsSync: (...args: Parameters<typeof existsSync>) => existsSync(...args) },
 }));
 
 describe("server environment file discovery", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.resetAllMocks();
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -27,28 +27,30 @@ describe("server environment file discovery", () => {
 
   it("loads .env from the current working directory first", async () => {
     vi.spyOn(process, "cwd").mockReturnValue("/workspace/project");
-    existsSync.mockImplementation((candidate) => candidate === "/workspace/project/.env");
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const cwdEnv = path.join("/workspace/project", ".env");
+    existsSync.mockImplementation((candidate) => candidate === cwdEnv);
+    const log = vi.mocked(console.log);
 
     await import("./env");
 
     expect(dotenvConfig).toHaveBeenCalledOnce();
-    expect(dotenvConfig).toHaveBeenCalledWith({ path: "/workspace/project/.env" });
-    expect(existsSync).toHaveBeenCalledWith("/workspace/project/.env");
+    expect(dotenvConfig).toHaveBeenCalledWith({ path: cwdEnv });
+    expect(existsSync).toHaveBeenCalledWith(cwdEnv);
     expect(log).not.toHaveBeenCalled();
   });
 
   it("walks up parent directories when the working directory has no .env", async () => {
     vi.spyOn(process, "cwd").mockReturnValue("/workspace/project/apps/web");
-    existsSync.mockImplementation((candidate) => candidate === "/workspace/project/.env");
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const parentEnv = path.join("/workspace/project", ".env");
+    existsSync.mockImplementation((candidate) => candidate === parentEnv);
+    const log = vi.mocked(console.log);
 
     await import("./env");
 
     expect(dotenvConfig).toHaveBeenCalledOnce();
-    expect(dotenvConfig).toHaveBeenCalledWith({ path: "/workspace/project/.env" });
+    expect(dotenvConfig).toHaveBeenCalledWith({ path: parentEnv });
     expect(log).toHaveBeenCalledWith(
-      "[env] loading environment from /workspace/project/.env"
+      `[env] loading environment from ${parentEnv}`
     );
   });
 
@@ -61,7 +63,7 @@ describe("server environment file discovery", () => {
     );
     vi.spyOn(process, "cwd").mockReturnValue("/outside/launch-directory");
     existsSync.mockImplementation((candidate) => candidate === projectEnv);
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const log = vi.mocked(console.log);
 
     await import("./env");
 
@@ -75,7 +77,7 @@ describe("server environment file discovery", () => {
 
     await import("./env");
 
-    expect(config).not.toHaveBeenCalled();
+    expect(dotenvConfig).not.toHaveBeenCalled();
     expect(console.log).not.toHaveBeenCalled();
   });
 });
