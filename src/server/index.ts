@@ -1,5 +1,7 @@
 import "./env"; // MUST be first: loads .env before other modules evaluate
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
+import type { ParamsDictionary } from "express-serve-static-core";
+import type { ParsedQs } from "qs";
 import path from "path";
 import { Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
@@ -19,6 +21,16 @@ import { getBrandsByUser, upsertBrand, deleteBrand, getSql, isDbConfigured } fro
 import { uploadImageToStore, isImageStoreConfigured } from "./imageStore";
 import { applyLogoHistoryToEras, getLogoHistory, matchImagesToEras } from "./logoHistory";
 import { prepareBrandForPersistence } from "./brandPayload";
+import type { BrandListResponse, BrandMutationResponse, BrandRouteParams, HealthResponse } from "../types/api";
+
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: { user?: { id?: string } } | null;
+      userId?: string;
+    }
+  }
+}
 import { isAllowedOrigin } from "./security/originPolicy";
 import {
   apiErrorMiddleware,
@@ -275,7 +287,13 @@ app.use("/api", async (req: any, _res, next) => {
 });
 
 // Require an authenticated session and attach the user id.
-function requireAuth(req: any, res: any, next: any) {
+function requireAuth<
+  P extends ParamsDictionary = ParamsDictionary,
+  ResBody = unknown,
+  ReqBody = unknown,
+  ReqQuery = ParsedQs,
+  Locals extends Record<string, unknown> = Record<string, unknown>
+>(req: Request<P, ResBody, ReqBody, ReqQuery, Locals>, res: Response<ResBody, Locals>, next: NextFunction): void {
   const session = req.auth;
   const userId = session?.user?.id;
   if (!userId) {
@@ -286,7 +304,8 @@ function requireAuth(req: any, res: any, next: any) {
 }
 
 // Brand library CRUD (server-side Postgres — credentials never reach the browser)
-app.get("/api/brands", requireAuth, async (req: any, res) => {
+app.get<{}, BrandListResponse>("/api/brands", requireAuth, async (req, res: Response<BrandListResponse>) => {
+  if (!req.userId) return sendApiError(res, 401, "AUTHENTICATION_REQUIRED", "Authentication required.");
   try {
     const brands = await getBrandsByUser(req.userId);
     return res.json({ brands });
@@ -296,8 +315,9 @@ app.get("/api/brands", requireAuth, async (req: any, res) => {
   }
 });
 
-app.put("/api/brands/:id", requireAuth, async (req: any, res) => {
+app.put<BrandRouteParams, BrandMutationResponse, unknown>("/api/brands/:id", requireAuth, async (req, res) => {
   try {
+    if (!req.userId) return sendApiError(res, 401, "AUTHENTICATION_REQUIRED", "Authentication required.");
     const brand = prepareBrandForPersistence(req.body, req.params.id, req.userId);
     if (!brand) {
       return sendApiError(res, 400, "VALIDATION_ERROR", "A valid brand is required.");
@@ -310,8 +330,9 @@ app.put("/api/brands/:id", requireAuth, async (req: any, res) => {
   }
 });
 
-app.delete("/api/brands/:id", requireAuth, async (req: any, res) => {
+app.delete<BrandRouteParams, BrandMutationResponse>("/api/brands/:id", requireAuth, async (req, res) => {
   try {
+    if (!req.userId) return sendApiError(res, 401, "AUTHENTICATION_REQUIRED", "Authentication required.");
     await deleteBrand(req.userId, req.params.id);
     return res.json({ ok: true });
   } catch (err: any) {
@@ -348,7 +369,8 @@ app.get("/api/health", async (_req, res) => {
       db = "error";
     }
   }
-  res.json({ status: "ok", time: new Date().toISOString(), db });
+  const response: HealthResponse = { status: "ok", time: new Date().toISOString(), db };
+  res.json(response);
 });
 
 // 2. Generate Brand Bible Endpoint (Handles both new ventures and existing brand refreshes / upgrades)

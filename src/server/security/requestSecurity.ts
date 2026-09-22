@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
+import type { ApiErrorCode } from '../../types/api';
 
 export const REQUEST_ID_HEADER = 'X-Request-Id';
 
@@ -11,17 +12,7 @@ export function requestIdMiddleware(_req: Request, res: Response, next: NextFunc
   next();
 }
 
-export type ApiErrorCode =
-  | 'VALIDATION_ERROR'
-  | 'AUTHENTICATION_REQUIRED'
-  | 'AUTHORIZATION_ERROR'
-  | 'NOT_FOUND'
-  | 'CONFLICT'
-  | 'RATE_LIMITED'
-  | 'PROVIDER_ERROR'
-  | 'DATABASE_ERROR'
-  | 'BAD_REQUEST'
-  | 'INTERNAL_SERVER_ERROR';
+export type { ApiErrorCode } from '../../types/api';
 
 export class ApiError extends Error {
   readonly statusCode: number;

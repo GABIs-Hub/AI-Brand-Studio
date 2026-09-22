@@ -28,4 +28,15 @@ describe('prepareBrandForPersistence', () => {
       prepareBrandForPersistence({ id: 'brand-2', brandName: 'Acme' }, 'brand-1', 'user-1')
     ).toBeNull();
   });
+
+  it('rejects unsafe identifiers and drops arbitrary request fields before persistence', () => {
+    expect(prepareBrandForPersistence({ id: '../users/other', brandName: 'Acme' }, '../users/other', 'user-1')).toBeNull();
+    const brand = prepareBrandForPersistence(
+      { id: 'brand-1', brandName: 'Acme', userId: 'attacker', injected: { role: 'admin' } },
+      'brand-1',
+      'session-user'
+    );
+    expect(brand?.userId).toBe('session-user');
+    expect(brand).not.toHaveProperty('injected');
+  });
 });
