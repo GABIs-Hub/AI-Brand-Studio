@@ -311,6 +311,10 @@ export interface TextGenerationRequest {
    * cheapest rung only. Default: 'standard'.
    */
   tier?: TaskTier;
+  /** Optional observability hook used by the AI engine; it does not affect execution. */
+  onProviderAttempt?: (provider: TextProvider) => void;
+  /** When false, an explicitly selected provider is not cascaded to others. */
+  allowProviderFallback?: boolean;
 }
 
 /**
@@ -329,10 +333,15 @@ function textOrder(preferred?: TextProvider): TextProvider[] {
 
 export async function generateText(req: TextGenerationRequest): Promise<string> {
   let lastError: any = null;
-  for (const provider of textOrder(req.preferred)) {
+  const providers =
+    req.allowProviderFallback === false && req.preferred && req.preferred !== "auto"
+      ? [req.preferred]
+      : textOrder(req.preferred);
+  for (const provider of providers) {
     const key = `text:${provider}`;
     if (onCooldown(key)) continue;
     try {
+      req.onProviderAttempt?.(provider);
       const text = await callTextProvider(provider, req);
       if (text) return text;
     } catch (err: any) {
@@ -547,6 +556,10 @@ export interface ImageGenerationRequest {
   aspectRatio?: '1:1' | '16:9' | '9:16';
   size?: string;
   preferred?: ImageProvider;
+  /** Optional observability hook used by the AI engine; it does not affect execution. */
+  onProviderAttempt?: (provider: ImageProvider) => void;
+  /** When false, an explicitly selected provider is not cascaded to others. */
+  allowProviderFallback?: boolean;
 }
 
 export interface ImageGenerationResult {
@@ -567,10 +580,15 @@ export async function generateImage(
   req: ImageGenerationRequest
 ): Promise<ImageGenerationResult> {
   let lastError: any = null;
-  for (const provider of imageOrder(req.preferred)) {
+  const providers =
+    req.allowProviderFallback === false && req.preferred && req.preferred !== "auto"
+      ? [req.preferred]
+      : imageOrder(req.preferred);
+  for (const provider of providers) {
     const key = `image:${provider}`;
     if (onCooldown(key)) continue;
     try {
+      req.onProviderAttempt?.(provider);
       const result = await callImageProvider(provider, req);
       if (result) return result;
     } catch (err: any) {

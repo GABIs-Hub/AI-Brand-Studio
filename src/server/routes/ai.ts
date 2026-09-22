@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import type { Express, Request, Response, NextFunction } from "express";
-import { generateText, generateImage, ImageProvider, TextProvider } from "../aiGateway";
+import { aiEngine } from "../ai/engine";
 import { generateProceduralLogoVariations, synthesizeProceduralBrand } from "../proceduralBrands";
 import { applyLogoHistoryToEras, getLogoHistory, matchImagesToEras } from "../logoHistory";
 import { sendApiError, sendInternalApiError } from "../security/requestSecurity";
@@ -79,7 +79,7 @@ REQUIREMENTS:
 8. targetAudience string.
 `;
 
-        const responseText = await generateText({
+        const responseText = (await aiEngine.executeText("brand_generation", {
           prompt,
           preferred: req.body?.provider,
           tier: "max",
@@ -231,7 +231,7 @@ REQUIREMENTS:
                 "targetAudience",
               ],
             },
-        });
+        })).output;
 
         if (responseText) {
           const brandData = JSON.parse(responseText);
@@ -302,7 +302,7 @@ Create a complete, clean SVG string (viewBox="0 0 320 100", width="100%", height
 Return strict JSON schema with an array of variations.
 `;
 
-        const responseText = await generateText({
+        const responseText = (await aiEngine.executeText("logo_variations", {
           prompt,
           preferred: req.body?.provider,
           jsonSchema: {
@@ -340,7 +340,7 @@ Return strict JSON schema with an array of variations.
               },
               required: ["variations"],
             },
-        });
+        })).output;
 
         if (responseText) {
           const parsed = JSON.parse(responseText);
@@ -676,7 +676,7 @@ MANDATORY CHAIN-OF-THOUGHT STAGES:
 Return strict JSON adhering to the schema.
 `;
 
-        const responseText = await generateText({
+        const responseText = (await aiEngine.executeText("logo_refinement", {
           prompt,
           preferred: req.body?.provider,
           jsonSchema: {
@@ -730,7 +730,7 @@ Return strict JSON adhering to the schema.
                 "generatedSvg",
               ],
             },
-        });
+        })).output;
 
         if (responseText) {
           const parsed = JSON.parse(responseText);
@@ -790,7 +790,7 @@ Generate structured JSON matching the schema for 6 diverse hook angles:
 6. "data_insight" (counter-intuitive data point or realization)
 `;
 
-        const responseText = await generateText({
+        const responseText = (await aiEngine.executeText("content_generation", {
           prompt,
           preferred: req.body?.provider,
           jsonSchema: {
@@ -829,7 +829,7 @@ Generate structured JSON matching the schema for 6 diverse hook angles:
               },
               required: ["hooks"],
             },
-        });
+        })).output;
 
         if (responseText) {
           const parsed = JSON.parse(responseText);
@@ -948,7 +948,7 @@ Generate a comprehensive audit that:
 3. Gives prioritized, non-destructive modernization recommendations (so the client does not need to start from scratch).
 `;
 
-        const responseText = await generateText({
+        const responseText = (await aiEngine.executeText("brand_audit", {
           prompt,
           preferred: req.body?.provider,
           jsonSchema: {
@@ -986,7 +986,7 @@ Generate a comprehensive audit that:
                 "quickFixPivots",
               ],
             },
-        });
+        })).output;
 
         if (responseText) {
           const parsed = JSON.parse(responseText);
@@ -1076,12 +1076,12 @@ app.post("/api/generate-logo-image", imageRateLimiter, async (req, res) => {
     // 1. Attempt AI image generation across the provider gateway (OpenAI → Gemini → Higgsfield)
     try {
       const enrichedPrompt = `Photorealistic 3D luxury physical logomark emblem render for brand "${displayBrandName}" (${industry || "Design"}). Primary color ${pColor}, secondary ${sColor}, accent ${aColor}. High-end architectural studio setting, raytraced global illumination, volumetric rim lighting, macro lens depth of field, 8k octane render: ${prompt}`;
-      const result = await generateImage({
+      const result = (await aiEngine.executeImage("image_generation", {
         prompt: enrichedPrompt,
         aspectRatio: "1:1",
         size: validResolution,
         preferred: req.body?.provider,
-      });
+      })).output;
       if (result) {
         return res.json({
           imageUrl: result.imageUrl,
@@ -1422,12 +1422,12 @@ Typography: Heading: ${brandContext.typography?.headingFont}, Body: ${brandConte
         const transcript = messages
           .map((msg: any) => `${msg.sender === "user" ? "User" : "Assistant"}: ${msg.text}`)
           .join("\n\n");
-        const responseText = await generateText({
+        const responseText = (await aiEngine.executeText("assistant", {
           prompt: `${transcript}\n\nAssistant:`,
           system: systemInstruction,
           preferred: provider || "auto",
           tier: "lite",
-        });
+        })).output;
         if (responseText) {
           return res.json({ reply: responseText });
         }
@@ -1509,7 +1509,7 @@ Generate structured JSON matching the schema:
 18. whatsappMessageTemplate (clean, markdown-formatted message with bolding and call to action for WhatsApp Broadcast)
 `;
 
-        const responseText = await generateText({
+        const responseText = (await aiEngine.executeText("social_post", {
           prompt,
           preferred: req.body?.provider,
           jsonSchema: {
@@ -1559,7 +1559,7 @@ Generate structured JSON matching the schema:
                 "recommendedTheme",
               ],
             },
-        });
+        })).output;
 
         if (responseText) {
           const postData = JSON.parse(responseText);
@@ -1662,11 +1662,11 @@ app.post("/api/generate-social-image", imageRateLimiter, async (req, res) => {
 
     // Attempt AI image generation across the provider gateway (OpenAI → Gemini → Higgsfield)
     try {
-      const result = await generateImage({
+      const result = (await aiEngine.executeImage("social_image", {
         prompt: `High-end editorial aesthetic background photograph for social media template: ${prompt}. Atmospheric, sophisticated lighting, artistic depth of field, minimalist composition.`,
         aspectRatio: validAspectRatio as any,
         preferred: req.body?.provider,
-      });
+      })).output;
       if (result) {
         return res.json({ imageUrl: result.imageUrl, engine: result.engine });
       }
@@ -1811,11 +1811,11 @@ Ensure high analytical rigor, historical accuracy, deep semiotic insight into th
     let parsedData = null;
 
     try {
-      const text = await generateText({
+      const text = (await aiEngine.executeText("brand_research", {
         prompt: systemPrompt,
         requireJson: true,
         temperature: 0.3,
-      });
+      })).output;
       let cleanJson = (text || "").trim();
       if (cleanJson.startsWith("```json")) {
         cleanJson = cleanJson.slice(7);
@@ -1958,4 +1958,3 @@ Ensure high analytical rigor, historical accuracy, deep semiotic insight into th
   }
 });
 }
-
