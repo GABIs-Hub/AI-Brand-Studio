@@ -6,7 +6,7 @@ import {
   type TextGenerationRequest,
   type TextProvider,
 } from "../aiGateway";
-import { createImageProviderAdapters, createTextProviderAdapters } from "./adapters";
+import { createImageProviderAdapters, createTextProviderAdapters, type ProviderAdapterAttempt } from "./adapters";
 import { getCapabilityDefinition, type AiCapability } from "./capabilityRegistry";
 import { normalizeAiError, AiEngineError, type AiErrorCategory } from "./errors";
 import { resolveModel, type ModelResolution, type ProductModelAlias } from "./modelRegistry";
@@ -30,8 +30,8 @@ export interface AiExecutionResult<T> {
 }
 
 export interface AiEngineDependencies {
-  textAdapters: ReadonlyMap<TextProvider, { execute(request: TextGenerationRequest): Promise<string> }>;
-  imageAdapters: ReadonlyMap<ImageProvider, { execute(request: ImageGenerationRequest): Promise<ImageGenerationResult> }>;
+  textAdapters: ReadonlyMap<TextProvider, { execute(request: TextGenerationRequest, model: ProviderAdapterAttempt): Promise<string> }>;
+  imageAdapters: ReadonlyMap<ImageProvider, { execute(request: ImageGenerationRequest, model: ProviderAdapterAttempt): Promise<ImageGenerationResult> }>;
 }
 
 export class AiEngine {
@@ -59,6 +59,7 @@ export class AiEngine {
       alias: options.modelAlias,
       preferredProvider: request.preferred,
     });
+    this.assertResolvedModel(resolution);
     const adapter = this.textAdapters.get(resolution.provider as TextProvider);
     if (!adapter) throw new AiEngineError(`No adapter configured for ${resolution.provider}.`, "configuration");
     const metadata = this.startMetadata(capability, resolution);
@@ -68,7 +69,7 @@ export class AiEngine {
         tier: request.tier || definition.tier,
         allowProviderFallback: options.allowFallback ?? definition.retry.fallbackAllowed,
         onProviderAttempt: (provider) => this.recordProviderAttempt(metadata, capability, provider),
-      });
+      }, this.adapterModel(resolution));
       if (definition.structuredOutput === "json") this.validateStructuredOutput(output);
       if (metadata.attempt === 0) metadata.attempt = 1;
       metadata.endedAt = new Date().toISOString();
@@ -96,6 +97,7 @@ export class AiEngine {
       alias: options.modelAlias,
       preferredProvider: request.preferred,
     });
+    this.assertResolvedModel(resolution);
     const adapter = this.imageAdapters.get(resolution.provider as ImageProvider);
     if (!adapter) throw new AiEngineError(`No adapter configured for ${resolution.provider}.`, "configuration");
     const metadata = this.startMetadata(capability, resolution);
@@ -104,7 +106,7 @@ export class AiEngine {
         ...request,
         allowProviderFallback: options.allowFallback ?? definition.retry.fallbackAllowed,
         onProviderAttempt: (provider) => this.recordProviderAttempt(metadata, capability, provider),
-      });
+      }, this.adapterModel(resolution));
       if (metadata.attempt === 0) metadata.attempt = 1;
       metadata.endedAt = new Date().toISOString();
       metadata.success = true;
@@ -130,6 +132,19 @@ export class AiEngine {
       attempt: 0,
       success: false,
     };
+  }
+
+  private assertResolvedModel(resolution: ModelResolution): void {
+    if (resolution.source === "unresolved" || !resolution.providerModelId) {
+      throw new AiEngineError(
+        `No configured provider model is available for ${resolution.alias}.`,
+        "configuration"
+      );
+    }
+  }
+
+  private adapterModel(resolution: ModelResolution): ProviderAdapterAttempt {
+    return { provider: resolution.provider, providerModelId: resolution.providerModelId };
   }
 
   private recordProviderAttempt(

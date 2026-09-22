@@ -38,6 +38,19 @@ describe("AI model registry", () => {
     });
   });
 
+  it("selects the first configured automatic image provider without using a default ID", () => {
+    vi.stubEnv("OPENAI_IMAGE_MODEL", "");
+    vi.stubEnv("GEMINI_IMAGE_MODELS", "configured-gemini-image");
+
+    expect(resolveModel("image_generation")).toMatchObject({
+      alias: "nano-banana",
+      provider: "gemini",
+      providerModelId: "configured-gemini-image",
+      configurationKey: "GEMINI_IMAGE_MODELS",
+      source: "configuration",
+    });
+  });
+
   it("rejects unsupported capability/model combinations", () => {
     expect(() => resolveModel("image_generation", { alias: "astra" })).toThrow(
       "Model alias astra is not supported for image_generation."

@@ -14,7 +14,7 @@ describe("AI provider adapters", () => {
     gatewayMocks.generateText.mockResolvedValue("normalized text");
     const adapter = createTextProviderAdapters().get("anthropic");
 
-    await expect(adapter?.execute({ prompt: "prompt" })).resolves.toBe("normalized text");
+    await expect(adapter?.execute({ prompt: "prompt" }, { provider: "anthropic", providerModelId: "configured-model" })).resolves.toBe("normalized text");
     expect(gatewayMocks.generateText).toHaveBeenCalledWith({
       prompt: "prompt",
       preferred: "anthropic",
@@ -25,7 +25,7 @@ describe("AI provider adapters", () => {
     gatewayMocks.generateImage.mockResolvedValue({ imageUrl: "https://example.test/image.png", engine: "gemini" });
     const adapter = createImageProviderAdapters().get("gemini");
 
-    await expect(adapter?.execute({ prompt: "image", aspectRatio: "1:1" })).resolves.toEqual({
+    await expect(adapter?.execute({ prompt: "image", aspectRatio: "1:1" }, { provider: "gemini", providerModelId: "configured-image-model" })).resolves.toEqual({
       imageUrl: "https://example.test/image.png",
       engine: "gemini",
     });

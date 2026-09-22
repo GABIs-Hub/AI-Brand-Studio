@@ -315,6 +315,9 @@ export interface TextGenerationRequest {
   onProviderAttempt?: (provider: TextProvider) => void;
   /** When false, an explicitly selected provider is not cascaded to others. */
   allowProviderFallback?: boolean;
+  /** Resolved by the AI engine; legacy callers may omit this. */
+  providerModelId?: string;
+  providerModelProvider?: TextProvider;
 }
 
 /**
@@ -394,7 +397,7 @@ async function callOpenAIText(req: TextGenerationRequest): Promise<string | null
     OPENAI_TEXT_LADDER,
     req.tier || 'standard',
     parseModelList(process.env.OPENAI_TEXT_MODELS),
-    process.env.OPENAI_MODEL || undefined
+    req.providerModelProvider === 'openai' ? req.providerModelId : process.env.OPENAI_MODEL || undefined
   );
   let lastError: any = null;
   for (const model of ladder) {
@@ -473,7 +476,7 @@ async function callAnthropicText(req: TextGenerationRequest): Promise<string | n
     ANTHROPIC_TEXT_LADDER,
     req.tier || 'standard',
     parseModelList(process.env.ANTHROPIC_TEXT_MODELS),
-    process.env.ANTHROPIC_MODEL || undefined
+    req.providerModelProvider === 'anthropic' ? req.providerModelId : process.env.ANTHROPIC_MODEL || undefined
   );
   let lastError: any = null;
   for (const model of ladder) {
@@ -533,7 +536,9 @@ async function callGeminiText(req: TextGenerationRequest): Promise<string | null
   const models = pickModelsForTier(
     GEMINI_TEXT_LADDER,
     req.tier || 'standard',
-    parseModelList(process.env.GEMINI_TEXT_MODELS)
+    req.providerModelProvider === 'gemini' && req.providerModelId
+      ? [req.providerModelId]
+      : parseModelList(process.env.GEMINI_TEXT_MODELS)
   );
   const response = await generateContentWithFallback(
     ai,
@@ -560,6 +565,9 @@ export interface ImageGenerationRequest {
   onProviderAttempt?: (provider: ImageProvider) => void;
   /** When false, an explicitly selected provider is not cascaded to others. */
   allowProviderFallback?: boolean;
+  /** Resolved by the AI engine; legacy callers may omit this. */
+  providerModelId?: string;
+  providerModelProvider?: ImageProvider;
 }
 
 export interface ImageGenerationResult {
@@ -634,7 +642,9 @@ async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenera
     '9:16': '1024x1536',
   };
   const resp = await client.images.generate({
-    model: OPENAI_IMAGE_MODEL,
+    model: req.providerModelProvider === 'openai' && req.providerModelId
+      ? req.providerModelId
+      : OPENAI_IMAGE_MODEL,
     prompt: req.prompt,
     size: sizeMap[req.aspectRatio || '1:1'] as any,
     quality: 'high',
@@ -659,7 +669,9 @@ async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenera
   const ai = getGeminiClient();
   if (!ai) return null;
   const imageModels =
-    parseModelList(process.env.GEMINI_IMAGE_MODELS).length > 0
+    req.providerModelProvider === 'gemini' && req.providerModelId
+      ? [req.providerModelId]
+      : parseModelList(process.env.GEMINI_IMAGE_MODELS).length > 0
       ? parseModelList(process.env.GEMINI_IMAGE_MODELS)
       : GEMINI_IMAGE_MODELS;
   for (const model of imageModels) {
@@ -702,14 +714,19 @@ async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenera
 async function callHiggsfieldImage(req: ImageGenerationRequest): Promise<ImageGenerationResult | null> {
   ensureHiggsfieldConfig();
   if (!higgsfieldConfigured && !process.env.HF_CREDENTIALS) return null;
-  const response = await higgsfield.subscribe(HIGGSFIELD_ENDPOINT, {
+  const response = await higgsfield.subscribe(
+    req.providerModelProvider === 'higgsfield' && req.providerModelId
+      ? req.providerModelId
+      : HIGGSFIELD_ENDPOINT,
+    {
     input: {
       prompt: req.prompt,
       aspect_ratio: req.aspectRatio || '1:1',
       safety_tolerance: 2,
     },
     withPolling: true,
-  });
+    }
+  );
   if (response && response.status === 'completed') {
     const url = response.images?.[0]?.url;
     if (url) return { imageUrl: url, engine: 'higgsfield' };

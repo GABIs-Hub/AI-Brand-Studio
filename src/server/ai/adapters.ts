@@ -15,12 +15,12 @@ export interface ProviderAdapterAttempt {
 
 export interface TextProviderAdapter {
   readonly provider: TextProvider;
-  execute(request: TextGenerationRequest): Promise<string>;
+  execute(request: TextGenerationRequest, model: ProviderAdapterAttempt): Promise<string>;
 }
 
 export interface ImageProviderAdapter {
   readonly provider: ImageProvider;
-  execute(request: ImageGenerationRequest): Promise<ImageGenerationResult>;
+  execute(request: ImageGenerationRequest, model: ProviderAdapterAttempt): Promise<ImageGenerationResult>;
 }
 
 /**
@@ -34,7 +34,12 @@ export function createTextProviderAdapters(): ReadonlyMap<TextProvider, TextProv
       provider,
       {
         provider,
-        execute: (request) => generateText({ ...request, preferred: provider }),
+        execute: (request, model) => generateText({
+          ...request,
+          preferred: provider,
+          providerModelId: model.providerModelId,
+          providerModelProvider: provider,
+        }),
       },
     ])
   );
@@ -46,7 +51,12 @@ export function createImageProviderAdapters(): ReadonlyMap<ImageProvider, ImageP
       provider,
       {
         provider,
-        execute: (request) => generateImage({ ...request, preferred: provider }),
+        execute: (request, model) => generateImage({
+          ...request,
+          preferred: provider,
+          providerModelId: model.providerModelId,
+          providerModelProvider: provider,
+        }),
       },
     ])
   );

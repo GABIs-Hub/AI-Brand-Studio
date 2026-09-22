@@ -52,13 +52,22 @@ function resolveImageAlias(preferredProvider?: ImageProvider): ModelResolution {
   // The existing gateway tries OpenAI, Gemini, then Higgsfield for auto image
   // requests. Keep that first attempt for compatibility while exposing the
   // product-level image alias separately from provider model IDs.
-  const provider: ImageProvider = preferredProvider && preferredProvider !== "auto" ? preferredProvider : "openai";
-  const configuration =
+  const configuredProviders: Array<{ provider: ImageProvider; configuration: { value?: string; key: string } }> = [
+    { provider: "openai", configuration: firstConfigured("OPENAI_IMAGE_MODEL") },
+    { provider: "gemini", configuration: firstConfigured("GEMINI_IMAGE_MODELS") },
+    { provider: "higgsfield", configuration: firstConfigured("HIGGSFIELD_ENDPOINT") },
+  ];
+  const selected = preferredProvider && preferredProvider !== "auto"
+    ? configuredProviders.find(({ provider }) => provider === preferredProvider)
+    : configuredProviders.find(({ configuration }) => configuration.value);
+  const provider = selected?.provider || (preferredProvider && preferredProvider !== "auto" ? preferredProvider : "openai");
+  const configuration = selected?.configuration || firstConfigured(
     provider === "openai"
-      ? firstConfigured("OPENAI_IMAGE_MODEL")
+      ? "OPENAI_IMAGE_MODEL"
       : provider === "gemini"
-        ? firstConfigured("GEMINI_IMAGE_MODELS")
-        : firstConfigured("HIGGSFIELD_ENDPOINT");
+        ? "GEMINI_IMAGE_MODELS"
+        : "HIGGSFIELD_ENDPOINT"
+  );
   return {
     alias: "nano-banana",
     provider,
