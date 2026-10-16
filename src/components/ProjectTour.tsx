@@ -431,7 +431,7 @@ export function ProjectTour({
       >
         <div className="bg-[#1A1A1A] text-white dark:bg-[#FAF9F6] dark:text-[#1A1A1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/30 shadow-2xl p-2.5 px-4 flex items-center gap-3">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsMinimized(false)}>
-            <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+            <div className="w-2.5 h-2.5 rounded-xl-full bg-amber-400 animate-ping" />
             <div className="flex flex-col">
               <span className="text-[9px] uppercase tracking-widest font-black flex items-center gap-1.5">
                 <Compass className="w-3 h-3 text-amber-400" />
@@ -574,7 +574,7 @@ export function ProjectTour({
             <span className="font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate">
               {activeBrand?.brandName || 'Showcase Brand'}
             </span>
-            <span className="text-[9px] text-gray-500 dark:text-gray-500 font-serif italic truncate hidden sm:inline">
+            <span className="text-[9px] text-gray-500 dark:text-gray-500 font-display truncate hidden sm:inline">
               ({activeBrand?.industry || 'Brand Bible'})
             </span>
           </div>
@@ -624,7 +624,7 @@ export function ProjectTour({
         <div className="p-4 space-y-4 max-h-[50vh] overflow-y-auto">
           {/* Step Header with Active View Mode Badge */}
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-none bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] flex items-center justify-center shrink-0 shadow-sm">
               <StepIcon className="w-4 h-4" />
             </div>
             <div className="space-y-0.5">
@@ -642,7 +642,7 @@ export function ProjectTour({
                   Module {currentStepIndex + 1}/{activeSteps.length}
                 </span>
               </div>
-              <h4 className="text-sm font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2] font-bold">
+              <h4 className="text-sm font-display text-[#1A1A1A] dark:text-[#F9F7F2] font-bold">
                 {currentStep.title}
               </h4>
               <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 leading-relaxed">

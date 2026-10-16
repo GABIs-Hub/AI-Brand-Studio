@@ -257,7 +257,7 @@ export function CoTPromptRefinementStudio({
                 5-Stage Vector Deconstruction
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
+            <h2 className="text-2xl sm:text-3xl font-display text-[#1A1A1A] dark:text-[#F9F7F2]">
               Chain-of-Thought Logo Prompt Refinement Lab
             </h2>
             <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
@@ -302,7 +302,7 @@ export function CoTPromptRefinementStudio({
                   <span className="text-[10px] font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
                     {arch.label}
                   </span>
-                  <span className="text-[9px] text-gray-500 dark:text-zinc-400 line-clamp-2 mt-1 font-serif italic">
+                  <span className="text-[9px] text-gray-500 dark:text-zinc-400 line-clamp-2 mt-1 font-display">
                     {arch.desc}
                   </span>
                 </button>
@@ -338,7 +338,7 @@ export function CoTPromptRefinementStudio({
                       {mode.badge}
                     </span>
                   </div>
-                  <p className={`text-[10px] mt-1.5 font-serif italic ${
+                  <p className={`text-[10px] mt-1.5 font-display ${
                     complexityLevel === mode.id ? 'opacity-90' : 'text-gray-500 dark:text-zinc-400'
                   }`}>
                     {mode.desc}
@@ -375,7 +375,7 @@ export function CoTPromptRefinementStudio({
                 value={customDirective}
                 onChange={(e) => setCustomDirective(e.target.value)}
                 placeholder="Enter specific geometric or metaphorical directives (e.g. 'Golden ratio Nautilus spiral intersecting central focal dot')..."
-                className="flex-1 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 px-4 py-2.5 text-xs font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 focus:outline-hidden focus:border-[#1A1A1A] dark:focus:border-[#F9F7F2]"
+                className="flex-1 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 px-4 py-2.5 text-xs font-display text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 focus:outline-hidden focus:border-[#1A1A1A] dark:focus:border-[#F9F7F2]"
               />
               <button
                 type="button"
@@ -431,14 +431,14 @@ export function CoTPromptRefinementStudio({
                       className="w-full p-3.5 bg-gray-50/70 dark:bg-zinc-900/40 flex items-center justify-between text-left hover:bg-gray-100 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="w-5 h-5 rounded-full bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[10px] font-mono font-bold flex items-center justify-center">
+                        <span className="w-5 h-5 rounded-xl-full bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[10px] font-mono font-bold flex items-center justify-center">
                           {step.stepNumber}
                         </span>
                         <div>
                           <h4 className="text-xs font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
                             {step.stepName}
                           </h4>
-                          <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-serif italic">
+                          <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-display">
                             {step.focus}
                           </p>
                         </div>
@@ -452,7 +452,7 @@ export function CoTPromptRefinementStudio({
 
                     {isExpanded && (
                       <div className="p-4 bg-white dark:bg-[#1C1C1A] border-t border-gray-100 dark:border-zinc-800/80 space-y-3 text-xs">
-                        <p className="font-serif italic text-gray-700 dark:text-zinc-300 leading-relaxed">
+                        <p className="font-display text-gray-700 dark:text-zinc-300 leading-relaxed">
                           {step.reasoning}
                         </p>
 
@@ -505,7 +505,7 @@ export function CoTPromptRefinementStudio({
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Anti-Basic Quality Benchmark: Passed</span>
                 </div>
-                <p className="text-[11px] font-serif italic text-emerald-800 dark:text-emerald-200 leading-relaxed">
+                <p className="text-[11px] font-display text-emerald-800 dark:text-emerald-200 leading-relaxed">
                   {refinementResult.visualComplexityAnalysis}
                 </p>
               </div>
@@ -522,7 +522,7 @@ export function CoTPromptRefinementStudio({
                 <span className="text-[9px] uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] block">
                   Synthesized Vector Concept
                 </span>
-                <span className="text-[10px] text-gray-500 dark:text-zinc-400 font-serif italic">
+                <span className="text-[10px] text-gray-500 dark:text-zinc-400 font-display">
                   {refinementResult?.conceptualMetaphor || 'CoT Precision Concept'}
                 </span>
               </div>
@@ -603,7 +603,7 @@ export function CoTPromptRefinementStudio({
                     className="w-full h-16 flex items-center justify-center bg-white dark:bg-black/40 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-2"
                     dangerouslySetInnerHTML={{ __html: sanitizeSvg(naiveBasicShapeSvg) }}
                   />
-                  <p className="text-[9px] text-gray-500 dark:text-gray-500 font-serif italic">
+                  <p className="text-[9px] text-gray-500 dark:text-gray-500 font-display">
                     Low memorability, no optical tension or storytelling.
                   </p>
                 </div>
@@ -621,7 +621,7 @@ export function CoTPromptRefinementStudio({
                       __html: sanitizeSvg(refinementResult?.generatedSvg || naiveBasicShapeSvg),
                     }}
                   />
-                  <p className="text-[9px] text-emerald-700 dark:text-emerald-300 font-serif italic">
+                  <p className="text-[9px] text-emerald-700 dark:text-emerald-300 font-display">
                     Bespoke mathematical topology, gradients, and depth.
                   </p>
                 </div>

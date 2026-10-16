@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { shareBrandBible, formatBrandSummarySnippet } from '../lib/share';
+import { exportBrandPowerPointDeck } from '../services/presentationService';
 import { generateFullBrandAssetKitZip, AssetKitProgress } from '../utils/brandAssetKit';
 
 interface ExportModalProps {
@@ -437,7 +438,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" id="export-modal">
-      <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative border border-gray-200 dark:border-gray-200 dark:border-[#F9F7F2]/20">
+      <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] rounded-xl-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative border border-gray-200 dark:border-gray-200 dark:border-[#F9F7F2]/20">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
@@ -456,7 +457,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Full Production Asset Kit (.ZIP) Enterprise Card */}
           <div
-            className="sm:col-span-2 p-5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-2 border-amber-400/40 dark:border-amber-400/30 rounded-2xl relative overflow-hidden flex flex-col justify-between space-y-4"
+            className="sm:col-span-2 p-5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-2 border-amber-400/40 dark:border-amber-400/30 rounded-xl-2xl relative overflow-hidden flex flex-col justify-between space-y-4"
             id="full-asset-kit-card"
           >
             <div className="flex items-start justify-between gap-4">
@@ -469,7 +470,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
                     <h3 className="font-bold text-base text-gray-900 dark:text-[#F9F7F2]">
                       Full Brand Production Asset Kit (.ZIP)
                     </h3>
-                    <span className="text-[9px] uppercase font-black px-2 py-0.5 bg-amber-400 text-black rounded-full">
+                    <span className="text-[9px] uppercase font-black px-2 py-0.5 bg-amber-400 text-black rounded-xl-full">
                       All-in-One
                     </span>
                   </div>
@@ -490,7 +491,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
                   </span>
                   <span className="font-bold">{zipProgress?.percent || 0}%</span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-full overflow-hidden">
+                <div className="w-full bg-gray-200 dark:bg-zinc-700 h-2 rounded-xl-full overflow-hidden">
                   <div
                     className="bg-amber-400 h-full transition-all duration-300"
                     style={{ width: `${zipProgress?.percent || 0}%` }}
@@ -528,7 +529,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* Web Share & Quick Snippet */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between sm:col-span-2" id="share-snippet-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-xl-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between sm:col-span-2" id="share-snippet-card">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -542,7 +543,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
                 </div>
               </div>
               {shareFeedback && (
-                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-md border border-emerald-200 dark:border-emerald-800 shrink-0">
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-xl-md border border-emerald-200 dark:border-emerald-800 shrink-0">
                   ✓ {shareFeedback}
                 </span>
               )}
@@ -550,7 +551,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 onClick={handleShare}
-                className="flex-1 min-w-[140px] py-2 px-3 text-xs font-bold rounded-lg bg-[#1A1A1A] hover:bg-black dark:bg-[#F9F7F2] dark:hover:bg-white text-white dark:text-[#1A1A1A] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="flex-1 min-w-[140px] py-2 px-3 text-xs font-bold rounded-xl-lg bg-[#1A1A1A] hover:bg-black dark:bg-[#F9F7F2] dark:hover:bg-white text-white dark:text-[#1A1A1A] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 id="native-share-btn"
               >
                 <Share2 className="w-3.5 h-3.5" />
@@ -558,7 +559,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
               </button>
               <button
                 onClick={() => handleCopy(summarySnippet, 'snippet')}
-                className="py-2 px-3 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                className="py-2 px-3 text-xs font-semibold rounded-xl-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                 id="copy-snippet-btn"
               >
                 {copiedType === 'snippet' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -568,7 +569,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* Structured Brand PDF */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="pdf-export-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-xl-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="pdf-export-card">
             <div>
               <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 flex items-center justify-center mb-2">
                 <FileText className="w-5 h-5" />
@@ -582,7 +583,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
               <button
                 onClick={handleDownloadPdf}
                 disabled={isGeneratingPdf}
-                className="w-full py-1.5 px-3 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full py-1.5 px-3 text-xs font-bold rounded-xl-lg bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
                 id="download-pdf-btn"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -591,8 +592,41 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
             </div>
           </div>
 
+          {/* Editable PowerPoint Deck */}
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-xl-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="pptx-export-card">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 flex items-center justify-center mb-2">
+                <Presentation className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">PowerPoint Deck</h3>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal mt-0.5">
+                Download a fully editable 16:9 brand presentation in .pptx format.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={async () => {
+                  try {
+                    setShareFeedback('Generating PPTX...');
+                    await exportBrandPowerPointDeck(brand);
+                    setShareFeedback('PPTX Downloaded');
+                  } catch (e) {
+                    console.error('PPTX failed:', e);
+                    setShareFeedback('Export failed');
+                  }
+                  setTimeout(() => setShareFeedback(null), 3000);
+                }}
+                className="w-full py-1.5 px-3 text-xs font-bold rounded-xl-lg bg-orange-600 hover:bg-orange-700 text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
+                id="download-pptx-btn"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download .pptx</span>
+              </button>
+            </div>
+          </div>
+
           {/* JSON Export */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="json-export-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-xl-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="json-export-card">
             <div>
               <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center mb-2">
                 <FileJson className="w-5 h-5" />
@@ -605,7 +639,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(jsonString, 'json')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-xl-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                 id="copy-json-btn"
               >
                 {copiedType === 'json' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -613,7 +647,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
               </button>
               <button
                 onClick={() => handleDownload(jsonString, `${brand.brandName.toLowerCase()}-brand-bible.json`, 'application/json')}
-                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
+                className="py-1.5 px-2.5 text-xs font-bold rounded-xl-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
                 title="Download JSON"
                 id="download-json-btn"
               >
@@ -623,7 +657,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* CSS Variables Export */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="css-export-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-xl-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="css-export-card">
             <div>
               <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 flex items-center justify-center mb-2">
                 <FileCode className="w-5 h-5" />
@@ -636,7 +670,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(cssString, 'css')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-xl-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                 id="copy-css-btn"
               >
                 {copiedType === 'css' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -644,7 +678,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
               </button>
               <button
                 onClick={() => handleDownload(cssString, `${brand.brandName.toLowerCase()}-brand-tokens.css`, 'text/css')}
-                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
+                className="py-1.5 px-2.5 text-xs font-bold rounded-xl-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
                 title="Download CSS"
                 id="download-css-btn"
               >
@@ -654,7 +688,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
           </div>
 
           {/* Markdown Summary Export */}
-          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="markdown-export-card">
+          <div className="bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-xl-2xl border border-gray-200 dark:border-gray-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between" id="markdown-export-card">
             <div>
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mb-2">
                 <FileUp className="w-5 h-5" />
@@ -667,7 +701,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
             <div className="flex gap-1.5 pt-2">
               <button
                 onClick={() => handleCopy(markdownString, 'md')}
-                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
+                className="flex-1 py-1.5 px-2 text-xs font-semibold rounded-xl-lg bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 flex items-center justify-center gap-1 cursor-pointer"
                 id="copy-md-btn"
               >
                 {copiedType === 'md' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -675,7 +709,7 @@ export function ExportModal({ brand, isOpen, onClose, onOpenPitchDeck }: ExportM
               </button>
               <button
                 onClick={() => handleDownload(markdownString, `${brand.brandName.toLowerCase()}-brand-bible.md`, 'text/markdown')}
-                className="py-1.5 px-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
+                className="py-1.5 px-2.5 text-xs font-bold rounded-xl-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center cursor-pointer"
                 title="Download MD"
                 id="download-md-btn"
               >

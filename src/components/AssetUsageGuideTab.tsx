@@ -84,7 +84,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               Brand Standards & Compliance
             </span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
+          <h2 className="text-3xl sm:text-4xl font-display text-[#1A1A1A] dark:text-[#F9F7F2]">
             Asset Usage Guide
           </h2>
           <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-2xl mt-2 leading-relaxed font-sans">
@@ -95,7 +95,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={copyRuleChecklist}
-            className="flex items-center gap-2 px-4 py-2.5 text-[10px] uppercase tracking-widest font-bold border border-[#1A1A1A] dark:border-[#F9F7F2]/30 bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] hover:bg-black dark:hover:bg-white transition-all cursor-pointer rounded-none"
+            className="flex items-center gap-2 px-4 py-2.5 text-[10px] uppercase tracking-widest font-bold border border-[#1A1A1A] dark:border-[#F9F7F2]/30 bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] hover:bg-black dark:hover:bg-white transition-all cursor-pointer rounded-xl"
             id="copy-usage-rules-btn"
           >
             {copiedRules ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -122,7 +122,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id as GuideFilter)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold transition-all rounded-none border cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase tracking-widest font-bold transition-all rounded-xl border cursor-pointer ${
                 isActive
                   ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
                   : 'bg-transparent text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-gray-300 dark:border-zinc-800 hover:border-[#1A1A1A] dark:hover:border-[#F9F7F2]'
@@ -166,7 +166,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 </span>
               </div>
               <div className="p-8 flex items-center justify-center min-h-[190px] bg-gray-50 dark:bg-zinc-900/40 relative">
-                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-gray-200 dark:border-gray-200">
+                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-xl shadow-xs border border-gray-200 dark:border-gray-200">
                   <div
                     className="w-full h-full flex items-center justify-center"
                     dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
@@ -192,7 +192,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 </span>
               </div>
               <div className="p-8 flex items-center justify-center min-h-[190px] bg-rose-50/20 dark:bg-zinc-900/40 relative overflow-hidden">
-                <div className="w-36 h-20 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-rose-200 scale-x-125 scale-y-75 opacity-90">
+                <div className="w-36 h-20 flex items-center justify-center p-2 bg-white dark:bg-white rounded-xl shadow-xs border border-rose-200 scale-x-125 scale-y-75 opacity-90">
                   <div
                     className="w-full h-full flex items-center justify-center"
                     dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
@@ -258,7 +258,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               </div>
               <div className="p-8 flex items-center justify-center min-h-[190px] bg-rose-50/20 dark:bg-zinc-900/40 relative">
                 <div
-                  className="w-28 h-28 flex items-center justify-center p-2 bg-white rounded-none"
+                  className="w-28 h-28 flex items-center justify-center p-2 bg-white rounded-xl"
                   style={{
                     filter: 'drop-shadow(0px 18px 12px rgba(0,0,0,0.85)) blur(0.3px)',
                   }}
@@ -292,7 +292,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               </div>
               <div className="p-8 flex items-center justify-center gap-6 min-h-[190px] bg-gray-50 dark:bg-zinc-900/40">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-8 h-8 p-1 bg-white dark:bg-white rounded-none shadow-xs border border-gray-300 dark:border-gray-300 flex items-center justify-center">
+                  <div className="w-8 h-8 p-1 bg-white dark:bg-white rounded-xl shadow-xs border border-gray-300 dark:border-gray-300 flex items-center justify-center">
                     <div
                       className="w-full h-full"
                       dangerouslySetInnerHTML={{ __html: sanitizeSvg(secondarySvg) }}
@@ -301,7 +301,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                   <span className="text-[9px] font-mono text-gray-500 dark:text-gray-500">32px Favicon</span>
                 </div>
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 p-1.5 bg-white dark:bg-white rounded-none shadow-xs border border-gray-300 dark:border-gray-300 flex items-center justify-center">
+                  <div className="w-14 h-14 p-1.5 bg-white dark:bg-white rounded-xl shadow-xs border border-gray-300 dark:border-gray-300 flex items-center justify-center">
                     <div
                       className="w-full h-full"
                       dangerouslySetInnerHTML={{ __html: sanitizeSvg(secondarySvg) }}
@@ -330,7 +330,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               </div>
               <div className="p-8 flex items-center justify-center min-h-[190px] bg-rose-50/20 dark:bg-zinc-900/40 relative">
                 <div
-                  className="w-28 h-28 flex items-center justify-center p-2 bg-gradient-to-tr from-fuchsia-400 via-lime-400 to-cyan-400 rounded-none"
+                  className="w-28 h-28 flex items-center justify-center p-2 bg-gradient-to-tr from-fuchsia-400 via-lime-400 to-cyan-400 rounded-xl"
                   style={{ filter: 'hue-rotate(190deg) saturate(3)' }}
                 >
                   <div
@@ -361,7 +361,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 </span>
               </div>
               <div className="p-8 flex items-center justify-center min-h-[190px] bg-gray-50 dark:bg-zinc-900/40">
-                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-gray-200 dark:border-gray-200">
+                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-xl shadow-xs border border-gray-200 dark:border-gray-200">
                   <div
                     className="w-full h-full flex items-center justify-center"
                     dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
@@ -387,7 +387,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                 </span>
               </div>
               <div className="p-8 flex items-center justify-center min-h-[190px] bg-rose-50/20 dark:bg-zinc-900/40 relative overflow-hidden">
-                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-none shadow-xs border border-rose-200 rotate-25 skew-x-12 opacity-80">
+                <div className="w-28 h-28 flex items-center justify-center p-2 bg-white dark:bg-white rounded-xl shadow-xs border border-rose-200 rotate-25 skew-x-12 opacity-80">
                   <div
                     className="w-full h-full flex items-center justify-center"
                     dangerouslySetInnerHTML={{ __html: sanitizeSvg(logo.primaryLogoSvg) }}
@@ -442,7 +442,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
               </div>
 
               {/* Blueprint Visual Representation */}
-              <div className="relative p-12 bg-slate-900 rounded-none border border-slate-700 flex items-center justify-center overflow-hidden my-4">
+              <div className="relative p-12 bg-slate-900 rounded-xl border border-slate-700 flex items-center justify-center overflow-hidden my-4">
                 {/* Blueprint grid background */}
                 <div
                   className="absolute inset-0 opacity-20 pointer-events-none"
@@ -627,7 +627,7 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                   style={{ fontFamily: `'${typography.bodyFont}', sans-serif` }}
                   className="text-xs text-gray-700 dark:text-zinc-300 leading-relaxed max-w-prose"
                 >
-                  Our mission is grounded in rigorous craftsmanship. We combine refined aesthetic sensibility with seamless functional execution to create timeless brand value for global audiences.
+                  Our mission is grounded-lg in rigorous craftsmanship. We combine refined aesthetic sensibility with seamless functional execution to create timeless brand value for global audiences.
                 </p>
               </div>
               <div className="p-4 border-t border-gray-100 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A]">
@@ -657,8 +657,8 @@ export function AssetUsageGuideTab({ brand }: AssetUsageGuideTabProps) {
                     Transforming the industry...
                   </h4>
                 </div>
-                <p className="text-xs font-serif font-bold text-amber-800 dark:text-amber-400 tracking-widest leading-none">
-                  Our mission is grounded in randomized typographic chaos that degrades brand credibility and visual hierarchy.
+                <p className="text-xs font-display font-bold text-amber-800 dark:text-amber-400 tracking-widest leading-none">
+                  Our mission is grounded-lg in randomized typographic chaos that degrades brand credibility and visual hierarchy.
                 </p>
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <XCircle className="w-16 h-16 text-rose-500/25 stroke-[1.5]" />

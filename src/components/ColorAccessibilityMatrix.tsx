@@ -102,12 +102,12 @@ export function ColorAccessibilityMatrix({ palette }: ColorAccessibilityMatrixPr
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-xl-full bg-emerald-500" />
             <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
               WCAG 2.1 Color Accessibility Matrix
             </h3>
           </div>
-          <p className="text-xs font-serif italic text-gray-600 dark:text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-xs font-display text-gray-600 dark:text-gray-600 dark:text-gray-400 mt-1">
             Automated luminance auditing across all color pairings for WCAG AA/AAA compliance and accessible interface design.
           </p>
         </div>
@@ -156,7 +156,7 @@ export function ColorAccessibilityMatrix({ palette }: ColorAccessibilityMatrixPr
                 Accessible Typography Specimen
               </span>
               <h2
-                className="text-2xl sm:text-3xl font-serif italic font-bold tracking-tight mb-2"
+                className="text-2xl sm:text-3xl font-display font-bold tracking-tight mb-2"
                 style={{ color: selectedFgHex }}
               >
                 Clear, Legible Brand Aesthetics
@@ -285,7 +285,7 @@ export function ColorAccessibilityMatrix({ palette }: ColorAccessibilityMatrixPr
                     type="button"
                     onClick={() => setSelectedBgHex(c.hex)}
                     style={{ backgroundColor: c.hex }}
-                    className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
+                    className={`w-6 h-6 rounded-xl-full border-2 transition-transform cursor-pointer ${
                       selectedBgHex.toLowerCase() === c.hex.toLowerCase()
                         ? 'scale-125 ring-2 ring-black dark:ring-white border-white'
                         : 'border-gray-300 dark:border-gray-300 dark:border-zinc-600 hover:scale-110'
@@ -307,7 +307,7 @@ export function ColorAccessibilityMatrix({ palette }: ColorAccessibilityMatrixPr
                     type="button"
                     onClick={() => setSelectedFgHex(c.hex)}
                     style={{ backgroundColor: c.hex }}
-                    className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
+                    className={`w-6 h-6 rounded-xl-full border-2 transition-transform cursor-pointer ${
                       selectedFgHex.toLowerCase() === c.hex.toLowerCase()
                         ? 'scale-125 ring-2 ring-black dark:ring-white border-white'
                         : 'border-gray-300 dark:border-gray-300 dark:border-zinc-600 hover:scale-110'
@@ -347,7 +347,7 @@ export function ColorAccessibilityMatrix({ palette }: ColorAccessibilityMatrixPr
                   >
                     <div className="flex flex-col items-center gap-1">
                       <span
-                        className="w-4 h-4 rounded-full border border-black/10 shadow-xs inline-block"
+                        className="w-4 h-4 rounded-xl-full border border-black/10 shadow-xs inline-block"
                         style={{ backgroundColor: bg.hex }}
                       />
                       <span className="text-[9px] font-bold text-gray-700 dark:text-gray-300 truncate max-w-[80px]">
@@ -368,7 +368,7 @@ export function ColorAccessibilityMatrix({ palette }: ColorAccessibilityMatrixPr
                   <td className="p-3 font-bold border-r border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-gray-50/30 dark:bg-zinc-800/10">
                     <div className="flex items-center gap-2">
                       <span
-                        className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-xs shrink-0"
+                        className="w-3.5 h-3.5 rounded-xl-full border border-black/10 shadow-xs shrink-0"
                         style={{ backgroundColor: fg.hex }}
                       />
                       <div>
@@ -399,12 +399,12 @@ export function ColorAccessibilityMatrix({ palette }: ColorAccessibilityMatrixPr
                         }`}
                       >
                         <div
-                          className="p-1.5 rounded-xs flex flex-col items-center justify-center gap-0.5"
+                          className="p-1.5 rounded-xl-xs flex flex-col items-center justify-center gap-0.5"
                           style={{ backgroundColor: bg.hex, color: fg.hex }}
                         >
                           <span className="font-mono font-black text-xs leading-none">{ratio}</span>
                           <span
-                            className={`text-[7px] font-black uppercase px-1 rounded-xs ${
+                            className={`text-[7px] font-black uppercase px-1 rounded-xl-xs ${
                               wcag.normalText === 'AAA'
                                 ? 'bg-emerald-500 text-white'
                                 : wcag.normalText === 'AA'

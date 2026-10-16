@@ -4,6 +4,7 @@ import { DEFAULT_SAVED_BRANDS } from '../data/defaultBrands';
 import { GenerateBrandRequest, SamplePreset, BrandBible } from '../types';
 import { SessionUser } from '../lib/authClient';
 import { PopularBrandResearchStudio } from './PopularBrandResearchStudio';
+import { RebrandStudio } from './RebrandStudio';
 import {
   Sparkles,
   ArrowRight,
@@ -16,7 +17,14 @@ import {
   Check,
   Compass,
   Search,
+  Type,
 } from 'lucide-react';
+import { FontPickerModal } from './FontPickerModal';
+import {
+  GOOGLE_FONTS_CATALOG,
+  CURATED_GOOGLE_FONT_PAIRINGS,
+  loadGoogleFontDynamically,
+} from '../data/googleFontsCatalog';
 
 interface BrandInputFormProps {
   onGenerate: (req: GenerateBrandRequest) => void;
@@ -76,8 +84,8 @@ export function BrandInputForm({
   onClearInitialBrand,
   onSelectShowcaseBrand,
 }: BrandInputFormProps) {
-  const [activeMode, setActiveMode] = useState<'new_brand' | 'existing_brand' | 'research_brands'>(
-    initialBrandToUpgrade ? 'existing_brand' : 'new_brand'
+  const [activeMode, setActiveMode] = useState<'new_brand' | 'rebrand' | 'existing_brand' | 'research_brands'>(
+    initialBrandToUpgrade ? 'rebrand' : 'new_brand'
   );
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
@@ -87,6 +95,25 @@ export function BrandInputForm({
   const [industry, setIndustry] = useState('');
   const [aesthetics, setAesthetics] = useState<string[]>(['Modern & Minimalist']);
   const [targetAudience, setTargetAudience] = useState('');
+  const [powerLevel, setPowerLevel] = useState<'pro' | 'lite' | 'legacy'>('pro');
+  const [productsServices, setProductsServices] = useState('');
+  const [geographicMarket, setGeographicMarket] = useState('');
+  const [brandArchetype, setBrandArchetype] = useState('');
+  const [competitiveEnvironment, setCompetitiveEnvironment] = useState('');
+  const [primaryColorPreference, setPrimaryColorPreference] = useState('');
+  const [preferredHeadingFont, setPreferredHeadingFont] = useState('');
+  const [preferredBodyFont, setPreferredBodyFont] = useState('');
+  const [isFontPickerOpen, setIsFontPickerOpen] = useState(false);
+  const [fontPickerRole, setFontPickerRole] = useState<'heading' | 'body'>('heading');
+
+  // Dynamically load chosen Google Fonts for live preview
+  useEffect(() => {
+    if (preferredHeadingFont) loadGoogleFontDynamically(preferredHeadingFont);
+  }, [preferredHeadingFont]);
+
+  useEffect(() => {
+    if (preferredBodyFont) loadGoogleFontDynamically(preferredBodyFont);
+  }, [preferredBodyFont]);
 
   // Existing Brand State
   const [selectedBaseBrandId, setSelectedBaseBrandId] = useState<string | null>(
@@ -115,7 +142,7 @@ export function BrandInputForm({
   // Sync if initialBrandToUpgrade changes
   useEffect(() => {
     if (initialBrandToUpgrade) {
-      setActiveMode('existing_brand');
+      setActiveMode('rebrand');
       setSelectedBaseBrandId(initialBrandToUpgrade.id);
       setExistingName(initialBrandToUpgrade.brandName);
       setExistingTagline(initialBrandToUpgrade.tagline || '');
@@ -224,6 +251,19 @@ export function BrandInputForm({
       industry: industry.trim() || undefined,
       aesthetic: aesthetics.join(', '),
       targetAudience: targetAudience.trim() || undefined,
+      powerLevel,
+      productsServices: productsServices.trim() || undefined,
+      geographicMarket: geographicMarket.trim() || undefined,
+      brandArchetype: brandArchetype.trim() || undefined,
+      competitiveEnvironment: competitiveEnvironment.trim() || undefined,
+      primaryColorPreference: primaryColorPreference.trim() || undefined,
+      preferredTypography:
+        preferredHeadingFont.trim() || preferredBodyFont.trim()
+          ? {
+              headingFont: preferredHeadingFont.trim() || undefined,
+              bodyFont: preferredBodyFont.trim() || undefined,
+            }
+          : undefined,
     });
   };
 
@@ -260,7 +300,7 @@ export function BrandInputForm({
     <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12 animate-fadeIn">
       {/* GABI identity statement — the first thing visitors read */}
       <div className="text-center mb-6">
-        <p className="text-sm font-serif italic text-gray-600 dark:text-zinc-400">
+        <p className="text-sm font-display text-gray-600 dark:text-zinc-400">
           Turning brand ideas into complete, consistent identities.
         </p>
       </div>
@@ -277,7 +317,7 @@ export function BrandInputForm({
             className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMode === 'new_brand'
                 ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
-                : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
             }`}
             id="tab-new-brand-mode"
           >
@@ -286,30 +326,29 @@ export function BrandInputForm({
           </button>
           <button
             type="button"
+            onClick={() => setActiveMode('rebrand')}
+            className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeMode === 'rebrand' || activeMode === 'existing_brand'
+                ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
+                : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+            }`}
+            id="tab-rebrand-mode"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+            <span>Rebrand</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveMode('research_brands')}
             className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
               activeMode === 'research_brands'
                 ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
-                : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                : 'text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
             }`}
             id="tab-research-brands-mode"
           >
-            <Compass className="w-3.5 h-3.5 text-amber-400" />
-            <span>Iconic Brand Case Studies</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveMode('existing_brand')}
-            className={`px-4 sm:px-5 py-2 text-[10px] uppercase tracking-widest font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeMode === 'existing_brand'
-                ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] shadow-sm'
-                : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
-            }`}
-            id="tab-upgrade-brand-mode"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Upgrade Existing Brand</span>
-            <span className="sm:hidden">Upgrade</span>
+            <Compass className="w-3.5 h-3.5" />
+            <span>Case Studies</span>
           </button>
         </div>
       </div>
@@ -319,10 +358,10 @@ export function BrandInputForm({
         <div className="space-y-6">
           {/* Main Title & One-Sentence Pitch */}
           <div className="text-center space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-serif italic font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
+            <h1 className="text-3xl sm:text-4xl font-display font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
               Create Your Complete Brand Identity
             </h1>
-            <p className="text-sm font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-lg mx-auto">
+            <p className="text-sm font-display text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-lg mx-auto">
               Describe your idea in one sentence. AI will craft your vector logos, color palette, typography, social templates, and guidelines.
             </p>
           </div>
@@ -346,7 +385,7 @@ export function BrandInputForm({
                     <span className="text-[8px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 block">
                       ★ Showcase
                     </span>
-                    <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate mt-0.5">
+                    <h4 className="font-display text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate mt-0.5">
                       {b.brandName}
                     </h4>
                     <p className="text-[9px] text-gray-500 dark:text-zinc-400 truncate mt-0.5">
@@ -375,7 +414,7 @@ export function BrandInputForm({
                   <span className="text-[8px] font-mono uppercase tracking-widest text-gray-500 dark:text-gray-500 block">
                     {preset.aesthetic.split(' ')[0]}
                   </span>
-                  <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate mt-0.5">
+                  <h4 className="font-display text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate mt-0.5">
                     {preset.name}
                   </h4>
                 </button>
@@ -398,7 +437,7 @@ export function BrandInputForm({
                   value={mission}
                   onChange={(e) => setMission(e.target.value)}
                   placeholder="e.g. Crafting artisanal cold-brew coffee with ethically sourced single-origin beans and cozy neighborhood cafes..."
-                  className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-4 py-3 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600 text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
+                  className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-4 py-3 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600 text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-display"
                 />
               </div>
 
@@ -433,19 +472,148 @@ export function BrandInputForm({
                 </div>
               </div>
 
+              {/* Power Level & Autonomous Engine Routing */}
+              <div className="border-t border-dashed border-gray-200 dark:border-zinc-800 pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
+                    Intelligence Engine & Power Level
+                  </span>
+                  <span className="text-[8px] font-mono text-gray-400">
+                    {powerLevel === 'pro' ? 'Gemini 3.1 Pro Strategic Cascade' : powerLevel === 'lite' ? 'Gemini 3.1 Flash Lite Agile Sprint' : 'Local Deterministic Vector Engine'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPowerLevel('pro')}
+                    className={`p-2.5 border text-left transition-all cursor-pointer ${
+                      powerLevel === 'pro'
+                        ? 'border-black dark:border-white bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                        : 'border-gray-200 dark:border-zinc-800 bg-transparent text-gray-600 dark:text-zinc-400 hover:border-black'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase tracking-wider">Pro Director</span>
+                      <span className="text-[7px] font-mono px-1 py-0.2 bg-amber-400/20 text-amber-500 rounded">DEEP</span>
+                    </div>
+                    <p className="text-[8px] opacity-75 mt-0.5 leading-tight">Multi-stage reasoning & agency vector craft</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPowerLevel('lite')}
+                    className={`p-2.5 border text-left transition-all cursor-pointer ${
+                      powerLevel === 'lite'
+                        ? 'border-black dark:border-white bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                        : 'border-gray-200 dark:border-zinc-800 bg-transparent text-gray-600 dark:text-zinc-400 hover:border-black'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase tracking-wider">Lite Agile</span>
+                      <span className="text-[7px] font-mono px-1 py-0.2 bg-blue-400/20 text-blue-500 rounded">FAST</span>
+                    </div>
+                    <p className="text-[8px] opacity-75 mt-0.5 leading-tight">Ultra-low latency rapid prototyping</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPowerLevel('legacy')}
+                    className={`p-2.5 border text-left transition-all cursor-pointer ${
+                      powerLevel === 'legacy'
+                        ? 'border-black dark:border-white bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                        : 'border-gray-200 dark:border-zinc-800 bg-transparent text-gray-600 dark:text-zinc-400 hover:border-black'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase tracking-wider">Procedural</span>
+                      <span className="text-[7px] font-mono px-1 py-0.2 bg-emerald-400/20 text-emerald-500 rounded">LOCAL</span>
+                    </div>
+                    <p className="text-[8px] opacity-75 mt-0.5 leading-tight">Instant zero-API mathematical synthesis</p>
+                  </button>
+                </div>
+              </div>
+
               {/* Collapsible Additional Details */}
-              <div className="border-t border-dashed border-gray-200 dark:border-gray-200 dark:border-zinc-800 pt-3">
+              <div className="border-t border-dashed border-gray-200 dark:border-zinc-800 pt-3">
                 <button
                   type="button"
                   onClick={() => setShowMoreOptions(!showMoreOptions)}
-                  className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500 hover:text-black dark:hover:text-white cursor-pointer"
+                  className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
                 >
                   {showMoreOptions ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  <span>{showMoreOptions ? 'Hide Optional Style & Audience' : '+ Choose Aesthetic Style & Target Audience (Optional)'}</span>
+                  <span>{showMoreOptions ? 'Hide Strategic Context & Architecture' : '+ Add Strategic Brand Intelligence (Products, Market, Archetype)'}</span>
                 </button>
 
                 {showMoreOptions && (
                   <div className="pt-4 space-y-4 animate-fadeIn">
+                    {/* Products / Services & Geographic Market */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="products-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
+                          Key Products / Services Offered
+                        </label>
+                        <input
+                          id="products-input"
+                          type="text"
+                          value={productsServices}
+                          onChange={(e) => setProductsServices(e.target.value)}
+                          placeholder="e.g. Single-origin cold brew, beans, cafes"
+                          className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-xs focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="market-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
+                          Target Geographic Market
+                        </label>
+                        <input
+                          id="market-input"
+                          type="text"
+                          value={geographicMarket}
+                          onChange={(e) => setGeographicMarket(e.target.value)}
+                          placeholder="e.g. Global, North America & Europe"
+                          className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-xs focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Preferred Logo Archetype & Competitive Rivals */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="archetype-select" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
+                          Target Logo Archetype
+                        </label>
+                        <select
+                          id="archetype-select"
+                          value={brandArchetype}
+                          onChange={(e) => setBrandArchetype(e.target.value)}
+                          className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-xs focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                        >
+                          <option value="">Auto-select optimal industry archetype</option>
+                          <option value="Interlocking Monogram">Interlocking Monogram (Golden ratio curves)</option>
+                          <option value="Negative Space Cutout">Negative Space Cutout (Optical contrast)</option>
+                          <option value="Geometric Minimalist">Geometric Minimalist (Bauhaus grid)</option>
+                          <option value="Architectural Seal">Architectural Seal / Heraldic Badge</option>
+                          <option value="Abstract Kinetic Prism">Abstract Kinetic Prism (Dynamic metaphor)</option>
+                          <option value="Modern Wordmark">Modern Wordmark (Refined letterspacing)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="rivals-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
+                          Competitive Landscape / Rivals
+                        </label>
+                        <input
+                          id="rivals-input"
+                          type="text"
+                          value={competitiveEnvironment}
+                          onChange={(e) => setCompetitiveEnvironment(e.target.value)}
+                          placeholder="e.g. Blue Bottle, Stumptown, local roasters"
+                          className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-xs focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                        />
+                      </div>
+                    </div>
+
                     {/* Aesthetic Vibe Selector */}
                     <div>
                       <span className="block text-[9px] uppercase tracking-widest font-bold mb-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
@@ -462,7 +630,7 @@ export function BrandInputForm({
                               className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-bold transition-all border cursor-pointer ${
                                 isActive
                                   ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] border-[#1A1A1A] dark:border-[#F9F7F2]'
-                                  : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-zinc-400 border-gray-300 dark:border-gray-300 dark:border-zinc-700 hover:border-black'
+                                  : 'bg-transparent text-gray-600 dark:text-zinc-400 border-gray-300 dark:border-zinc-700 hover:border-black'
                               }`}
                             >
                               {vibe}
@@ -472,19 +640,172 @@ export function BrandInputForm({
                       </div>
                     </div>
 
-                    {/* Target Audience */}
-                    <div>
-                      <label htmlFor="audience-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
-                        Target Audience
-                      </label>
-                      <input
-                        id="audience-input"
-                        type="text"
-                        value={targetAudience}
-                        onChange={(e) => setTargetAudience(e.target.value)}
-                        placeholder="e.g. Discerning lifestyle enthusiasts"
-                        className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
-                      />
+                    {/* Target Audience & Primary Color Anchor */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="audience-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
+                          Target Audience
+                        </label>
+                        <input
+                          id="audience-input"
+                          type="text"
+                          value={targetAudience}
+                          onChange={(e) => setTargetAudience(e.target.value)}
+                          placeholder="e.g. Discerning lifestyle enthusiasts"
+                          className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="color-anchor-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
+                          Seed Color Anchor <span className="text-gray-400 font-normal">(Optional hex)</span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={primaryColorPreference || '#1A1A1A'}
+                            onChange={(e) => setPrimaryColorPreference(e.target.value)}
+                            className="w-9 h-9 border border-gray-300 dark:border-zinc-700 cursor-pointer bg-transparent"
+                          />
+                          <input
+                            id="color-anchor-input"
+                            type="text"
+                            value={primaryColorPreference}
+                            onChange={(e) => setPrimaryColorPreference(e.target.value)}
+                            placeholder="e.g. #2563EB or leave blank"
+                            className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Google Fonts Typography Direction */}
+                    <div className="border-t border-dashed border-gray-200 dark:border-zinc-800 pt-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Type className="w-3.5 h-3.5 text-blue-500" />
+                          <span className="text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
+                            Typography Direction (Google Fonts)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFontPickerRole('heading');
+                            setIsFontPickerOpen(true);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-blue-600 hover:bg-blue-500 text-white rounded cursor-pointer transition-colors"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>Browse 100+ Google Fonts</span>
+                        </button>
+                      </div>
+
+                      {/* Curated Google Font Pairings Quick-Pills */}
+                      <div>
+                        <span className="block text-[8px] text-gray-400 uppercase font-bold tracking-wider mb-1.5">
+                          1-Click Curated Google Font Pairings:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {CURATED_GOOGLE_FONT_PAIRINGS.map((pairing) => {
+                            const isSelected =
+                              preferredHeadingFont === pairing.headingFont &&
+                              preferredBodyFont === pairing.bodyFont;
+                            return (
+                              <button
+                                key={pairing.name}
+                                type="button"
+                                onClick={() => {
+                                  setPreferredHeadingFont(pairing.headingFont);
+                                  setPreferredBodyFont(pairing.bodyFont);
+                                  loadGoogleFontDynamically(pairing.headingFont);
+                                  loadGoogleFontDynamically(pairing.bodyFont);
+                                }}
+                                className={`px-2 py-1 text-[8px] uppercase tracking-wider font-bold border transition-colors cursor-pointer rounded-xs ${
+                                  isSelected
+                                    ? 'bg-blue-600 text-white border-blue-600 font-black'
+                                    : 'bg-white dark:bg-zinc-800/60 text-gray-700 dark:text-zinc-300 border-gray-300 dark:border-zinc-700 hover:border-blue-500'
+                                }`}
+                              >
+                                {pairing.name} ({pairing.headingFont} + {pairing.bodyFont})
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
+                              Preferred Heading Font
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFontPickerRole('heading');
+                                setIsFontPickerOpen(true);
+                              }}
+                              className="text-[8px] text-blue-500 hover:underline cursor-pointer"
+                            >
+                              Browse Catalog...
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={preferredHeadingFont}
+                            onChange={(e) => setPreferredHeadingFont(e.target.value)}
+                            placeholder="e.g. Plus Jakarta Sans, Syne, Playfair Display"
+                            className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3 py-1.5 text-[#1A1A1A] dark:text-[#F9F7F2] text-xs focus:border-black dark:focus:border-white focus:outline-hidden"
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
+                              Preferred Body Font
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFontPickerRole('body');
+                                setIsFontPickerOpen(true);
+                              }}
+                              className="text-[8px] text-blue-500 hover:underline cursor-pointer"
+                            >
+                              Browse Catalog...
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={preferredBodyFont}
+                            onChange={(e) => setPreferredBodyFont(e.target.value)}
+                            placeholder="e.g. Inter, Roboto, DM Sans, Lora"
+                            className="w-full border border-gray-300 dark:border-zinc-700 bg-transparent px-3 py-1.5 text-[#1A1A1A] dark:text-[#F9F7F2] text-xs focus:border-black dark:focus:border-white focus:outline-hidden"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Live Specimen Preview if selected */}
+                      {(preferredHeadingFont || preferredBodyFont) && (
+                        <div className="p-3 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-sm">
+                          <span className="text-[8px] font-mono uppercase text-gray-400 block mb-1">
+                            Live Specimen Preview:
+                          </span>
+                          <div
+                            className="text-base font-bold text-gray-900 dark:text-zinc-100"
+                            style={{ fontFamily: `"${preferredHeadingFont || 'sans-serif'}", sans-serif` }}
+                          >
+                            {brandName || 'Brand Display'} — Aa Bb Cc 123
+                          </div>
+                          <p
+                            className="text-xs text-gray-600 dark:text-zinc-400 mt-0.5"
+                            style={{ fontFamily: `"${preferredBodyFont || 'sans-serif'}", sans-serif` }}
+                          >
+                            Crafting extraordinary digital products and consistent design systems.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -514,250 +835,16 @@ export function BrandInputForm({
         </div>
       )}
 
-      {/* MODE 2: EXISTING BRAND REFRESH & UPGRADE */}
-      {activeMode === 'existing_brand' && (
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-serif italic font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
-              Upgrade Existing Brand
-            </h1>
-            <p className="text-sm font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-lg mx-auto">
-              Preserve your existing brand name and identity equity while upgrading your vector marks, typography, social templates, and brand bible.
-            </p>
-          </div>
-
-          {/* LOOKUP FROM SAVED BRANDS HISTORY (Account Library or Tab Cache) */}
-          {savedBrands.length > 0 && (
-            <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-4 sm:p-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-gray-600 dark:text-gray-600 dark:text-zinc-400" />
-                  <span className="text-[10px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
-                    {user ? 'Select From Your Saved Cloud Library' : 'Select From Current Tab Session Cache'}
-                  </span>
-                </div>
-                <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-600 dark:text-zinc-400">
-                  {user ? `${savedBrands.length} Cloud Saved` : `${savedBrands.length} In Tab Cache`}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1">
-                {savedBrands.map((b) => {
-                  const isSelected = selectedBaseBrandId === b.id;
-                  return (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => handleSelectSavedBrandToUpgrade(b)}
-                      className={`p-3 border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
-                        isSelected
-                          ? 'border-[#1A1A1A] dark:border-[#F9F7F2] bg-gray-50 dark:bg-zinc-900/90 shadow-xs'
-                          : 'border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[8px] font-mono uppercase tracking-widest text-gray-500 dark:text-gray-500 truncate">
-                          {b.industry || 'Brand'}
-                        </span>
-                        {isSelected && (
-                          <span className="flex items-center gap-1 text-[8px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400">
-                            <Check className="w-3 h-3" /> Selected
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate">
-                          {b.brandName}
-                        </h4>
-                        {b.tagline && (
-                          <p className="text-[10px] text-gray-500 dark:text-zinc-400 font-serif italic truncate">
-                            "{b.tagline}"
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 pt-1">
-                        {b.palette?.slice(0, 4).map((c, i) => (
-                          <div
-                            key={i}
-                            className="w-3.5 h-3.5 border border-black/10"
-                            style={{ backgroundColor: c.hex }}
-                          />
-                        ))}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Quick test with sample brands if user has none yet */}
-          {savedBrands.length === 0 && (
-            <div className="space-y-2">
-              <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-500 block text-center">
-                Or test with sample existing brands:
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {EXISTING_BRAND_SAMPLES.map((sample, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    disabled={isLoading}
-                    onClick={() => handleSelectExistingSample(sample)}
-                    className="p-3 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#1C1C1A] hover:border-black dark:hover:border-white text-left transition-all cursor-pointer"
-                  >
-                    <span className="text-[8px] font-mono text-gray-500 dark:text-gray-500 uppercase tracking-widest block">
-                      {sample.industry.split('&')[0]}
-                    </span>
-                    <h4 className="font-serif italic text-sm font-bold text-[#1A1A1A] dark:text-[#F9F7F2] truncate">
-                      {sample.name}
-                    </h4>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Real-time Match Banner if typed name matches a saved brand */}
-          {matchingSavedBrand && (
-            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 text-[#1A1A1A] dark:text-[#F9F7F2] flex items-center justify-between gap-3 animate-fadeIn">
-              <div className="flex items-center gap-2.5">
-                <Database className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span className="text-xs">
-                  Found <strong>"{matchingSavedBrand.brandName}"</strong> in your{' '}
-                  {user ? 'saved cloud library' : 'current tab cache'}.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleSelectSavedBrandToUpgrade(matchingSavedBrand)}
-                className="px-2.5 py-1 text-[9px] uppercase tracking-widest font-black bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] hover:opacity-80 transition-opacity cursor-pointer shrink-0"
-              >
-                Auto-Fill Identity
-              </button>
-            </div>
-          )}
-
-          {/* Existing Brand Form */}
-          <div className="bg-white dark:bg-[#1C1C1A] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 p-6 sm:p-8 space-y-5 shadow-sm">
-            <form onSubmit={handleExistingBrandSubmit} className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="existing-name-input" className="block text-[9px] uppercase tracking-widest font-black mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
-                    Brand Name <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    id="existing-name-input"
-                    required
-                    type="text"
-                    value={existingName}
-                    onChange={(e) => setExistingName(e.target.value)}
-                    placeholder="e.g. Veritas Coffee Co."
-                    className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="existing-industry-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
-                    Industry / Sector <span className="text-gray-400 font-normal">(Optional)</span>
-                  </label>
-                  <input
-                    id="existing-industry-input"
-                    type="text"
-                    value={existingIndustry}
-                    onChange={(e) => setExistingIndustry(e.target.value)}
-                    placeholder="e.g. Specialty Coffee & Hospitality"
-                    className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="existing-tagline-input" className="block text-[9px] uppercase tracking-widest font-bold mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
-                  Existing Tagline <span className="text-gray-400 font-normal">(Optional)</span>
-                </label>
-                <input
-                  id="existing-tagline-input"
-                  type="text"
-                  value={existingTagline}
-                  onChange={(e) => setExistingTagline(e.target.value)}
-                  placeholder="e.g. Truth in Every Roast"
-                  className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-3.5 py-2 text-[#1A1A1A] dark:text-[#F9F7F2] text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="existing-mission-input" className="block text-[10px] uppercase tracking-widest font-black mb-1 text-[#1A1A1A] dark:text-[#F9F7F2]">
-                  Brand Mission &amp; Values <span className="text-rose-500">*</span>
-                </label>
-                <textarea
-                  id="existing-mission-input"
-                  required
-                  rows={3}
-                  value={existingMission}
-                  onChange={(e) => setExistingMission(e.target.value)}
-                  placeholder="Describe your current brand values and products..."
-                  className="w-full border border-gray-300 dark:border-gray-300 dark:border-zinc-700 bg-transparent px-4 py-3 text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 dark:placeholder-zinc-600 text-sm focus:border-black dark:focus:border-white focus:outline-hidden transition-all font-serif italic"
-                />
-              </div>
-
-              {/* Colors */}
-              <div>
-                <span className="block text-[9px] uppercase tracking-widest font-bold mb-2 text-gray-600 dark:text-gray-600 dark:text-zinc-400">
-                  Current Brand Colors (Optional):
-                </span>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="color"
-                      value={primaryColor}
-                      onChange={(e) => setPrimaryColor(e.target.value)}
-                      className="w-7 h-7 rounded-none border border-gray-300 dark:border-gray-300 cursor-pointer"
-                    />
-                    <span className="text-[9px] font-mono uppercase">{primaryColor}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="color"
-                      value={secondaryColor}
-                      onChange={(e) => setSecondaryColor(e.target.value)}
-                      className="w-7 h-7 rounded-none border border-gray-300 dark:border-gray-300 cursor-pointer"
-                    />
-                    <span className="text-[9px] font-mono uppercase">{secondaryColor}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="color"
-                      value={accentColor}
-                      onChange={(e) => setAccentColor(e.target.value)}
-                      className="w-7 h-7 rounded-none border border-gray-300 dark:border-gray-300 cursor-pointer"
-                    />
-                    <span className="text-[9px] font-mono uppercase">{accentColor}</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading || !existingName.trim() || !existingMission.trim()}
-                className="w-full py-4 px-6 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-xs uppercase tracking-[0.25em] font-black hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 cursor-pointer shadow-md"
-              >
-                {isLoading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{loadingStep || 'Upgrading Brand Bible...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <Layers className="w-4 h-4" />
-                    <span>Refresh &amp; Upgrade Brand</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
+      {/* MODE 2: REBRAND STUDIO */}
+      {(activeMode === 'rebrand' || activeMode === 'existing_brand') && (
+        <RebrandStudio
+          onGenerate={onGenerate}
+          isLoading={isLoading}
+          loadingStep={loadingStep}
+          savedBrands={savedBrands}
+          initialBrandToRebrand={initialBrandToUpgrade}
+          onClearInitialBrand={onClearInitialBrand}
+        />
       )}
 
       {/* MODE 3: ICONIC BRAND CASE STUDIES & HISTORY */}
@@ -766,6 +853,29 @@ export function BrandInputForm({
           onApplyBrandInspiration={handleApplyBrandInspiration}
         />
       )}
+
+      {/* Vast Google Fonts Picker Modal */}
+      <FontPickerModal
+        isOpen={isFontPickerOpen}
+        onClose={() => setIsFontPickerOpen(false)}
+        onSelectFont={(fontName) => {
+          if (fontPickerRole === 'heading') {
+            setPreferredHeadingFont(fontName);
+          } else {
+            setPreferredBodyFont(fontName);
+          }
+          loadGoogleFontDynamically(fontName);
+        }}
+        onSelectPairing={(pairing) => {
+          setPreferredHeadingFont(pairing.headingFont);
+          setPreferredBodyFont(pairing.bodyFont);
+          loadGoogleFontDynamically(pairing.headingFont);
+          loadGoogleFontDynamically(pairing.bodyFont);
+        }}
+        currentHeadingFont={preferredHeadingFont}
+        currentBodyFont={preferredBodyFont}
+        targetRole={fontPickerRole}
+      />
     </div>
   );
 }

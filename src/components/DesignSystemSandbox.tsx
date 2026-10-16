@@ -58,12 +58,12 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-500" />
+            <span className="w-2 h-2 rounded-xl-full bg-indigo-500" />
             <h2 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
               Interactive UI Component &amp; Design System Sandbox
             </h2>
           </div>
-          <p className="text-sm font-serif italic text-gray-600 dark:text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm font-display text-gray-600 dark:text-gray-600 dark:text-gray-400 mt-1">
             Real-time interactive component library styled dynamically with {brand.brandName}&apos;s typography, semantic color hierarchy, and border geometry.
           </p>
         </div>
@@ -399,7 +399,7 @@ export function DesignSystemSandbox({ brand }: DesignSystemSandboxProps) {
                     </div>
                     <div>
                       <span className="text-xs font-bold block">{brand.brandName} Systems</span>
-                      <span className="text-[10px] opacity-60 block font-serif italic">{brand.toneOfVoice?.[0]?.trait || brand.industry}</span>
+                      <span className="text-[10px] opacity-60 block font-display">{brand.toneOfVoice?.[0]?.trait || brand.industry}</span>
                     </div>
                   </div>
 

@@ -206,7 +206,7 @@ export function Render3DStudio({
           <h3 className="text-sm uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2] mt-1">
             3D Photorealistic Identity &amp; Physical Emblem Studio
           </h3>
-          <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 font-display mt-0.5">
             Simulate tangible high-end physical materials, studio lighting rigs, and export ultra-high-resolution 1K to 4K assets.
           </p>
         </div>
@@ -318,7 +318,7 @@ export function Render3DStudio({
                       <div>
                         <div className="flex items-center gap-2">
                           <span
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            className="w-2.5 h-2.5 rounded-xl-full shrink-0"
                             style={{ backgroundColor: preset.accentColor }}
                           />
                           <h4 className="text-[11px] uppercase tracking-wider font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
@@ -335,7 +335,7 @@ export function Render3DStudio({
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-serif italic mt-2 line-clamp-2 leading-relaxed">
+                    <p className="text-[10px] text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-display mt-2 line-clamp-2 leading-relaxed">
                       {preset.description}
                     </p>
                   </button>
@@ -429,9 +429,9 @@ export function Render3DStudio({
             <div className="bg-[#1A1A1A] px-4 py-2.5 flex items-center justify-between border-b border-white/10 text-white">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-rose-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-amber-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-emerald-500/80" />
                 </div>
                 <span className="text-[9px] uppercase tracking-widest font-mono text-gray-400">
                   STAGE: {brand.brandName.toUpperCase()} // {activePreset.title.toUpperCase()}
@@ -440,7 +440,7 @@ export function Render3DStudio({
 
               <div className="flex items-center gap-2">
                 <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-xl-full bg-emerald-400 animate-pulse" />
                   {dimensionsInfo.label}
                 </span>
 
@@ -482,7 +482,7 @@ export function Render3DStudio({
                     <div className="relative flex flex-col items-center">
                       {!isImgReady && (
                         <div className="absolute inset-0 flex items-center justify-center min-h-[300px] min-w-[300px]">
-                          <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin" />
+                          <div className="w-12 h-12 rounded-xl-full border-2 border-white/20 border-t-amber-400 animate-spin" />
                         </div>
                       )}
                       <img
@@ -517,7 +517,7 @@ export function Render3DStudio({
                 <div className="relative z-10 flex flex-col items-center text-center space-y-4 max-w-md p-6">
                   {/* Default 3D Simulated Monogram Plaque */}
                   <div
-                    className="w-36 h-36 rounded-2xl border p-4 shadow-2xl flex items-center justify-center group transform hover:rotate-3 transition-transform duration-300 relative overflow-hidden"
+                    className="w-36 h-36 rounded-xl-2xl border p-4 shadow-2xl flex items-center justify-center group transform hover:rotate-3 transition-transform duration-300 relative overflow-hidden"
                     style={{
                       backgroundColor: '#161922',
                       borderColor: activePreset.accentColor + '55',
@@ -541,7 +541,7 @@ export function Render3DStudio({
                     <h5 className="text-xs uppercase tracking-widest font-black text-white">
                       Preset Active: {activePreset.title}
                     </h5>
-                    <p className="text-xs text-gray-400 font-serif italic max-w-xs">
+                    <p className="text-xs text-gray-400 font-display max-w-xs">
                       {activePreset.description}
                     </p>
                   </div>

@@ -406,7 +406,7 @@ export function generatePlaceholderSvg(brandName: string, eraLabel: string): str
     svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
   <rect width="320" height="160" fill="#F9F7F2"/>
   <circle cx="160" cy="78" r="50" fill="none" stroke="#1A1A1A" stroke-width="3"/>
-  <text x="160" y="98" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="54" font-weight="700" fill="#1A1A1A" text-anchor="middle">${initial}</text>
+  <text x="160" y="98" font-family="'Plus Jakarta Sans', sans-serif" font-style="italic" font-size="54" font-weight="700" fill="#1A1A1A" text-anchor="middle">${initial}</text>
   <text x="160" y="140" font-family="Helvetica, Arial, sans-serif" font-size="${name.length > 14 ? 12 : 15}" letter-spacing="3" font-weight="700" fill="#1A1A1A" text-anchor="middle">${name}</text>
 </svg>`;
   } else if (isHeritage) {
@@ -415,13 +415,13 @@ export function generatePlaceholderSvg(brandName: string, eraLabel: string): str
   <rect width="320" height="160" fill="#F9F7F2"/>
   <rect x="60" y="58" width="200" height="3" fill="#1A1A1A"/>
   <rect x="60" y="100" width="200" height="3" fill="#1A1A1A"/>
-  <text x="160" y="93" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="${name.length > 14 ? 20 : 26}" font-weight="700" fill="#1A1A1A" text-anchor="middle">${name}</text>
+  <text x="160" y="93" font-family="'Plus Jakarta Sans', sans-serif" font-style="italic" font-size="${name.length > 14 ? 20 : 26}" font-weight="700" fill="#1A1A1A" text-anchor="middle">${name}</text>
 </svg>`;
   } else {
     // Transitional lockup — bold small-caps with a single rule.
     svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
   <rect width="320" height="160" fill="#F9F7F2"/>
-  <text x="160" y="86" font-family="Georgia, 'Times New Roman', serif" font-size="${name.length > 14 ? 22 : 30}" font-weight="700" fill="#1A1A1A" text-anchor="middle" letter-spacing="2">${name}</text>
+  <text x="160" y="86" font-family="'Plus Jakarta Sans', sans-serif" font-size="${name.length > 14 ? 22 : 30}" font-weight="700" fill="#1A1A1A" text-anchor="middle" letter-spacing="2">${name}</text>
   <rect x="110" y="104" width="100" height="3" fill="#1A1A1A"/>
 </svg>`;
   }

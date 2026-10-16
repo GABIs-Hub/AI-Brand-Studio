@@ -44,7 +44,7 @@ function shell(title: string, paragraph: string, linkHref: string, linkLabel: st
 
   const html = `<!DOCTYPE html>
 <html lang="en">
-<body style="margin:0;padding:0;background:#F9F7F2;font-family:Georgia,'Times New Roman',serif;">
+<body style="margin:0;padding:0;background:#F9F7F2;font-family:'Plus Jakarta Sans',sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F9F7F2;padding:32px 16px;">
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border:1px solid #E5E0D6;border-top:4px solid #1A1A1A;">

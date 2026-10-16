@@ -5,6 +5,8 @@ import { Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { generateText, generateImage, ImageProvider, TextProvider } from "./aiGateway";
 import { generateProceduralLogoVariations, synthesizeProceduralBrand } from "./proceduralBrands";
+import { routeTask, getDirectorStatus } from "./aiDirector";
+import { resolveIndustryDirection } from "./industryContext";
 import { getSession } from "@auth/express";
 import {
   authConfig,
@@ -23,6 +25,7 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Behind a hosting proxy (Render / Fly / Railway), trust the first hop so
 // req.ip (rate limiting) and protocol detection (secure cookies) reflect the
@@ -345,16 +348,92 @@ app.post("/api/generate-brand", apiRateLimiter, async (req, res) => {
       existingTagline,
       baseBrandId,
       previousVersionDetails,
+      isRebrand,
+      currentLogo,
+      currentLogoType,
+      currentTypography,
+      preferredTypography,
+      rebrandMode,
+      customRebrandPrompt,
+      // GABI Brand Intelligence & Contextual parameters
+      powerLevel = 'pro',
+      productsServices,
+      geographicMarket,
+      brandArchetype,
+      competitiveEnvironment,
+      primaryColorPreference,
+      tonePreference,
     } = req.body;
 
     if (!mission || typeof mission !== "string" || mission.trim().length === 0) {
       return res.status(400).json({ error: "Mission statement or current company core is required." });
     }
 
-    // Attempt AI generation across the provider gateway (OpenAI → Claude → Gemini)
+    const resolvedIndustry = industry || "Innovation & Technology";
+    const industryDir = resolveIndustryDirection(resolvedIndustry, mission);
+    const chosenColors = primaryColorPreference
+      ? [primaryColorPreference, ...(existingColors || [])]
+      : existingColors;
+
+    // Fast-path: Legacy Mode runs the high-aesthetic deterministic synthesis engine directly
+    if (powerLevel === 'legacy') {
+      const synthesized: any = synthesizeProceduralBrand({
+        brandName,
+        mission,
+        industry: resolvedIndustry,
+        aesthetic,
+        targetAudience,
+        isExistingBrandRefresh,
+        existingColors: chosenColors,
+        existingTagline,
+        isRebrand,
+        currentLogo,
+        currentLogoType,
+        currentTypography,
+        rebrandMode,
+        customRebrandPrompt,
+      });
+      synthesized.powerLevel = 'legacy';
+      synthesized.productsServices = productsServices;
+      synthesized.geographicMarket = geographicMarket;
+      synthesized.brandArchetype = brandArchetype || synthesized.brandArchetype || industryDir.logoArchetypes[0];
+      synthesized.competitiveEnvironment = competitiveEnvironment;
+      return res.json(synthesized);
+    }
+
+    const startTime = Date.now();
+    const decision = routeTask('brand_strategy', {
+      powerLevel,
+      userPreferredProvider: req.body?.provider,
+    });
+
+    // Attempt AI generation across the provider gateway (routed by AI Director)
     try {
         let refreshInstruction = "Generate a brand identity from scratch.";
-        if (isExistingBrandRefresh) {
+        if (isRebrand) {
+          const modeDescription = rebrandMode === 'custom_prompt'
+            ? `USER'S CUSTOM REBRAND VISION & SPECIFIC INSTRUCTIONS:\n"${customRebrandPrompt || "Modernize the brand with elevated polish and authority"}"\nExecute these specific instructions meticulously while ensuring world-class design standards.`
+            : `GABI AUTONOMOUS STRATEGIC REASONING MANDATE:\nAnalyze the user's legacy brand assets below. Diagnose visual bottlenecks, outdated tropes, accessibility or contrast shortcomings, and formulate an ambitious, visionary transformation that positions this brand as an undisputed industry leader.`;
+
+          refreshInstruction = `NOTE: THIS IS AN OFFICIAL STRATEGIC REBRAND & MODERNIZATION PROJECT.
+The user is rebranding their company/product from its previous identity to an elevated, modern new phase.
+
+Current Legacy Brand Assets:
+- Current Brand Name: "${brandName || "Legacy Brand"}"
+- Current Colors: ${chosenColors && chosenColors.length > 0 ? chosenColors.join(", ") : "Not specified"}
+- Current Typography: ${currentTypography ? `Heading: ${currentTypography.headingFont || "Unspecified"}, Body: ${currentTypography.bodyFont || "Unspecified"}` : "Not specified"}
+- Current Logo: ${currentLogo ? (currentLogoType === "description" ? currentLogo : "Existing logo graphic provided") : "Legacy emblem provided"}
+
+Strategic Mode:
+${modeDescription}
+
+MANDATORY REBRAND DELIVERABLE:
+You MUST generate a cohesive 'rebrandStory' containing:
+1. 'rebrandTitle': A punchy, inspiring rebrand campaign title (e.g. "From Utility to Artistry: The Next Era of ${brandName || "Brand"}").
+2. 'rebrandBio': An inspiring, eloquent 2-3 paragraph strategic story / announcement bio ("Why We're Moving Towards This New Phase") explaining the heritage, why the company is shifting now, what the new identity represents, and how it aligns with modern customer expectations.
+3. 'strategicDiagnosis': A sharp 1-2 sentence assessment of what needed evolution in the previous identity.
+4. 'keyEvolutionPoints': 3-4 structured comparison items with 'title', 'before', 'after', and 'strategicWhy'.`;
+        } else if (isExistingBrandRefresh) {
           refreshInstruction = `NOTE: THIS IS AN EXISTING BRAND REFRESH & MODERNIZATION UPGRADE.
 Preserve the user's established Brand Name ("${brandName}"), existing identity equity, and harmonize the colors/tagline without completely discarding their recognizable history.`;
           if (previousVersionDetails) {
@@ -368,33 +447,65 @@ Upgrade this brand to a higher tier of modern polish and visual distinction whil
         }
 
         const prompt = `
-You are a world-class Creative Director and Brand Strategist at an award-winning identity firm.
-Your task is to generate a comprehensive, cohesive, professional "Brand Bible" for a brand based on the following input brief:
+You are a world-class Creative Director and Brand Strategist at an award-winning identity design firm.
+Your task is to generate a comprehensive, highly cohesive, production-grade "Brand Bible" strictly tailored to the specific business context, industry benchmarks, and strategic requirements below.
 
 ${refreshInstruction}
-Brand Name: ${brandName || "Please invent a memorable, premium, distinctive brand name"}
-Industry / Category: ${industry || "Auto-detect from mission"}
-Aesthetic Vibe: ${aesthetic || "Modern, Clean, High-Contrast"}
-Mission & Purpose: ${mission}
-Target Audience: ${targetAudience || "General discerning audience"}
-${existingTagline ? `Existing Tagline to refine/preserve: ${existingTagline}` : ""}
-${existingColors && existingColors.length > 0 ? `Existing Brand Colors: ${existingColors.join(", ")}` : ""}
 
-REQUIREMENTS:
+STRATEGIC BRIEF:
+- Brand Name: ${brandName || "Please invent a memorable, premium, distinctive brand name"}
+- Industry & Domain: ${resolvedIndustry} (${industryDir.name})
+- Core Mission & Purpose: ${mission}
+- Products & Services: ${productsServices || "High-craft core offerings aligned with mission"}
+- Target Audience & User Persona: ${targetAudience || "Discerning modern clients and practitioners"}
+- Geographic / Cultural Market: ${geographicMarket || "Global / Prime Metropolitan"}
+- Competitive Landscape: ${competitiveEnvironment || "Fast-moving, quality-conscious landscape requiring unmistakable differentiation"}
+- Preferred Brand Archetype: ${brandArchetype || industryDir.logoArchetypes[0]} (Alternatives: ${industryDir.logoArchetypes.join(', ')})
+- Aesthetic Vibe & Tone: ${aesthetic || "Modern, Clean, High-Contrast"} ${tonePreference ? `| Specific Tone: ${tonePreference}` : ""}
+${existingTagline ? `- Established Tagline: ${existingTagline}` : ""}
+${chosenColors && chosenColors.length > 0 ? `- Established Color Anchors: ${chosenColors.join(", ")}` : ""}
+${preferredTypography?.headingFont ? `- User-Specified Preferred Heading Font: ${preferredTypography.headingFont} (from Google Fonts)` : ""}
+${preferredTypography?.bodyFont ? `- User-Specified Preferred Body Font: ${preferredTypography.bodyFont} (from Google Fonts)` : ""}
+
+INDUSTRY CREATIVE INTELLIGENCE GUIDELINES:
+1. Color Architecture Philosophy:
+   - Hue Family: ${industryDir.colorPhilosophy.hueFamily}
+   - Palette Rationale: ${industryDir.colorPhilosophy.paletteRationale}
+   - Recommended Seed Hues: ${industryDir.colorPhilosophy.suggestedSeedHues.join(', ')}
+   - Surface Treatment: ${industryDir.colorPhilosophy.surfaceTreatment}
+   - Follow 60-30-10 distribution (60% Neutral canvas, 30% Primary family, 10% Accent CTA pop).
+   - Ensure WCAG AA compliance (Primary/Secondary >= 4.5:1 against Neutral Light; Light vs Dark >= 7:1).
+2. Typographic Rules:
+   - Heading Stance: ${industryDir.typographyRules.headingStyle}
+   - Body Stance: ${industryDir.typographyRules.bodyStyle}
+   - Curated Reference Pairings: ${industryDir.typographyRules.recommendedPairings.map(p => `${p.heading} + ${p.body} (${p.rationale})`).join(' | ')}
+3. Logo Geometry & Vector Architecture:
+   - Structural Guidance: ${industryDir.logoGeometryGuidance}
+   - Target Archetypes: ${industryDir.logoArchetypes.join(', ')}
+   - primaryLogoSvg MUST be an agency-quality vector SVG with <defs>, gradients or negative space/interlocking paths, viewBox="0 0 320 100".
+4. Applied Photography & Material Direction:
+   - Camera & Lens: ${industryDir.photographyDirection.lens}
+   - Lighting Physics: ${industryDir.photographyDirection.lighting}
+   - Materials & Texture: ${industryDir.photographyDirection.materials}
+   - Color Grade: ${industryDir.photographyDirection.colorGrade}
+
+DELIVERABLE REQUIREMENTS:
 1. Brand Core: brandName, tagline, industry, mission, vision, positioningStatement, personalityTraits (4 items with trait, rating 1-5, minLabel, maxLabel), values (4 items with title, description, iconName among Lucide icons).
-2. 5-Color Hex Palette: Exactly 5 colors (Primary, Secondary, Accent, Neutral Light, Neutral Dark) with name, hex, rgb, role, usage, contrastNote. Apply a real color-harmony strategy — analogous, complementary, triadic, or split-complementary built around ONE seed hue, never a random rainbow. Follow the 60-30-10 balance (neutral canvas ~60%, primary family ~30%, accent ~10%). Enforce WCAG AA: Primary and Secondary must reach >= 4.5:1 against Neutral Light, and the two neutrals must reach >= 7:1 against each other. Tint the neutrals with the seed hue instead of pure gray, and tune saturation/lightness to the industry and aesthetic (muted earth tones for organic/artisanal, desaturated deeps for luxury/heritage, electric saturation for tech/futuristic).
+2. 5-Color Hex Palette: Exactly 5 colors (Primary, Secondary, Accent, Neutral Light, Neutral Dark) with name, hex, rgb, role, usage, contrastNote.
 3. Typography & Google Fonts: headingFont, headingFontCategory, headingWeights, bodyFont, bodyFontCategory, bodyWeights, googleFontsUrl, rationale, cssSnippet.
-4. Primary Logo Design: primaryLogoSvg (MUST BE an agency-quality vector SVG with <defs>, gradients, negative space or interlocking paths, viewBox="0 0 320 100"), concept, symbolism, geometryDetails, aiImagePrompt.
+4. Primary Logo Design: primaryLogoSvg, concept, symbolism, geometryDetails, aiImagePrompt.
 5. Secondary Marks: 3 marks with id, title, description, and svg (viewBox="0 0 160 160").
 6. Tone of Voice: 4 guidelines with trait, description, doExample, dontExample.
 7. Imagery Style: moodboardKeywords, photographyGuidance, dos, donts.
 8. targetAudience string.
+${isRebrand ? "9. rebrandStory object: rebrandTitle, rebrandBio, strategicDiagnosis, keyEvolutionPoints." : ""}
 `;
 
         const responseText = await generateText({
           prompt,
           preferred: req.body?.provider,
-          tier: "max",
+          taskType: 'brand_strategy',
+          powerLevel,
           jsonSchema: {
               type: Type.OBJECT,
               properties: {
@@ -524,6 +635,27 @@ REQUIREMENTS:
                   required: ["moodboardKeywords", "photographyGuidance", "dos", "donts"],
                 },
                 targetAudience: { type: Type.STRING },
+                rebrandStory: {
+                  type: Type.OBJECT,
+                  properties: {
+                    rebrandTitle: { type: Type.STRING },
+                    rebrandBio: { type: Type.STRING },
+                    strategicDiagnosis: { type: Type.STRING },
+                    keyEvolutionPoints: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          title: { type: Type.STRING },
+                          before: { type: Type.STRING },
+                          after: { type: Type.STRING },
+                          strategicWhy: { type: Type.STRING },
+                        },
+                        required: ["title", "before", "after", "strategicWhy"],
+                      },
+                    },
+                  },
+                },
               },
               required: [
                 "brandName",
@@ -549,6 +681,68 @@ REQUIREMENTS:
           const brandData = JSON.parse(responseText);
           brandData.id = "brand-" + Date.now();
           brandData.createdAt = new Date().toISOString();
+
+          // Stash context-aware fields and AI Director telemetry
+          brandData.powerLevel = powerLevel;
+          brandData.productsServices = productsServices;
+          brandData.geographicMarket = geographicMarket;
+          brandData.brandArchetype = brandArchetype || industryDir.logoArchetypes[0];
+          brandData.competitiveEnvironment = competitiveEnvironment;
+          brandData.photographyDirection = industryDir.photographyDirection;
+          brandData.directorMetadata = {
+            model: decision.modelName,
+            provider: decision.selectedEngine,
+            routingRationale: decision.routingRationale,
+            powerLevel,
+            latencyMs: Date.now() - startTime,
+          };
+
+          if (isRebrand) {
+            brandData.rebrandStory = {
+              isRebrand: true,
+              previousBrandName: brandName,
+              previousLogo: currentLogo,
+              previousLogoType: currentLogoType,
+              previousTypography: currentTypography,
+              previousColors: chosenColors,
+              rebrandMode: rebrandMode || 'impress_me',
+              customPrompt: customRebrandPrompt,
+              rebrandTitle: brandData.rebrandStory?.rebrandTitle || `${brandName || "Brand"}: The Next Strategic Era`,
+              rebrandBio:
+                brandData.rebrandStory?.rebrandBio ||
+                `As we enter this next phase, our rebranding reflects a deliberate evolution toward elevated craftsmanship, clarity, and enduring relevance in an evolving market.`,
+              strategicDiagnosis:
+                brandData.rebrandStory?.strategicDiagnosis ||
+                (rebrandMode === 'custom_prompt'
+                  ? `Executed custom transformation vision: ${customRebrandPrompt}`
+                  : "Diagnostic analysis modernized visual architecture and elevated brand presence for contemporary touchpoints."),
+              keyEvolutionPoints:
+                brandData.rebrandStory?.keyEvolutionPoints && brandData.rebrandStory.keyEvolutionPoints.length > 0
+                  ? brandData.rebrandStory.keyEvolutionPoints
+                  : [
+                      {
+                        title: "Visual Identity & Emblem Modernization",
+                        before: currentLogo ? "Legacy mark with visual friction and dated geometry" : "Initial uncalibrated logo concept",
+                        after: "Sculpted vector identity with mathematical geometry and negative space harmony",
+                        strategicWhy: "Ensures unmistakable recognition across digital touchpoints, app icons, and physical packaging.",
+                      },
+                      {
+                        title: "Typographic Hierarchy & Editorial Authority",
+                        before: currentTypography?.headingFont ? `Legacy ${currentTypography.headingFont} font pairing` : "System font lacking distinct brand voice",
+                        after: `${brandData.typography?.headingFont || "Modern Sans"} paired with ${brandData.typography?.bodyFont || "Clean Sans"}`,
+                        strategicWhy: brandData.typography?.rationale || "Elevates readability and signals premium editorial craft.",
+                      },
+                      {
+                        title: "Color Atmosphere & Accessibility",
+                        before: chosenColors?.length ? `Legacy palette (${chosenColors.join(', ')})` : "Uncalibrated primary colors",
+                        after: `5-Color balanced palette with 60-30-10 distribution and WCAG AA verification`,
+                        strategicWhy: "Eliminates contrast barriers while projecting contemporary sophistication.",
+                      },
+                    ],
+              createdAt: new Date().toISOString(),
+            };
+          }
+
           return res.json(brandData);
         }
     } catch (aiError: any) {
@@ -557,16 +751,34 @@ REQUIREMENTS:
 
     // High-quality Procedural fallback synthesis
     console.log("[Synthesis Engine] Generating brand identity deterministically...");
-    const synthesized = synthesizeProceduralBrand({
+    const synthesized: any = synthesizeProceduralBrand({
       brandName,
       mission,
-      industry,
+      industry: resolvedIndustry,
       aesthetic,
       targetAudience,
       isExistingBrandRefresh,
-      existingColors,
+      existingColors: chosenColors,
       existingTagline,
+      isRebrand,
+      currentLogo,
+      currentLogoType,
+      currentTypography,
+      rebrandMode,
+      customRebrandPrompt,
     });
+    synthesized.powerLevel = powerLevel;
+    synthesized.productsServices = productsServices;
+    synthesized.geographicMarket = geographicMarket;
+    synthesized.brandArchetype = brandArchetype || synthesized.brandArchetype || industryDir.logoArchetypes[0];
+    synthesized.competitiveEnvironment = competitiveEnvironment;
+    synthesized.directorMetadata = {
+      model: 'GABI Procedural Architecture Engine',
+      provider: 'local',
+      routingRationale: `Autonomous Failover: Deterministic mathematical vector synthesis with WCAG AA compliance engaged.`,
+      powerLevel,
+      latencyMs: Date.now() - startTime,
+    };
     return res.json(synthesized);
   } catch (error: any) {
     console.error("Critical error in /api/generate-brand:", error);
@@ -592,16 +804,19 @@ app.post("/api/generate-logo-variations", apiRateLimiter, async (req, res) => {
     const ndColor = palette?.[4]?.hex || "#111827";
     const hFont = typography?.headingFont || "Plus Jakarta Sans";
     const bFont = typography?.bodyFont || "Plus Jakarta Sans";
+    const industryDir = resolveIndustryDirection(industry || "Technology", mission);
 
     try {
         const prompt = `
 You are a master identity designer & vector craft specialist at Pentagram / Wolff Olins.
-Generate 6 distinct, stunning, production-ready logo variations for:
+Generate 6 distinct, stunning, production-ready logo variations tailored to the brand's industry context:
 Brand Name: "${brandName}"
-Industry: "${industry || "Modern Innovation"}"
+Industry: "${industry || "Modern Innovation"}" (${industryDir.name})
 Mission/Philosophy: "${mission || "Leading with craft and vision"}"
 Palette: Primary=${pColor}, Secondary=${sColor}, Accent=${aColor}, NeutralLight=${nlColor}, NeutralDark=${ndColor}
 Heading Font: ${hFont}
+Industry Logo Guidance: ${industryDir.logoGeometryGuidance}
+Industry Recommended Archetypes: ${industryDir.logoArchetypes.join(', ')}
 ${stylePrompt ? `Special Aesthetic Direction: ${stylePrompt}` : ""}
 
 FOR EACH LOGO VARIATION:
@@ -619,6 +834,8 @@ Return strict JSON schema with an array of variations.
         const responseText = await generateText({
           prompt,
           preferred: req.body?.provider,
+          taskType: 'logo_vector',
+          powerLevel: req.body?.powerLevel || 'pro',
           jsonSchema: {
               type: Type.OBJECT,
               properties: {
@@ -1736,14 +1953,19 @@ Typography: Heading: ${brandContext.typography?.headingFont}, Body: ${brandConte
         const transcript = messages
           .map((msg: any) => `${msg.sender === "user" ? "User" : "Assistant"}: ${msg.text}`)
           .join("\n\n");
+        const decision = routeTask('chat_director', {
+          powerLevel: model === 'gemini-3.1-flash-lite' ? 'lite' : 'pro',
+          userPreferredProvider: provider,
+        });
         const responseText = await generateText({
           prompt: `${transcript}\n\nAssistant:`,
           system: systemInstruction,
           preferred: provider || "auto",
-          tier: "lite",
+          taskType: 'chat_director',
+          powerLevel: model === 'gemini-3.1-flash-lite' ? 'lite' : 'pro',
         });
         if (responseText) {
-          return res.json({ reply: responseText });
+          return res.json({ reply: responseText, directorDecision: decision });
         }
     } catch (chatError: any) {
       console.warn("[AI Gateway] Chat fallback notice:", chatError?.message || chatError);
@@ -2019,6 +2241,122 @@ app.post("/api/generate-social-image", imageRateLimiter, async (req, res) => {
   }
 });
 
+// Dedicated Commercial AI Mockups Studio Generation Endpoint
+app.post("/api/generate-ai-mockup", imageRateLimiter, async (req, res) => {
+  try {
+    const {
+      prompt,
+      brandName = "Brand",
+      industry = "Design",
+      mockupType = "product",
+      environment = "minimalist studio",
+      lens = "50mm prime",
+      lighting = "directional studio light",
+      materials = "matte tactile textures",
+      colorGrade = "commercial clean",
+      palette = [],
+      aspectRatio = "4:5",
+      provider = "auto",
+    } = req.body;
+
+    const validAspectRatio = ["1:1", "4:5", "16:9", "9:16", "3:4"].includes(aspectRatio)
+      ? aspectRatio
+      : "4:5";
+
+    const paletteList = Array.isArray(palette)
+      ? palette.slice(0, 4).map((p: any) => (typeof p === "string" ? p : p.hex || "")).filter(Boolean).join(", ")
+      : "";
+
+    const fullPrompt = [
+      `High-end commercial product photography mockup of a ${mockupType} for the brand "${brandName}" in the ${industry} industry.`,
+      `Scene environment: ${environment}. Contextual details: ${prompt || "clean presentation with balanced negative space"}.`,
+      `Camera optics: Shot with professional camera using ${lens} lens with crisp central subject focus and natural optical depth of field.`,
+      `Lighting physics: ${lighting}.`,
+      `Material authenticity: ${materials}, real physical surface finishes and tactile textures.`,
+      `Color grading: ${colorGrade}. ${paletteList ? `Adhering to brand palette accents (${paletteList}).` : ""}`,
+      `Aesthetic: Prestigious editorial commercial catalog standard, crisp 8k details, zero artificial noise, zero unwanted artifacts.`,
+    ].join(" ");
+
+    try {
+      const result = await generateImage({
+        prompt: fullPrompt,
+        aspectRatio: validAspectRatio as any,
+        preferred: provider !== "auto" ? provider : undefined,
+      });
+
+      if (result && result.imageUrl) {
+        return res.json({
+          imageUrl: result.imageUrl,
+          engine: result.engine,
+          promptUsed: fullPrompt,
+          isFallback: false,
+        });
+      }
+    } catch (imgErr: any) {
+      console.warn("[AI Gateway] AI Mockup generation error:", imgErr?.message || imgErr);
+    }
+
+    // High fidelity procedural branded vector mockup fallback
+    const primaryHex = Array.isArray(palette) && palette[0]?.hex ? palette[0].hex : "#1A1A1A";
+    const accentHex = Array.isArray(palette) && palette[1]?.hex ? palette[1].hex : "#D97706";
+    const width = 1080;
+    const height = validAspectRatio === "9:16" ? 1920 : validAspectRatio === "16:9" ? 608 : 1350;
+
+    const proceduralMockupSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
+      <defs>
+        <radialGradient id="mockupLighting" cx="35%" cy="25%" r="80%">
+          <stop offset="0%" stop-color="#2D3139" />
+          <stop offset="60%" stop-color="#181A20" />
+          <stop offset="100%" stop-color="#0E1015" />
+        </radialGradient>
+        <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.08" />
+          <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.02" />
+        </linearGradient>
+        <filter id="studioShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.6" />
+        </filter>
+      </defs>
+      <rect width="${width}" height="${height}" fill="url(#mockupLighting)" />
+      
+      <!-- Studio floor grid subtly visible -->
+      <line x1="0" y1="${height * 0.72}" x2="${width}" y2="${height * 0.72}" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
+      
+      <!-- Main Mockup Plinth / Canvas Object -->
+      <g filter="url(#studioShadow)" transform="translate(${width * 0.15}, ${height * 0.18})">
+        <rect width="${width * 0.7}" height="${height * 0.58}" rx="16" fill="${primaryHex}" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" />
+        <rect width="${width * 0.7}" height="${height * 0.58}" rx="16" fill="url(#cardGrad)" />
+        
+        <!-- Embossed Brand Badge -->
+        <rect x="48" y="48" width="${width * 0.7 - 96}" height="${height * 0.58 - 96}" rx="8" fill="none" stroke="${accentHex}" stroke-width="1" stroke-dasharray="4 6" opacity="0.4" />
+        
+        <!-- Brand Monogram Header -->
+        <circle cx="${(width * 0.7) / 2}" cy="${(height * 0.58) / 2 - 40}" r="48" fill="none" stroke="${accentHex}" stroke-width="2" />
+        <text x="${(width * 0.7) / 2}" y="${(height * 0.58) / 2 - 32}" font-family="sans-serif" font-size="28" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">${brandName.slice(0, 2).toUpperCase()}</text>
+        
+        <!-- Brand Wordmark -->
+        <text x="${(width * 0.7) / 2}" y="${(height * 0.58) / 2 + 40}" font-family="serif" font-size="34" font-weight="400" fill="#FFFFFF" text-anchor="middle" letter-spacing="8">${brandName.toUpperCase()}</text>
+        <text x="${(width * 0.7) / 2}" y="${(height * 0.58) / 2 + 75}" font-family="sans-serif" font-size="12" font-weight="700" fill="rgba(255,255,255,0.6)" text-anchor="middle" letter-spacing="4">${mockupType.toUpperCase()} SPECIFICATION • ${lens.toUpperCase()}</text>
+      </g>
+      
+      <!-- Lens & Telemetry Label -->
+      <text x="${width * 0.15}" y="${height * 0.88}" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.4)" letter-spacing="2">GABI OPTICS ENGINE • ${lens.toUpperCase()} • ${lighting.toUpperCase()}</text>
+    </svg>`;
+
+    const base64 = Buffer.from(proceduralMockupSvg).toString("base64");
+    return res.json({
+      imageUrl: `data:image/svg+xml;base64,${base64}`,
+      engine: "procedural-studio",
+      isFallback: true,
+      promptUsed: fullPrompt,
+      message: "Generated using GABI Studio Procedural Engine. Add an AI API key in Settings for photorealistic diffusion rendering.",
+    });
+  } catch (error: any) {
+    console.error("Error generating AI mockup:", error);
+    return res.status(500).json({ error: error.message || "Failed to generate AI mockup." });
+  }
+});
+
 // AI Brand History & Origin Case Study Deep Intelligence Endpoint
 // Real archival logo history for a brand (Wikimedia Commons). Used by the
 // curated showcase path to attach real images to pre-baked case studies.
@@ -2269,6 +2607,16 @@ Ensure high analytical rigor, historical accuracy, deep semiotic insight into th
   } catch (error: any) {
     console.error("Error in /api/brand-case-study:", error);
     return res.status(500).json({ error: error.message || "Failed to compile brand case study intelligence." });
+  }
+});
+
+// AI Director Status & Telemetry Endpoint
+app.get("/api/ai-director/status", (_req, res) => {
+  try {
+    const status = getDirectorStatus();
+    return res.json(status);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || "Failed to retrieve director status" });
   }
 });
 

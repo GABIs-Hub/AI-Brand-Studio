@@ -41,7 +41,7 @@ function EraLogoImage({ logo, brandName }: { logo: BrandHistoricalLogo; brandNam
   const [failed, setFailed] = React.useState(false);
   if (failed || !logo.imageUrl) {
     return (
-      <div className="font-serif italic text-sm font-bold text-center opacity-35 px-4 leading-relaxed">
+      <div className="font-display text-sm font-bold text-center opacity-35 px-4 leading-relaxed">
         {brandName} — {logo.title}
         <span className="block font-sans text-[9px] uppercase tracking-widest font-black opacity-60 mt-1">
           Archival image unavailable
@@ -234,15 +234,15 @@ export function PopularBrandResearchStudio({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-200 dark:border-zinc-800 pb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="w-2.5 h-2.5 rounded-xl-full bg-amber-400 animate-pulse" />
               <span className="text-[9px] uppercase tracking-[0.3em] font-black text-gray-500 dark:text-zinc-400">
                 Pre-Creation Intelligence &bull; Brand Origins &amp; Logo History
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif italic font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
+            <h2 className="text-2xl sm:text-3xl font-display font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
               Study How Iconic Brands Were Built
             </h2>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-2xl font-serif italic">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-2xl font-display">
               Search any iconic or historical brand (e.g. Nike, Apple, Patagonia, Spotify, Ferrari). Explore their garage origins, logo evolution over decades, color psychology, and extract actionable takeaways for your own brand.
             </p>
           </div>
@@ -333,7 +333,7 @@ export function PopularBrandResearchStudio({
                 <span className="text-[8px] font-mono uppercase tracking-widest text-gray-400 dark:text-zinc-500 block">
                   Est. {b.foundingYear}
                 </span>
-                <h4 className="font-serif italic font-bold text-base text-[#1A1A1A] dark:text-[#F9F7F2] truncate group-hover:underline">
+                <h4 className="font-display font-bold text-base text-[#1A1A1A] dark:text-[#F9F7F2] truncate group-hover:underline">
                   {b.brandName}
                 </h4>
               </div>
@@ -344,7 +344,7 @@ export function PopularBrandResearchStudio({
                   {b.colorPaletteHeritage?.slice(0, 3).map((c) => (
                     <div
                       key={'swatch-' + b.id + '-' + c.hex}
-                      className="w-2.5 h-2.5 rounded-full border border-black/10"
+                      className="w-2.5 h-2.5 rounded-xl-full border border-black/10"
                       style={{ backgroundColor: c.hex }}
                     />
                   ))}
@@ -352,7 +352,7 @@ export function PopularBrandResearchStudio({
               </div>
 
               {isSelected && (
-                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-full" />
+                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-xl-full" />
               )}
             </button>
           );
@@ -381,11 +381,11 @@ export function PopularBrandResearchStudio({
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-serif italic font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
+              <h1 className="text-3xl sm:text-5xl font-display font-light tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
                 {selectedBrand.brandName}
               </h1>
 
-              <p className="text-base sm:text-lg font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
+              <p className="text-base sm:text-lg font-display text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                 &ldquo;{selectedBrand.tagline}&rdquo;
               </p>
               <div className="text-xs text-gray-500 dark:text-gray-500 font-mono">
@@ -483,7 +483,7 @@ export function PopularBrandResearchStudio({
                   <span className="text-[9px] uppercase tracking-widest font-black text-gray-400 dark:text-zinc-500 block">
                     Phase I &bull; The Humble Beginning
                   </span>
-                  <h3 className="font-serif italic text-lg font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
+                  <h3 className="font-display text-lg font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
                     The Origin Reality
                   </h3>
                   <p className="text-xs text-gray-700 dark:text-zinc-300 leading-relaxed">
@@ -495,7 +495,7 @@ export function PopularBrandResearchStudio({
                   <span className="text-[9px] uppercase tracking-widest font-black text-rose-500 block">
                     Phase II &bull; The Early Struggle
                   </span>
-                  <h3 className="font-serif italic text-lg font-bold text-rose-900 dark:text-rose-200">
+                  <h3 className="font-display text-lg font-bold text-rose-900 dark:text-rose-200">
                     The Near-Fatal Friction
                   </h3>
                   <p className="text-xs text-rose-800/90 dark:text-rose-300 leading-relaxed">
@@ -507,7 +507,7 @@ export function PopularBrandResearchStudio({
                   <span className="text-[9px] uppercase tracking-widest font-black text-emerald-600 block">
                     Phase III &bull; The Pivot
                   </span>
-                  <h3 className="font-serif italic text-lg font-bold text-emerald-900 dark:text-emerald-200">
+                  <h3 className="font-display text-lg font-bold text-emerald-900 dark:text-emerald-200">
                     The Breakthrough Moment
                   </h3>
                   <p className="text-xs text-emerald-800/90 dark:text-emerald-300 leading-relaxed">
@@ -527,7 +527,7 @@ export function PopularBrandResearchStudio({
                       key={'pillar-' + idx}
                       className="p-4 border-l-4 border-black dark:border-white bg-[#FAF9F6] dark:bg-[#161614]"
                     >
-                      <h4 className="font-serif italic font-bold text-sm text-[#1A1A1A] dark:text-[#F9F7F2] mb-1">
+                      <h4 className="font-display font-bold text-sm text-[#1A1A1A] dark:text-[#F9F7F2] mb-1">
                         {pillar.title}
                       </h4>
                       <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed">
@@ -562,7 +562,7 @@ export function PopularBrandResearchStudio({
                           </p>
                         </div>
                       </div>
-                      <div className="sm:max-w-xs p-2.5 bg-amber-400/10 border border-amber-400/30 text-[11px] text-amber-900 dark:text-amber-300 font-serif italic shrink-0">
+                      <div className="sm:max-w-xs p-2.5 bg-amber-400/10 border border-amber-400/30 text-[11px] text-amber-900 dark:text-amber-300 font-display shrink-0">
                         <strong>Takeaway:</strong> {m.takeaway}
                       </div>
                     </div>
@@ -576,10 +576,10 @@ export function PopularBrandResearchStudio({
           {activeAnalysisTab === 'logos' && (
             <div className="p-6 sm:p-8 space-y-8 animate-fadeIn">
               <div className="space-y-1">
-                <h3 className="font-serif italic text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
+                <h3 className="font-display text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
                   How the {selectedBrand.brandName} Logomark Evolved Across Eras
                 </h3>
-                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-serif italic">
+                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-display">
                   Notice how nearly all legendary logos start complex, literal, or crowded, and gradually subtract unnecessary detail until only a pure geometric essence remains. Archival images from Wikimedia Commons (CC-licensed){logoHistoryLoading === selectedBrand.id ? ' — loading historical logos…' : ''}.
                 </p>
               </div>
@@ -616,7 +616,7 @@ export function PopularBrandResearchStudio({
                           ) : null}
                         </>
                       ) : (
-                        <div className="font-serif italic text-2xl font-bold text-center opacity-40">
+                        <div className="font-display text-2xl font-bold text-center opacity-40">
                           {selectedBrand.brandName}
                         </div>
                       )}
@@ -633,7 +633,7 @@ export function PopularBrandResearchStudio({
                             {idx < selectedBrand.logoEvolution.length - 1 ? ' →' : ' ◆'}
                           </span>
                         </div>
-                        <h4 className="font-serif italic font-bold text-base text-[#1A1A1A] dark:text-[#F9F7F2]">
+                        <h4 className="font-display font-bold text-base text-[#1A1A1A] dark:text-[#F9F7F2]">
                           {logo.title}
                         </h4>
                         <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed">
@@ -651,7 +651,7 @@ export function PopularBrandResearchStudio({
                               key={'change-' + cIdx}
                               className="text-[11px] text-gray-700 dark:text-zinc-300 flex items-center gap-1.5"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                              <span className="w-1.5 h-1.5 rounded-xl-full bg-amber-400 shrink-0" />
                               <span>{change}</span>
                             </li>
                           ))}
@@ -673,7 +673,7 @@ export function PopularBrandResearchStudio({
                   <span className="text-[9px] uppercase tracking-[0.25em] font-black text-gray-400 block">
                     Heritage Palette &amp; Psychology
                   </span>
-                  <h3 className="font-serif italic text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
+                  <h3 className="font-display text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
                     Color Distribution
                   </h3>
                 </div>
@@ -688,7 +688,7 @@ export function PopularBrandResearchStudio({
                         className="h-24 p-3 flex items-start justify-between"
                         style={{ backgroundColor: color.hex }}
                       >
-                        <span className="text-[8px] font-mono uppercase font-black px-1.5 py-0.5 bg-black/80 text-white rounded-xs">
+                        <span className="text-[8px] font-mono uppercase font-black px-1.5 py-0.5 bg-black/80 text-white rounded-xl-xs">
                           {color.role}
                         </span>
                         <span className="text-[9px] font-mono px-1.5 py-0.5 bg-white/90 text-black font-bold">
@@ -715,7 +715,7 @@ export function PopularBrandResearchStudio({
                   <span className="text-[9px] uppercase tracking-[0.25em] font-black text-gray-400 block">
                     Type Heritage
                   </span>
-                  <h3 className="font-serif italic text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
+                  <h3 className="font-display text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
                     Typography System
                   </h3>
                 </div>
@@ -735,7 +735,7 @@ export function PopularBrandResearchStudio({
                       <h4 className="text-2xl font-bold tracking-tight text-[#1A1A1A] dark:text-[#F9F7F2]">
                         {typeSpec.fontName}
                       </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed font-serif italic">
+                      <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed font-display">
                         {typeSpec.rationale}
                       </p>
                     </div>
@@ -749,10 +749,10 @@ export function PopularBrandResearchStudio({
           {activeAnalysisTab === 'lessons' && (
             <div className="p-6 sm:p-8 space-y-8 animate-fadeIn">
               <div className="space-y-1">
-                <h3 className="font-serif italic text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
+                <h3 className="font-display text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
                   What You Can Learn From {selectedBrand.brandName} To Build Your Brand
                 </h3>
-                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-serif italic">
+                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 font-display">
                   Direct principles distilled from {selectedBrand.brandName}&apos;s founding journey and how to apply them immediately in your brand prompt.
                 </p>
               </div>
@@ -768,7 +768,7 @@ export function PopularBrandResearchStudio({
                         <Award className="w-4 h-4" />
                         <span>Core Strategy #{lIdx + 1}</span>
                       </div>
-                      <h4 className="font-serif italic font-bold text-lg text-[#1A1A1A] dark:text-[#F9F7F2]">
+                      <h4 className="font-display font-bold text-lg text-[#1A1A1A] dark:text-[#F9F7F2]">
                         {lesson.lessonTitle}
                       </h4>
                       <p className="text-xs text-gray-700 dark:text-zinc-300 leading-relaxed">
@@ -793,10 +793,10 @@ export function PopularBrandResearchStudio({
                     <span className="text-[9px] uppercase tracking-[0.3em] font-mono text-amber-400 dark:text-amber-600 font-bold block">
                       Blueprint Recommendation
                     </span>
-                    <h4 className="font-serif italic text-xl font-light">
+                    <h4 className="font-display text-xl font-light">
                       Start Your Brand With This Proven {selectedBrand.brandName} Archetype
                     </h4>
-                    <p className="text-xs opacity-80 max-w-xl font-serif italic">
+                    <p className="text-xs opacity-80 max-w-xl font-display">
                       &ldquo;{selectedBrand.starterPromptInspiration.recommendedMission}&rdquo;
                     </p>
                   </div>

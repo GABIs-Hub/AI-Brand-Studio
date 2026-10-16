@@ -564,18 +564,23 @@ export default function App() {
   const handleUpdateBrand = async (updatedBrand: BrandBible) => {
     setActiveBrand(updatedBrand);
     setSavedBrands((prev) => {
-      const updated = prev.map((b) => (b.id === updatedBrand.id ? updatedBrand : b));
+      const exists = prev.some((b) => b.id === updatedBrand.id);
+      const updated = exists
+        ? prev.map((b) => (b.id === updatedBrand.id ? updatedBrand : b))
+        : [updatedBrand, ...prev];
       writeSavedBrands(updated);
       return updated;
     });
     
-    if (user && updatedBrand.userId === user.id) {
+    if (user) {
       try {
-        await saveBrandToCloud(updatedBrand);
+        await saveBrandToCloud({ ...updatedBrand, userId: user.id });
       } catch (e) {
         console.warn('Could not save updated brand to cloud:', e);
       }
     }
+    setShareToast(`Saved "${updatedBrand.brandName}" to your library!`);
+    setTimeout(() => setShareToast(null), 3000);
   };
 
   const handleDeleteBrand = async (id: string) => {
@@ -824,7 +829,7 @@ export default function App() {
       {/* Share Toast Notification */}
       {shareToast && (
         <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <div className="bg-[#1A1A1A] dark:bg-[#F9F7F2] text-[#F9F7F2] dark:text-[#1A1A1A] px-4 py-3 rounded-none shadow-2xl border border-[#F9F7F2]/20 dark:border-[#1A1A1A]/20 flex items-center gap-3">
+          <div className="bg-[#1A1A1A] dark:bg-[#F9F7F2] text-[#F9F7F2] dark:text-[#1A1A1A] px-4 py-3 rounded-xl shadow-2xl border border-[#F9F7F2]/20 dark:border-[#1A1A1A]/20 flex items-center gap-3">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600 shrink-0" />
             <span className="text-xs font-bold uppercase tracking-wider">{shareToast}</span>
           </div>

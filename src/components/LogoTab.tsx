@@ -160,7 +160,7 @@ export function LogoTab({
           <h2 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
             Logo &amp; Brand Marks
           </h2>
-          <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-zinc-400 font-display mt-0.5">
             Vector logos, alternate styles, web favicons, and high-resolution exports.
           </p>
         </div>
@@ -189,7 +189,7 @@ export function LogoTab({
                 <Icon className="w-3 h-3" />
                 <span>{tab.label}</span>
                 {tab.id === 'render3d' && (
-                  <span className="ml-1 px-1 py-0.2 bg-amber-500 text-black text-[7px] font-black rounded-xs">
+                  <span className="ml-1 px-1 py-0.2 bg-amber-500 text-black text-[7px] font-black rounded-xl-xs">
                     HD
                   </span>
                 )}
@@ -336,7 +336,7 @@ export function LogoTab({
             >
               {isEditingSvg ? (
                 <textarea
-                  className="w-full h-[300px] bg-zinc-900 text-green-400 p-4 font-mono text-xs outline-none border border-zinc-700 rounded-sm"
+                  className="w-full h-[300px] bg-zinc-900 text-green-400 p-4 font-mono text-xs outline-none border border-zinc-700 rounded-xl-md"
                   value={svgDraft}
                   onChange={(e) => setSvgDraft(e.target.value)}
                   placeholder="Paste SVG Code here..."
@@ -358,7 +358,7 @@ export function LogoTab({
                 <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 dark:text-gray-500 block">
                   Core Concept
                 </span>
-                <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
+                <p className="font-display text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
                   {logo.concept}
                 </p>
               </div>
@@ -367,7 +367,7 @@ export function LogoTab({
                 <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 dark:text-gray-500 block">
                   Symbolism
                 </span>
-                <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
+                <p className="font-display text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
                   {logo.symbolism}
                 </p>
               </div>
@@ -376,7 +376,7 @@ export function LogoTab({
                 <span className="text-[9px] uppercase tracking-widest font-black text-gray-500 dark:text-gray-500 block">
                   Geometry
                 </span>
-                <p className="font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
+                <p className="font-display text-sm text-[#1A1A1A] dark:text-[#F9F7F2] leading-relaxed">
                   {logo.geometryDetails}
                 </p>
               </div>
@@ -389,7 +389,7 @@ export function LogoTab({
               <h4 className="text-xs uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                 Want to try another logo style?
               </h4>
-              <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic mt-0.5">
+              <p className="text-xs text-gray-500 dark:text-zinc-400 font-display mt-0.5">
                 Explore Minimalist, Negative Space, Monogram, Crest, and Seal variations with 1-click instant preview.
               </p>
             </div>
@@ -471,7 +471,7 @@ export function LogoTab({
       {activeTabMode === 'styles' && (
         <div className="space-y-6">
           <div className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-4 flex items-center justify-between">
-            <span className="text-xs font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
+            <span className="text-xs font-display text-gray-600 dark:text-gray-600 dark:text-zinc-400">
               Click any style to preview and apply it as your primary logomark.
             </span>
             <button
@@ -547,7 +547,7 @@ export function LogoTab({
                 </div>
 
                 <div className="border-t border-gray-200 dark:border-gray-200 dark:border-zinc-800 p-3">
-                  <p className="text-[11px] font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
+                  <p className="text-[11px] font-display text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                     {mark.description}
                   </p>
                 </div>

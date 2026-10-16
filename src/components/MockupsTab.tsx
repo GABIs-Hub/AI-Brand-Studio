@@ -59,7 +59,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
           <h2 className="text-[11px] uppercase tracking-[0.3em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
             Dynamic Brand Application Mockups
           </h2>
-          <p className="font-serif italic text-lg opacity-80 mt-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
+          <p className="font-display text-lg opacity-80 mt-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
             Industry-tailored live simulations applying generated palette, logomarks, typography, and messaging.
           </p>
         </div>
@@ -134,9 +134,9 @@ export function MockupsTab({ brand }: MockupsTabProps) {
             <div className="bg-[#1A1A1A] dark:bg-[#0E0E0D] px-4 py-3 flex items-center justify-between text-[#F9F7F2]">
               <div className="flex items-center gap-4">
                 <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-rose-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-amber-500/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-emerald-500/80" />
                 </div>
                 {/* Active Tab */}
                 <div className="bg-[#F9F7F2] dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] px-3.5 py-1 flex items-center gap-2 text-[9px] uppercase tracking-widest font-bold max-w-[220px] truncate border border-black/20">
@@ -224,7 +224,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                 >
                   <div className="flex items-center justify-between border-b border-white/10 pb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
+                      <div className="w-3 h-3 rounded-xl-full" style={{ backgroundColor: accentColor }} />
                       <span className="text-[10px] uppercase tracking-widest font-bold opacity-80">
                         {brand.brandName} Core Engine Active
                       </span>
@@ -490,14 +490,14 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   style={{ backgroundColor: '#202226', borderColor: 'rgba(255,255,255,0.2)' }}
                   className="w-full max-w-[300px] aspect-[1/1.4] border-2 p-6 flex flex-col justify-between shadow-[0_30px_60px_rgba(0,0,0,0.7)] relative"
                 >
-                  <div className="w-12 h-2 mx-auto bg-white/20 rounded-full mb-2" />
+                  <div className="w-12 h-2 mx-auto bg-white/20 rounded-xl-full mb-2" />
                   <div className="text-center space-y-3">
                     <span className="text-[8px] uppercase tracking-[0.3em] text-amber-400 font-bold">ARTISAN HARVEST</span>
                     <div
                       className="w-16 h-16 mx-auto"
                       dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                     />
-                    <p className="text-xs italic font-serif text-white/80 max-w-[200px] mx-auto">
+                    <p className="text-xs font-display text-white/80 max-w-[200px] mx-auto">
                       &ldquo;{brand.mission.slice(0, 70)}...&rdquo;
                     </p>
                   </div>
@@ -513,7 +513,7 @@ export function MockupsTab({ brand }: MockupsTabProps) {
                   style={{ backgroundColor: lightColor, color: darkColor }}
                   className="w-full max-w-[240px] aspect-[1/2] border-2 border-black p-6 flex flex-col justify-between shadow-2xl relative"
                 >
-                  <div className="w-4 h-4 rounded-full border-2 border-current mx-auto mb-2" />
+                  <div className="w-4 h-4 rounded-xl-full border-2 border-current mx-auto mb-2" />
                   <div className="text-center space-y-3">
                     <div
                       className="w-16 h-16 mx-auto"
@@ -738,9 +738,9 @@ export function MockupsTab({ brand }: MockupsTabProps) {
             <div className="max-w-4xl mx-auto border-4 border-[#252830] bg-[#14171D] p-4 shadow-[0_40px_90px_rgba(0,0,0,0.9)] relative">
               {/* Top Overhead Floodlights */}
               <div className="flex justify-around mb-2">
-                <div className="w-12 h-1.5 bg-zinc-600 rounded-full shadow-[0_10px_20px_rgba(255,255,255,0.4)]" />
-                <div className="w-12 h-1.5 bg-zinc-600 rounded-full shadow-[0_10px_20px_rgba(255,255,255,0.4)]" />
-                <div className="w-12 h-1.5 bg-zinc-600 rounded-full shadow-[0_10px_20px_rgba(255,255,255,0.4)]" />
+                <div className="w-12 h-1.5 bg-zinc-600 rounded-xl-full shadow-[0_10px_20px_rgba(255,255,255,0.4)]" />
+                <div className="w-12 h-1.5 bg-zinc-600 rounded-xl-full shadow-[0_10px_20px_rgba(255,255,255,0.4)]" />
+                <div className="w-12 h-1.5 bg-zinc-600 rounded-xl-full shadow-[0_10px_20px_rgba(255,255,255,0.4)]" />
               </div>
 
               {/* Billboard Screen Surface */}
