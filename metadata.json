@@ -1,0 +1,8 @@
+{
+  "name": "GABI - Generate. Align. Build. Inspire.",
+  "description": "Turning brand ideas into complete, consistent identities. GABI generates a complete Brand Bible — logo suite, WCAG-validated color palette, Google Fonts pairing, tone of voice, and social content — powered by OpenAI, Claude, Gemini, and Higgsfield.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

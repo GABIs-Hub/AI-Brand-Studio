@@ -1,3 +1,4 @@
+import { routeTask } from "../aiDirector";
 import { randomUUID } from "node:crypto";
 import {
   type ImageGenerationRequest,
@@ -55,6 +56,10 @@ export class AiEngine {
     if (definition.modality !== "text") {
       throw new AiEngineError(`Capability ${capability} does not support text requests.`, "invalid_input");
     }
+    if ((!request.preferred || request.preferred === "auto") && request.taskType) {
+      const decision = routeTask(request.taskType, { powerLevel: request.powerLevel });
+      if (decision.selectedEngine !== "local") request = { ...request, preferred: decision.selectedEngine as typeof request.preferred };
+    }
     const resolution = resolveModel(capability, {
       alias: options.modelAlias,
       preferredProvider: request.preferred,
@@ -92,6 +97,10 @@ export class AiEngine {
     const definition = getCapabilityDefinition(capability);
     if (definition.modality !== "image") {
       throw new AiEngineError(`Capability ${capability} does not support image requests.`, "invalid_input");
+    }
+    if ((!request.preferred || request.preferred === "auto") && request.taskType) {
+      const decision = routeTask(request.taskType, { powerLevel: request.powerLevel });
+      if (decision.selectedEngine !== "local") request = { ...request, preferred: decision.selectedEngine as typeof request.preferred };
     }
     const resolution = resolveModel(capability, {
       alias: options.modelAlias,

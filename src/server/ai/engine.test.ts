@@ -79,7 +79,8 @@ describe("AI engine", () => {
     await engine.executeText("assistant", { prompt: "Use only OpenAI", preferred: "openai" }, { allowFallback: false });
 
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({ preferred: "openai", allowProviderFallback: false })
+      expect.objectContaining({ preferred: "openai", allowProviderFallback: false }),
+      { provider: "openai", providerModelId: "configured-openai-model" }
     );
   });
 

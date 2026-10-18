@@ -75,7 +75,7 @@ export function PaletteTab({ palette }: PaletteTabProps) {
           className="fixed bottom-6 right-6 z-50 bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] px-5 py-3 border border-[#F9F7F2]/20 dark:border-[#1A1A1A]/20 shadow-2xl flex items-center gap-3 transition-all duration-300 animate-in fade-in slide-in-from-bottom-5"
           id="hex-copied-toast"
         >
-          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
+          <div className="w-5 h-5 rounded-xl-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
             <Check className="w-3 h-3 text-white" strokeWidth={3} />
           </div>
           <div className="flex flex-col text-left">
@@ -91,7 +91,7 @@ export function PaletteTab({ palette }: PaletteTabProps) {
           className="fixed bottom-6 right-6 z-50 bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] px-5 py-3 border border-[#F9F7F2]/20 dark:border-[#1A1A1A]/20 shadow-2xl flex items-center gap-3 transition-all duration-300 animate-in fade-in slide-in-from-bottom-5"
           id="snippet-copied-toast"
         >
-          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
+          <div className="w-5 h-5 rounded-xl-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
             <Check className="w-3 h-3 text-white" strokeWidth={3} />
           </div>
           <div className="flex flex-col text-left">
@@ -105,7 +105,7 @@ export function PaletteTab({ palette }: PaletteTabProps) {
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 pb-4 transition-colors duration-300">
         <div>
           <h2 className="text-[11px] uppercase tracking-[0.3em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">5-Color Brand Palette</h2>
-          <p className="font-serif italic text-lg opacity-80 mt-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
+          <p className="font-display text-lg opacity-80 mt-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
             Curated 5-color hex palette with strict semantic roles, contrast compliance, and digital usage rules.
           </p>
         </div>
@@ -172,7 +172,7 @@ export function PaletteTab({ palette }: PaletteTabProps) {
                   </button>
                 </div>
                 <div>
-                  <h3 className="font-serif italic text-2xl font-light tracking-tighter">{color.name}</h3>
+                  <h3 className="font-display text-2xl font-light tracking-tighter">{color.name}</h3>
                   <p className="text-[9px] uppercase font-bold tracking-widest opacity-70 mt-1">RGB({color.rgb})</p>
                 </div>
               </div>
@@ -195,7 +195,7 @@ export function PaletteTab({ palette }: PaletteTabProps) {
       </div>
 
       {/* Palette Export Snippets Box with Multi-Format Selector and 1-Click Copy */}
-      <div className="bg-[#1A1A1A] dark:bg-[#1E1E1C] text-white dark:text-[#F9F7F2] p-6 sm:p-8 space-y-6 border border-[#1A1A1A] dark:border-[#F9F7F2]/10 rounded-none mt-8 transition-colors duration-300 shadow-md">
+      <div className="bg-[#1A1A1A] dark:bg-[#1E1E1C] text-white dark:text-[#F9F7F2] p-6 sm:p-8 space-y-6 border border-[#1A1A1A] dark:border-[#F9F7F2]/10 rounded-xl mt-8 transition-colors duration-300 shadow-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-dashed border-white/20 pb-4">
           <div className="flex items-center gap-3">
             <Code2 className="w-4 h-4 text-amber-400" />

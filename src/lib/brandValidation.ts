@@ -8,6 +8,8 @@ import {
   SecondaryMark,
   ToneGuideline,
   BrandValue,
+  RebrandStory,
+  RebrandEvolutionPoint,
 } from '../types';
 
 // ── Defensive Brand Bible validation ─────────────────────────────────────
@@ -165,6 +167,56 @@ function sanitizeImagery(v: unknown): ImageryStyle {
   };
 }
 
+function sanitizeRebrandStory(v: unknown): RebrandStory | undefined {
+  const o = obj(v);
+  if (!o) return undefined;
+  const rebrandBio = str(o.rebrandBio);
+  if (!rebrandBio && !o.isRebrand) return undefined;
+
+  const points: RebrandEvolutionPoint[] = [];
+  if (Array.isArray(o.keyEvolutionPoints)) {
+    for (const p of o.keyEvolutionPoints) {
+      const po = obj(p);
+      if (po) {
+        points.push({
+          title: str(po.title) || 'Strategic Shift',
+          before: str(po.before),
+          after: str(po.after),
+          strategicWhy: str(po.strategicWhy),
+        });
+      }
+    }
+  }
+
+  const prevTypo = obj(o.previousTypography);
+
+  return {
+    isRebrand: true,
+    previousBrandName: typeof o.previousBrandName === 'string' ? o.previousBrandName : undefined,
+    previousLogo: typeof o.previousLogo === 'string' ? o.previousLogo : undefined,
+    previousLogoType:
+      o.previousLogoType === 'svg' ||
+      o.previousLogoType === 'image' ||
+      o.previousLogoType === 'description'
+        ? o.previousLogoType
+        : undefined,
+    previousTypography: prevTypo
+      ? {
+          headingFont: typeof prevTypo.headingFont === 'string' ? prevTypo.headingFont : undefined,
+          bodyFont: typeof prevTypo.bodyFont === 'string' ? prevTypo.bodyFont : undefined,
+        }
+      : undefined,
+    previousColors: strArray(o.previousColors),
+    rebrandMode: o.rebrandMode === 'custom_prompt' ? 'custom_prompt' : 'impress_me',
+    customPrompt: typeof o.customPrompt === 'string' ? o.customPrompt : undefined,
+    rebrandTitle: str(o.rebrandTitle) || 'Brand Evolution & Strategic Shift',
+    rebrandBio: rebrandBio || 'Rebranding toward a modern, elevated market presence.',
+    strategicDiagnosis: typeof o.strategicDiagnosis === 'string' ? o.strategicDiagnosis : undefined,
+    keyEvolutionPoints: points,
+    createdAt: validDateString(o.createdAt) ?? new Date().toISOString(),
+  };
+}
+
 /**
  * Repairs any repairable brand document and returns a complete, render-safe
  * BrandBible. Returns null when the payload is not a brand at all — missing
@@ -209,6 +261,7 @@ export function sanitizeBrandBible(input: unknown): BrandBible | null {
     generatedLogoResolution:
       typeof o.generatedLogoResolution === 'string' ? o.generatedLogoResolution : undefined,
     version: typeof o.version === 'string' ? o.version : undefined,
+    rebrandStory: sanitizeRebrandStory(o.rebrandStory),
   };
 }
 

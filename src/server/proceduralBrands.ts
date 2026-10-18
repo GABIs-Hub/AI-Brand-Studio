@@ -3,6 +3,7 @@
 // booting the Express server.
 
 import { hexToRgb, rgbToHex, paletteFromBrandContext } from "../utils/colorEngine";
+import { resolveIndustryDirection } from "./industryContext";
 
 function normalizeHex(hex: string): string {
   return rgbToHex(hexToRgb(hex));
@@ -26,6 +27,67 @@ export interface ProceduralLogoVariationParams {
 }
 
 // Procedural Agency Logo Variations Generator (Diverse Archetypes Beyond Basic Shapes)
+// Dynamic letterform path generator for precision monograms and marks (A-Z)
+function getLetterformSvgPath(char: string): string {
+  const c = (char || 'A').toUpperCase();
+  switch (c) {
+    case 'A':
+      return 'M14 44 L29 14 L44 44 M19 35 L39 35';
+    case 'B':
+      return 'M16 14 L34 14 C40 14 43 18 43 23 C43 28 39 30 33 30 L16 30 M16 30 L35 30 C41 30 45 34 45 39 C45 44 41 45 34 45 L16 45 Z';
+    case 'C':
+      return 'M44 20 C38 14 34 14 28 14 C19 14 14 20 14 29 C14 38 19 44 28 44 C34 44 38 44 44 38';
+    case 'D':
+      return 'M16 14 L30 14 C39 14 45 20 45 29 C45 38 39 44 30 44 L16 44 Z';
+    case 'E':
+      return 'M42 14 L16 14 L16 44 L42 44 M16 29 L38 29';
+    case 'F':
+      return 'M42 14 L16 14 L16 44 M16 29 L36 29';
+    case 'G':
+      return 'M44 20 C38 14 34 14 28 14 C19 14 14 20 14 29 C14 38 19 44 28 44 C36 44 42 40 42 33 L29 33';
+    case 'H':
+      return 'M16 14 L16 44 M42 14 L42 44 M16 29 L42 29';
+    case 'I':
+      return 'M22 14 L36 14 M29 14 L29 44 M22 44 L36 44';
+    case 'J':
+      return 'M38 14 L38 36 C38 42 33 44 27 44 C20 44 16 40 16 35';
+    case 'K':
+      return 'M16 14 L16 44 M42 14 L18 30 L42 44';
+    case 'L':
+      return 'M16 14 L16 44 L42 44';
+    case 'M':
+      return 'M14 44 L14 14 L29 32 L44 14 L44 44';
+    case 'N':
+      return 'M15 44 L15 14 L43 44 L43 14';
+    case 'O':
+      return 'M29 14 C19 14 14 20 14 29 C14 38 19 44 29 44 C39 44 44 38 44 29 C44 20 39 14 29 14 Z';
+    case 'P':
+      return 'M16 14 L32 14 C39 14 43 18 43 24 C43 30 39 34 32 34 L16 34 L16 44';
+    case 'Q':
+      return 'M28 14 C19 14 14 20 14 29 C14 38 19 44 28 44 C34 44 38 42 41 38 M36 36 L44 44';
+    case 'R':
+      return 'M16 14 L32 14 C39 14 43 18 43 24 C43 30 39 33 32 33 L16 33 L16 44 M30 33 L43 44';
+    case 'S':
+      return 'M42 20 C38 14 33 14 28 14 C20 14 16 18 16 23 C16 32 44 28 44 37 C44 42 39 45 28 45 C20 45 15 42 14 38';
+    case 'T':
+      return 'M14 14 L44 14 M29 14 L29 44';
+    case 'U':
+      return 'M15 14 L15 34 C15 41 21 44 29 44 C37 44 43 41 43 34 L43 14';
+    case 'V':
+      return 'M14 14 L29 44 L44 14';
+    case 'W':
+      return 'M13 14 L20 44 L29 27 L38 44 L45 14';
+    case 'X':
+      return 'M15 14 L43 44 M43 14 L15 44';
+    case 'Y':
+      return 'M14 14 L29 29 L44 14 M29 29 L29 44';
+    case 'Z':
+      return 'M15 14 L43 14 L15 44 L43 44';
+    default:
+      return 'M14 44 L29 14 L44 44 M19 35 L39 35';
+  }
+}
+
 export function generateProceduralLogoVariations(params: ProceduralLogoVariationParams) {
   const brandName = params.brandName || "Aura";
   const pColor = params.pColor || "#1A1A1A";
@@ -37,6 +99,8 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
   const bFont = params.bodyFont || "Plus Jakarta Sans";
 
   const initial = brandName.charAt(0).toUpperCase();
+  const letterPath = getLetterformSvgPath(initial);
+  const subline = (params.industry || "Brand Identity").toUpperCase();
 
   // 1. Negative Space Archetype: Optical illusion where positive geometry carves an inner arrow/flame
   const negativeSpaceSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
@@ -47,8 +111,8 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     </linearGradient>
     <mask id="nsCutout">
       <rect width="100" height="100" fill="#ffffff" />
-      <!-- Negative space dynamic arrow / forward momentum cutout -->
-      <polygon points="40,25 65,50 40,75 48,50" fill="#000000" />
+      <!-- Negative space dynamic arrow / optical cutout -->
+      <polygon points="38,22 66,50 38,78 48,50" fill="#000000" />
       <circle cx="50" cy="50" r="6" fill="#000000" />
     </mask>
   </defs>
@@ -57,7 +121,7 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <circle cx="16" cy="16" r="4" fill="${aColor}" />
   </g>
   <text x="110" y="50" font-family="${hFont}, sans-serif" font-size="26" font-weight="800" fill="${ndColor}" letter-spacing="-0.5">${brandName}</text>
-  <text x="110" y="70" font-family="${bFont}, sans-serif" font-size="9" font-weight="700" fill="${sColor}" letter-spacing="3.5" text-transform="uppercase">NEGATIVE SPACE IDENTITY</text>
+  <text x="110" y="70" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${sColor}" letter-spacing="3.5" text-transform="uppercase">${subline}</text>
 </svg>`;
 
   // 2. Interlocking Dynamic Monogram Archetype: Overlapping woven typographic ribbon curves
@@ -74,14 +138,13 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
   </defs>
   <g transform="translate(15, 12)">
     <circle cx="38" cy="38" r="36" fill="${nlColor}" stroke="${ndColor}" stroke-width="1.5" stroke-opacity="0.1" />
-    <!-- Interlocking Ribbon Loop 1 -->
-    <path d="M22 56 C22 28, 42 22, 54 36 C62 46, 38 52, 28 42" fill="none" stroke="url(#monoGrad1)" stroke-width="6.5" stroke-linecap="round" />
-    <!-- Interlocking Ribbon Loop 2 -->
-    <path d="M54 20 C54 48, 34 54, 22 40 C14 30, 38 24, 48 34" fill="none" stroke="url(#monoGrad2)" stroke-width="4.5" stroke-linecap="round" opacity="0.9" />
-    <circle cx="38" cy="38" r="5" fill="${pColor}" />
+    <!-- Interlocking Ribbon Loops -->
+    <path d="M22 54 C22 26, 42 20, 54 34 C62 44, 38 50, 28 40" fill="none" stroke="url(#monoGrad1)" stroke-width="6" stroke-linecap="round" />
+    <path d="M54 22 C54 50, 34 56, 22 42 C14 32, 38 26, 48 36" fill="none" stroke="url(#monoGrad2)" stroke-width="4.5" stroke-linecap="round" opacity="0.9" />
+    <circle cx="38" cy="38" r="4.5" fill="${pColor}" />
   </g>
   <text x="110" y="48" font-family="${hFont}, sans-serif" font-size="25" font-weight="700" fill="${ndColor}">${brandName}</text>
-  <text x="110" y="68" font-family="${bFont}, sans-serif" font-size="9" font-weight="600" fill="${aColor}" letter-spacing="3" text-transform="uppercase">DYNAMIC MONOGRAM SYSTEM</text>
+  <text x="110" y="68" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="600" fill="${aColor}" letter-spacing="3" text-transform="uppercase">${subline}</text>
 </svg>`;
 
   // 3. Conceptual Abstract Emblem Archetype: Multi-axis kinetic isometric geometric vortex
@@ -110,7 +173,7 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <circle cx="38" cy="42" r="2.5" fill="${aColor}" />
   </g>
   <text x="112" y="49" font-family="${hFont}, sans-serif" font-size="25" font-weight="800" fill="${ndColor}" letter-spacing="-0.8">${brandName}</text>
-  <text x="112" y="69" font-family="${bFont}, sans-serif" font-size="9" font-weight="700" fill="${sColor}" letter-spacing="3" text-transform="uppercase">ARCHITECTURAL EMBLEM</text>
+  <text x="112" y="69" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${sColor}" letter-spacing="3" text-transform="uppercase">${subline}</text>
 </svg>`;
 
   // 4. Architectural Badge & Heritage Seal Archetype: Concentric precision rings, radial ticks, and seal
@@ -126,7 +189,7 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <circle cx="38" cy="54" r="2" fill="${aColor}" />
   </g>
   <text x="108" y="46" font-family="${hFont}, sans-serif" font-size="24" font-weight="700" fill="${ndColor}">${brandName}</text>
-  <text x="108" y="66" font-family="${bFont}, sans-serif" font-size="9" font-weight="700" fill="${pColor}" letter-spacing="3" text-transform="uppercase">AUTHENTICATED HERITAGE SEAL</text>
+  <text x="108" y="66" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${pColor}" letter-spacing="3" text-transform="uppercase">${subline}</text>
 </svg>`;
 
   // 5. Geometric Minimalist Archetype: Clean Bauhaus precision with asymmetrical golden-ratio balance
@@ -139,19 +202,20 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <circle cx="35" cy="14" r="4" fill="${aColor}" />
   </g>
   <text x="110" y="48" font-family="${hFont}, sans-serif" font-size="26" font-weight="800" fill="${ndColor}" letter-spacing="-0.5">${brandName}</text>
-  <text x="110" y="68" font-family="${bFont}, sans-serif" font-size="9" font-weight="600" fill="${sColor}" letter-spacing="3.5" text-transform="uppercase">MINIMALIST GEOMETRY</text>
+  <text x="110" y="68" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="600" fill="${sColor}" letter-spacing="3.5" text-transform="uppercase">${subline}</text>
 </svg>`;
 
-  // 6. Modern Wordmark + Standalone Responsive Mark
+  // 6. Modern Wordmark + Standalone Responsive Dynamic Initial Mark
   const modernWordmarkSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
   <g transform="translate(16, 20)">
     <rect x="0" y="0" width="58" height="58" rx="14" fill="${pColor}" />
-    <path d="M16 42 L29 16 L42 42 M20 34 L38 34" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-    <circle cx="44" cy="14" r="5" fill="${aColor}" />
+    <!-- Dynamic Letterform Initial Path -->
+    <path d="${letterPath}" fill="none" stroke="#FFFFFF" stroke-width="3.75" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="44" cy="14" r="4.5" fill="${aColor}" />
   </g>
   <text x="96" y="52" font-family="${hFont}, sans-serif" font-size="28" font-weight="900" fill="${ndColor}" letter-spacing="-1">${brandName}</text>
   <circle cx="96" cy="66" r="3" fill="${sColor}" />
-  <text x="106" y="69" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${sColor}" letter-spacing="4" text-transform="uppercase">GLOBAL VENTURE</text>
+  <text x="106" y="69" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${sColor}" letter-spacing="4" text-transform="uppercase">${subline}</text>
 </svg>`;
 
   return [
@@ -239,6 +303,15 @@ export interface ProceduralBrandRequest {
   isExistingBrandRefresh?: boolean;
   existingColors?: string[];
   existingTagline?: string;
+  isRebrand?: boolean;
+  currentLogo?: string;
+  currentLogoType?: 'image' | 'svg' | 'description';
+  currentTypography?: {
+    headingFont?: string;
+    bodyFont?: string;
+  };
+  rebrandMode?: 'impress_me' | 'custom_prompt';
+  customRebrandPrompt?: string;
 }
 
 // Procedural Brand Synthesis Engine (Deterministic high-aesthetic generator)
@@ -247,6 +320,7 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
   const aesthetic = (req.aesthetic || "Modern & Minimalist").toLowerCase();
   const industry = req.industry || "Creative Innovation & Technology";
   const audience = req.targetAudience || "Modern creators, forward-thinking professionals, and discerning global audiences";
+  const industryDir = resolveIndustryDirection(industry, mission);
 
   // Derive memorable brand name if not provided
   let brandName = req.brandName?.trim();
@@ -400,6 +474,61 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
     },
   ];
 
+  const positioningStatement = `${brandName} delivers uncompromising quality and visionary design to ${audience.toLowerCase()}, empowering them with refined solutions that elevate everyday standards.`;
+
+  let rebrandStory = undefined;
+  if (req.isRebrand) {
+    const isCustom = req.rebrandMode === 'custom_prompt' && Boolean(req.customRebrandPrompt?.trim());
+    const prevName = req.brandName || "Our Brand";
+
+    const rebrandBio = isCustom
+      ? `Our rebranding from ${prevName} marks a decisive strategic evolution aligned with our modern ambition: "${req.customRebrandPrompt}". This new identity unites architectural precision with elevated emotional resonance, stripping away legacy frictions to position our brand for long-term category leadership and meaningful customer connection.`
+      : `As ${prevName} enters its next chapter, we are embracing a comprehensive identity transformation. What began as an early venture has matured into an authoritative benchmark of craft, trust, and technological clarity. Moving towards this new phase allows us to shed outdated visual paradigms, sharpen our digital touchpoints, and communicate our true product excellence to a global audience.`;
+
+    rebrandStory = {
+      isRebrand: true,
+      previousBrandName: req.brandName,
+      previousLogo: req.currentLogo,
+      previousLogoType: req.currentLogoType,
+      previousTypography: req.currentTypography,
+      previousColors: req.existingColors,
+      rebrandMode: req.rebrandMode || 'impress_me',
+      customPrompt: req.customRebrandPrompt,
+      rebrandTitle: `${prevName}: The Next Strategic Era`,
+      rebrandBio,
+      strategicDiagnosis: isCustom
+        ? `Executed strategic transformation following user vision: "${req.customRebrandPrompt}". Rebalanced optical weights, heightened contrast, and harmonized assets.`
+        : `Diagnostic analysis revealed legacy aesthetic constraints in typography contrast and icon scalability. Re-engineered into a high-contrast, WCAG AA compliant system with enduring geometric authority.`,
+      keyEvolutionPoints: [
+        {
+          title: "Visual Identity & Emblem Modernization",
+          before: req.currentLogo ? "Legacy logo mark with visual clutter and multi-scale friction" : "Initial uncalibrated logo concept",
+          after: "Sculpted vector identity with mathematical geometry and negative space harmony",
+          strategicWhy: "Ensures unmistakable recognition across high-resolution displays, favicons, app icons, and physical architecture.",
+        },
+        {
+          title: "Typographic Hierarchy & Editorial Authority",
+          before: req.currentTypography?.headingFont ? `Legacy ${req.currentTypography.headingFont} font stack with limited dynamic range` : "System-default typography lacking distinct brand voice",
+          after: `${typography.headingFont} paired with ${typography.bodyFont}`,
+          strategicWhy: typography.rationale,
+        },
+        {
+          title: "Color Atmosphere & Accessibility",
+          before: req.existingColors?.length ? `Legacy palette (${req.existingColors.join(', ')}) with untested contrast ratios` : "Uncalibrated primary colors",
+          after: `5-Color balanced palette (${palette.map((c: any) => c.hex).join(', ')}) with 60-30-10 distribution and WCAG AA verification`,
+          strategicWhy: "Eliminates legibility barriers while projecting contemporary sophistication.",
+        },
+        {
+          title: "Strategic Market Posture",
+          before: "Initial utility focus with fragmented messaging",
+          after: `Cohesive positioning: "${positioningStatement}"`,
+          strategicWhy: "Builds defensible brand equity and commands premium market resonance.",
+        },
+      ],
+      createdAt: new Date().toISOString(),
+    };
+  }
+
   return {
     id: "brand-" + Date.now(),
     brandName,
@@ -407,7 +536,7 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
     industry,
     mission,
     vision: `To lead a global transformation in ${industry.toLowerCase()} by marrying timeless aesthetic craftsmanship with fearless technological execution.`,
-    positioningStatement: `${brandName} delivers uncompromising quality and visionary design to ${audience.toLowerCase()}, empowering them with refined solutions that elevate everyday standards.`,
+    positioningStatement,
     personalityTraits: [
       { trait: "Innovation", rating: 4.8, minLabel: "Traditional", maxLabel: "Pioneering" },
       { trait: "Aesthetic Precision", rating: 4.9, minLabel: "Pragmatic", maxLabel: "Obsessively Crafted" },
@@ -457,12 +586,31 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
       },
     ],
     imageryStyle: {
-      moodboardKeywords: ["Minimalist Architecture", "Cinematic Natural Light", "Tactile Textures", "Sculptural Geometry", "High-Contrast Monochrome"],
-      photographyGuidance: "Favor authentic natural lighting, gentle directional shadows, and tactile materials. Maintain generous negative space with human subjects captured in unposed, contemplative moments.",
-      dos: ["Use natural window light and subtle chiaroscuro", "Feature real tactile textures like linen, ceramic, and matte metal", "Maintain intentional negative space around focal subjects"],
-      donts: ["Avoid artificial studio flash and overly saturated HDR filters", "Never use cheesy, staged corporate stock photography", "Avoid busy, cluttered backgrounds with competing visual noise"],
+      moodboardKeywords: industryDir.categoryKeywords,
+      photographyGuidance: `${industryDir.photographyDirection.lighting}. Shot on ${industryDir.photographyDirection.lens}, featuring ${industryDir.photographyDirection.materials}. Color grade: ${industryDir.photographyDirection.colorGrade}.`,
+      dos: [
+        "Use natural directional light and authentic material physics",
+        "Feature high-craft architectural or tactile details without clutter",
+        "Maintain intentional negative space around focal subjects",
+      ],
+      donts: [
+        "Avoid generic corporate stock photography clichés",
+        "Never use harsh oversaturated artificial flash",
+        "Avoid busy, unfocused backgrounds with competing visual noise",
+      ],
     },
     targetAudience: audience,
+    powerLevel: 'legacy',
+    brandArchetype: industryDir.logoArchetypes[0] || 'geometric_minimalist',
+    photographyDirection: industryDir.photographyDirection,
+    directorMetadata: {
+      model: 'GABI Procedural Architecture Engine',
+      provider: 'local',
+      routingRationale: 'GABI Legacy Mode: Deterministic mathematical vector synthesis with WCAG AA compliance and zero external API dependencies.',
+      powerLevel: 'legacy',
+      latencyMs: 12,
+    },
     createdAt: new Date().toISOString(),
+    rebrandStory,
   };
 }

@@ -272,7 +272,7 @@ ${generateHtmlSnippet()}
         <div>
           <div className="flex items-center gap-3">
             <Globe className="w-5 h-5 text-[#1A1A1A] dark:text-[#F9F7F2]" />
-            <h3 className="text-xl font-serif italic tracking-tighter text-[#1A1A1A] dark:text-[#F9F7F2]">
+            <h3 className="text-xl font-display tracking-tighter text-[#1A1A1A] dark:text-[#F9F7F2]">
               Favicon & Web Icon Suite
             </h3>
             <span className="bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] text-[9px] uppercase tracking-widest font-black px-2 py-0.5">
@@ -326,7 +326,7 @@ ${generateHtmlSnippet()}
                   }`}
                 >
                   <div
-                    className="w-7 h-7 shrink-0 flex items-center justify-center p-1 rounded-none border border-current/20"
+                    className="w-7 h-7 shrink-0 flex items-center justify-center p-1 rounded-xl border border-current/20"
                     dangerouslySetInnerHTML={{ __html: sanitizeSvg(m.svg) }}
                   />
                   <div className="truncate">
@@ -450,14 +450,14 @@ ${generateHtmlSnippet()}
               </div>
 
               {/* Tab Bar Chrome */}
-              <div className="bg-gray-200 dark:bg-zinc-900 pt-2 px-3 flex items-center gap-2 rounded-t-lg">
+              <div className="bg-gray-200 dark:bg-zinc-900 pt-2 px-3 flex items-center gap-2 rounded-xl-t-lg">
                 <div className="flex gap-1.5 pr-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-red-400/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-amber-400/80" />
+                  <div className="w-2.5 h-2.5 rounded-xl-full bg-emerald-400/80" />
                 </div>
                 {/* Active Tab */}
-                <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] px-3 py-1.5 rounded-t-md flex items-center gap-2 text-xs shadow-xs max-w-xs border-t border-x border-gray-300 dark:border-gray-300 dark:border-zinc-700">
+                <div className="bg-white dark:bg-[#1C1C1A] text-[#1A1A1A] dark:text-[#F9F7F2] px-3 py-1.5 rounded-xl-t-md flex items-center gap-2 text-xs shadow-xs max-w-xs border-t border-x border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                   {currentPreview32 ? (
                     <img src={currentPreview32} alt="Favicon" className="w-4 h-4 object-contain shrink-0" />
                   ) : (
@@ -481,7 +481,7 @@ ${generateHtmlSnippet()}
               <div className="flex items-center gap-6 p-4 bg-white dark:bg-zinc-900/60 border border-dashed border-gray-200 dark:border-gray-200 dark:border-zinc-800">
                 {/* Mobile Icon Badge */}
                 <div className="flex flex-col items-center gap-1.5">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg border border-black/10 bg-white flex items-center justify-center p-1">
+                  <div className="w-16 h-16 rounded-xl-2xl overflow-hidden shadow-lg border border-black/10 bg-white flex items-center justify-center p-1">
                     {currentPreview180 ? (
                       <img src={currentPreview180} alt="Touch Icon" className="w-full h-full object-contain" />
                     ) : (

@@ -42,6 +42,10 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
         }),
       });
 
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
       if (!response.ok) {
         throw new Error('Failed to complete brand audit.');
       }
@@ -74,7 +78,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
                 Non-Destructive Modernization
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
+            <h2 className="text-2xl sm:text-3xl font-display text-[#1A1A1A] dark:text-[#F9F7F2]">
               Strategic Brand Health Audit
             </h2>
             <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
@@ -117,7 +121,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
                   Brand Equity Score
                 </span>
                 <div className="flex items-baseline gap-3">
-                  <span className="text-5xl font-serif italic font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
+                  <span className="text-5xl font-display font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                     {audit.overallScore}
                   </span>
                   <span className="text-sm font-mono text-gray-500 dark:text-gray-500">/ 100</span>
@@ -149,7 +153,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
                     Executive Strategic Evaluation
                   </span>
                 </div>
-                <p className="text-sm font-serif italic leading-relaxed text-[#1A1A1A] dark:text-[#F9F7F2] opacity-90">
+                <p className="text-sm font-display leading-relaxed text-[#1A1A1A] dark:text-[#F9F7F2] opacity-90">
                   "{audit.summary}"
                 </p>
               </div>
@@ -187,7 +191,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
               <ul className="space-y-3">
                 {audit.keyStrengths.map((strength, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-xs text-gray-700 dark:text-zinc-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-xl-full bg-emerald-500 mt-1.5 shrink-0" />
                     <span>{strength}</span>
                   </li>
                 ))}
@@ -205,7 +209,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
               <ul className="space-y-3">
                 {audit.criticalGaps.map((gap, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-xs text-gray-700 dark:text-zinc-300">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-xl-full bg-rose-500 mt-1.5 shrink-0" />
                     <span>{gap}</span>
                   </li>
                 ))}
@@ -248,7 +252,7 @@ export function BrandAuditTab({ brand, onNavigateToTab }: BrandAuditTabProps) {
                       <h4 className="text-xs font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">
                         {rec.finding}
                       </h4>
-                      <p className="text-xs font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400">
+                      <p className="text-xs font-display text-gray-600 dark:text-gray-600 dark:text-zinc-400">
                         {rec.recommendation}
                       </p>
                     </div>

@@ -84,6 +84,10 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
         }),
       });
 
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
       if (!response.ok) {
         let errText = 'Failed to receive chat response.';
         try {
@@ -163,7 +167,7 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
               key={p}
               type="button"
               onClick={() => setSelectedProvider(p)}
-              className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-none cursor-pointer ${
+              className={`py-1.5 text-[8px] uppercase tracking-widest font-black border transition-all text-center rounded-xl cursor-pointer ${
                 selectedProvider === p
                   ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
                   : 'bg-white text-[#1A1A1A] border-gray-300 dark:border-gray-300 dark:bg-[#181816] dark:text-zinc-400 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900'
@@ -225,7 +229,7 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
                   : 'bg-white text-[#1A1A1A] border-[#1A1A1A] border-dashed dark:bg-[#181816] dark:text-[#F9F7F2] dark:border-zinc-700'
               }`}
             >
-              <p className="whitespace-pre-wrap leading-relaxed font-serif italic text-sm">{msg.text}</p>
+              <p className="whitespace-pre-wrap leading-relaxed font-display text-sm">{msg.text}</p>
               <span
                 className={`text-[9px] uppercase tracking-widest font-bold block text-right opacity-50 ${
                   msg.sender === 'user' ? 'text-white' : 'text-[#1A1A1A] dark:text-[#F9F7F2]'
@@ -254,7 +258,7 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Ask brand strategist AI..."
-          className="flex-1 bg-transparent border-b border-dashed border-[#1A1A1A] dark:border-zinc-700 px-2 py-3 font-serif italic text-sm text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-solid transition-all"
+          className="flex-1 bg-transparent border-b border-dashed border-[#1A1A1A] dark:border-zinc-700 px-2 py-3 font-display text-sm text-[#1A1A1A] dark:text-[#F9F7F2] focus:outline-hidden focus:border-solid transition-all"
         />
         <button
           type="submit"

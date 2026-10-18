@@ -12,6 +12,7 @@ const PORT = 3000;
 
 app.use(requestIdMiddleware);
 app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 if (process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true") {
   app.set("trust proxy", 1);
@@ -96,8 +97,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "3000", () => {
-    console.log(`Server running on http://http://localhost:{PORT}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 

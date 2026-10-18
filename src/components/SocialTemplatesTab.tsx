@@ -303,6 +303,10 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
         }),
       });
 
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to generate social template.');
@@ -337,6 +341,10 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
         }),
       });
 
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.error || 'Image generation failed');
@@ -426,7 +434,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
               Multi-Channel
             </span>
           </div>
-          <p className="font-serif italic text-lg opacity-80 mt-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
+          <p className="font-display text-lg opacity-80 mt-2 text-[#1A1A1A] dark:text-[#F9F7F2]">
             AI-rendered campaigns across Instagram, LinkedIn, TikTok video hooks, and WhatsApp broadcast templates auto-infused with {brand.brandName}'s identity.
           </p>
         </div>
@@ -638,7 +646,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                 color: themeStyle.textPrimary,
                 fontFamily: bodyFont,
               }}
-              className={`w-full ${currentPlatformObj.aspectClass} p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden shadow-2xl transition-all duration-300 rounded-none`}
+              className={`w-full ${currentPlatformObj.aspectClass} p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden shadow-2xl transition-all duration-300 rounded-xl`}
             >
               {/* Optional AI Generated Background Image */}
               {postData.aiGeneratedImageUrl && (
@@ -691,7 +699,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                       color: themeStyle.badgeText,
                       border: themeStyle.badgeBorder,
                     }}
-                    className="text-[8px] sm:text-[9px] uppercase tracking-widest font-black px-3 py-1 rounded-none shadow-xs"
+                    className="text-[8px] sm:text-[9px] uppercase tracking-widest font-black px-3 py-1 rounded-xl shadow-xs"
                   >
                     {postData.badgeLabel}
                   </span>
@@ -801,7 +809,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                 {/* 5. Framed Quote Layout */}
                 {postData.layout === 'framed_quote' && (
                   <div className="space-y-4">
-                    <span className="text-4xl sm:text-5xl opacity-40 leading-none font-serif block" style={{ color: themeStyle.accent }}>
+                    <span className="text-4xl sm:text-5xl opacity-40 leading-none font-display block" style={{ color: themeStyle.accent }}>
                       “
                     </span>
                     <p
@@ -865,7 +873,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                       backgroundColor: themeStyle.buttonBg,
                       color: themeStyle.buttonText,
                     }}
-                    className="px-4 py-2 text-[8px] sm:text-[9px] uppercase tracking-widest font-black shadow-sm flex items-center gap-1.5 rounded-none"
+                    className="px-4 py-2 text-[8px] sm:text-[9px] uppercase tracking-widest font-black shadow-sm flex items-center gap-1.5 rounded-xl"
                   >
                     <span>{postData.callToAction}</span>
                     <ChevronRight className="w-3 h-3" />
@@ -915,7 +923,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                 <span className="text-[9px] uppercase tracking-widest font-bold text-gray-500 dark:text-zinc-400 block">
                   3-Second Retention Hook (Spoken + Kinetic Text Overlay)
                 </span>
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-xs font-serif italic text-amber-950 dark:text-amber-200">
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-xs font-display text-amber-950 dark:text-amber-200">
                   &ldquo;{postData.videoHookScript || postData.headline}&rdquo;
                 </div>
               </div>
@@ -933,7 +941,7 @@ export function SocialTemplatesTab({ brand, initialTopicHeadline }: SocialTempla
                         <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" />{scene.duration}</span>
                       </div>
                       <p className="text-gray-700 dark:text-zinc-300"><strong className="text-[#1A1A1A] dark:text-white">Action:</strong> {scene.action}</p>
-                      <p className="font-serif italic text-gray-600 dark:text-gray-600 dark:text-zinc-400"><strong className="font-sans not-italic text-[#1A1A1A] dark:text-white">VO:</strong> &ldquo;{scene.narration}&rdquo;</p>
+                      <p className="font-display text-gray-600 dark:text-gray-600 dark:text-zinc-400"><strong className="font-sans not-italic text-[#1A1A1A] dark:text-white">VO:</strong> &ldquo;{scene.narration}&rdquo;</p>
                     </div>
                   ))}
                 </div>

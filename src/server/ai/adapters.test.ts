@@ -18,6 +18,8 @@ describe("AI provider adapters", () => {
     expect(gatewayMocks.generateText).toHaveBeenCalledWith({
       prompt: "prompt",
       preferred: "anthropic",
+      providerModelId: "configured-model",
+      providerModelProvider: "anthropic",
     });
   });
 
@@ -33,6 +35,8 @@ describe("AI provider adapters", () => {
       prompt: "image",
       aspectRatio: "1:1",
       preferred: "gemini",
+      providerModelId: "configured-image-model",
+      providerModelProvider: "gemini",
     });
   });
 });

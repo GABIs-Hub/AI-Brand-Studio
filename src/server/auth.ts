@@ -1,4 +1,4 @@
-import { ExpressAuth } from '@auth/express';
+import { ExpressAuth, type ExpressAuthConfig } from '@auth/express';
 import NeonAdapter from '@auth/neon-adapter';
 import Credentials from '@auth/core/providers/credentials';
 import Google from '@auth/core/providers/google';
@@ -112,7 +112,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   );
 }
 
-export const authConfig = {
+export const authConfig: ExpressAuthConfig = {
   secret: authSecret,
   trustHost: true,
   basePath: '/api/auth',

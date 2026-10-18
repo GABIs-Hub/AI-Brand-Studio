@@ -4,6 +4,7 @@ import { sanitizeSvg } from '../utils/sanitizeSvg';
 import { sanitizeBrandBible } from '../lib/brandValidation';
 import { SessionUser } from '../lib/authClient';
 import { BrandComparisonDashboard } from './BrandComparisonDashboard';
+import { DEFAULT_SAVED_BRANDS } from '../data/defaultBrands';
 import {
   X,
   User as UserIcon,
@@ -365,11 +366,11 @@ export function AccountModal({
               <img
                 src={user.image}
                 alt={user.name || 'Account'}
-                className="w-9 h-9 rounded-full object-cover border border-[#1A1A1A]/20 dark:border-[#F9F7F2]/20 shadow-xs"
+                className="w-9 h-9 rounded-xl-full object-cover border border-[#1A1A1A]/20 dark:border-[#F9F7F2]/20 shadow-xs"
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-[#1A1A1A] dark:bg-[#F9F7F2] text-[#F9F7F2] dark:text-[#1A1A1A] text-xs flex items-center justify-center font-bold">
+              <div className="w-9 h-9 rounded-xl-full bg-[#1A1A1A] dark:bg-[#F9F7F2] text-[#F9F7F2] dark:text-[#1A1A1A] text-xs flex items-center justify-center font-bold">
                 {user ? user.name?.charAt(0) || user.email?.charAt(0) || 'U' : <UserIcon className="w-4 h-4" />}
               </div>
             )}
@@ -734,9 +735,23 @@ export function AccountModal({
                     <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1 max-w-md mx-auto">
                       {searchQuery || selectedIndustryFilter !== 'all'
                         ? 'Try clearing your search query or selecting "All Industries".'
-                        : 'Generate a brand identity in the studio or import an existing Brand Bible JSON to build your strategic identity library.'}
+                        : 'Generate a brand identity in the studio or import the pre-built showcase brands to populate your strategic identity library.'}
                     </p>
                   </div>
+                  {savedBrands.length === 0 && !searchQuery && selectedIndustryFilter === 'all' && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          DEFAULT_SAVED_BRANDS.forEach((brand) => onImportBrand(brand));
+                        }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-xs font-bold uppercase tracking-widest hover:opacity-85 transition-opacity cursor-pointer shadow-xs"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Load 5 Showcase Brand Bibles</span>
+                      </button>
+                    </div>
+                  )}
                   {searchQuery && (
                     <button
                       type="button"
@@ -784,7 +799,7 @@ export function AccountModal({
                                   dangerouslySetInnerHTML={{ __html: sanitizeSvg(brand.logo.primaryLogoSvg) }}
                                 />
                               ) : (
-                                <span className="text-xs font-serif font-black">{brand.brandName.slice(0, 2)}</span>
+                                <span className="text-xs font-display font-black">{brand.brandName.slice(0, 2)}</span>
                               )}
                             </div>
 
@@ -799,7 +814,7 @@ export function AccountModal({
                           </div>
 
                           {/* Tagline / Mission excerpt */}
-                          <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-300 line-clamp-2 italic font-serif leading-relaxed">
+                          <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-300 line-clamp-2 font-display leading-relaxed">
                             "{brand.tagline || brand.positioningStatement || brand.mission}"
                           </p>
 
@@ -1362,7 +1377,7 @@ export function AccountModal({
                     dangerouslySetInnerHTML={{ __html: sanitizeSvg(brandPendingDeletion.logo.primaryLogoSvg) }}
                   />
                 ) : (
-                  <span className="text-xs font-serif font-black">{brandPendingDeletion.brandName.slice(0, 2)}</span>
+                  <span className="text-xs font-display font-black">{brandPendingDeletion.brandName.slice(0, 2)}</span>
                 )}
               </div>
               <div className="min-w-0 flex-1">

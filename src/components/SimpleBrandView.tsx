@@ -110,10 +110,10 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
         </div>
 
         <div className="space-y-3 max-w-4xl">
-          <h1 className="text-4xl sm:text-6xl font-serif italic font-light tracking-tight text-[#F9F7F2]">
+          <h1 className="text-4xl sm:text-6xl font-display font-light tracking-tight text-[#F9F7F2]">
             {brand.brandName}
           </h1>
-          <p className="text-lg sm:text-xl font-serif italic text-[#F9F7F2]/80 border-l-2 border-[#F9F7F2]/40 pl-4">
+          <p className="text-lg sm:text-xl font-display text-[#F9F7F2]/80 border-l-2 border-[#F9F7F2]/40 pl-4">
             "{brand.tagline}"
           </p>
           <p className="text-sm font-sans font-light text-[#F9F7F2]/90 leading-relaxed pt-2">
@@ -147,7 +147,7 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
                 Your Logo
               </h2>
             </div>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic mt-0.5">
+            <p className="text-xs text-gray-500 dark:text-zinc-400 font-display mt-0.5">
               {brand.logo.concept}
             </p>
           </div>
@@ -232,7 +232,7 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
             Tap a color to copy it
           </span>
         </div>
-        <p className="text-xs text-gray-600 dark:text-zinc-400 font-serif italic mt-3">
+        <p className="text-xs text-gray-600 dark:text-zinc-400 font-display mt-3">
           These five colors are the foundation of your brand. Use them on your website, social posts, packaging, and everywhere else.
         </p>
 
@@ -285,7 +285,7 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
             Try typing below
           </span>
         </div>
-        <p className="text-xs text-gray-600 dark:text-zinc-400 font-serif italic mt-3">
+        <p className="text-xs text-gray-600 dark:text-zinc-400 font-display mt-3">
           One font for big headlines and one for everyday text. Type in the box at the bottom to see how they look together.
         </p>
 
@@ -306,7 +306,7 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
             >
               {brand.typography.headingFont}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic">
+            <p className="text-xs text-gray-500 dark:text-zinc-400 font-display">
               {brand.typography.rationale}
             </p>
           </div>
@@ -361,7 +361,7 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
               What Your Brand Stands For
             </h2>
           </div>
-          <p className="text-xs text-gray-600 dark:text-zinc-400 font-serif italic">
+          <p className="text-xs text-gray-600 dark:text-zinc-400 font-display">
             The core beliefs that guide every decision your brand makes.
           </p>
 
@@ -387,7 +387,7 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
               How Your Brand Sounds
             </h2>
           </div>
-          <p className="text-xs text-gray-600 dark:text-zinc-400 font-serif italic">
+          <p className="text-xs text-gray-600 dark:text-zinc-400 font-display">
             The personality your brand uses when it speaks — in posts, emails, and ads.
           </p>
 
@@ -397,7 +397,7 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
                 <span className="text-[9px] uppercase tracking-widest font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   {t.trait}
                 </span>
-                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed font-serif italic">
+                <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 leading-relaxed font-display">
                   {t.description}
                 </p>
                 <div className="grid grid-cols-1 gap-1.5 pt-1 text-[11px]">
@@ -425,7 +425,7 @@ export function SimpleBrandView({ brand, onSwitchToStudio, onUpgradeBrand }: Sim
               Need Deeper Creative Tools &amp; Assets?
             </h3>
           </div>
-          <p className="text-xs opacity-80 font-serif italic">
+          <p className="text-xs opacity-80 font-display">
             Switch to Studio View for social post generators, viral topic ideas, 3D merchandise mockups, brand health audit scorecards, and live SVG geometry editors.
           </p>
         </div>
