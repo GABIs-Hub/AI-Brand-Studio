@@ -112,7 +112,7 @@ export function Header({
             <span className="hidden md:block text-[9px] uppercase tracking-[0.35em] font-bold opacity-50 mb-1 whitespace-nowrap">
               Generate · Align · Build · Inspire
             </span>
-            <h1 className="text-3xl font-serif italic font-light tracking-tighter text-[#1A1A1A] dark:text-[#F9F7F2]">
+            <h1 className="text-3xl font-display font-light tracking-tighter text-[#1A1A1A] dark:text-[#F9F7F2]">
               GABI
             </h1>
           </button>
@@ -123,7 +123,7 @@ export function Header({
           {/* Quick Brand Library Button */}
           <button
             onClick={onOpenAccount}
-            className="flex items-center gap-1.5 px-3 py-2 text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] bg-transparent hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-[#F9F7F2] dark:hover:text-[#1A1A1A] transition-colors border border-[#1A1A1A] dark:border-[#F9F7F2]/30 rounded-none cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 text-[10px] uppercase tracking-widest font-bold text-[#1A1A1A] dark:text-[#F9F7F2] bg-transparent hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-[#F9F7F2] dark:hover:text-[#1A1A1A] transition-colors border border-[#1A1A1A] dark:border-[#F9F7F2]/30 rounded-xl cursor-pointer"
             title="Open Brand Library & Compare"
             id="open-library-btn"
           >
@@ -137,7 +137,7 @@ export function Header({
           {/* Create New Brand Primary Action */}
           <button
             onClick={onNewBrand}
-            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-white bg-[#1A1A1A] hover:bg-[#2C3333] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:hover:bg-white transition-all rounded-none cursor-pointer shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-[10px] uppercase tracking-widest font-bold text-white bg-[#1A1A1A] hover:bg-[#2C3333] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:hover:bg-white transition-all rounded-xl cursor-pointer shadow-xs"
             id="header-create-brand-btn"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -150,7 +150,7 @@ export function Header({
             <button
               type="button"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`flex items-center gap-2 px-3 py-2 text-[10px] uppercase tracking-widest font-bold border transition-colors cursor-pointer rounded-none ${
+              className={`flex items-center gap-2 px-3 py-2 text-[10px] uppercase tracking-widest font-bold border transition-colors cursor-pointer rounded-xl ${
                 isMenuOpen
                   ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
                   : 'bg-transparent text-[#1A1A1A] dark:text-[#F9F7F2] border-[#1A1A1A] dark:border-[#F9F7F2]/30 hover:bg-[#1A1A1A]/10 dark:hover:bg-white/10'
@@ -177,12 +177,12 @@ export function Header({
                 {/* Menu Header / Active Brand Context */}
                 <div className="p-3.5 bg-[#1A1A1A] text-white border-b border-black flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="w-2 h-2 rounded-xl-full bg-amber-400 animate-pulse" />
                     <div>
                       <span className="text-[9px] uppercase tracking-[0.25em] font-black text-amber-400 block">
                         Studio Navigation
                       </span>
-                      <p className="text-xs font-serif italic text-white/90 truncate max-w-[200px]">
+                      <p className="text-xs font-display text-white/90 truncate max-w-[200px]">
                         {activeBrand ? activeBrand.brandName : 'Brand Identity Suite'}
                       </p>
                     </div>
@@ -426,11 +426,11 @@ export function Header({
                         <img
                           src={user.image}
                           alt={user.name || 'User'}
-                          className="w-5 h-5 rounded-full object-cover border border-black/10"
+                          className="w-5 h-5 rounded-xl-full object-cover border border-black/10"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-[#1A1A1A] text-white text-[9px] flex items-center justify-center font-bold">
+                        <div className="w-5 h-5 rounded-xl-full bg-[#1A1A1A] text-white text-[9px] flex items-center justify-center font-bold">
                           {user?.name?.charAt(0) || 'U'}
                         </div>
                       )}

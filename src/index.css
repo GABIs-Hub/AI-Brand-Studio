@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+@theme {
+  /* GABI Typography System */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* GABI Corner Radius System */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 18px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
@@ -9,10 +24,46 @@
   html.dark {
     color-scheme: dark;
   }
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
 }
 
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes gabiSnakeTravel {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -56;
+  }
+}
+
+.animate-snake-border {
+  animation: gabiSnakeTravel 12s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-snake-border {
+    animation: none !important;
+  }
+}
+
+@layer base {
+  /* Smooth light/dark mode color transitions globally */
+  *, ::before, ::after {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
   }
 }

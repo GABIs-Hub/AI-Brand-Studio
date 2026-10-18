@@ -10,6 +10,14 @@ import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
 import { higgsfield, config as higgsfieldConfig } from '@higgsfield/client/v2';
 
+import { routeTask } from './aiDirector';
+import {
+  getAnthropicModels, getOpenAITextModels, getGeminiTextModels,
+  getOpenAIImageModels, getGeminiImageModels, getHiggsfieldEndpoints,
+  type TaskType, type PowerLevel,
+} from './aiModels';
+export type { TaskType, PowerLevel } from './aiModels';
+
 export type TextProvider = 'auto' | 'openai' | 'anthropic' | 'gemini';
 export type ImageProvider = 'auto' | 'openai' | 'gemini' | 'higgsfield';
 
@@ -181,13 +189,16 @@ function getAnthropic(): Anthropic | null {
 }
 
 let geminiClient: GoogleGenAI | null | undefined;
+let geminiKeyInvalid = false;
 /**
  * Gets the configured Gemini API client.
  *
  * @returns The cached Gemini client, or `null` when no API key is configured or client initialization fails.
  */
 export function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
+  if (geminiKeyInvalid) return null;
+  const rawKey = process.env.GEMINI_API_KEY?.trim();
+  const apiKey = rawKey ? rawKey.replace(/^["']|["']$/g, '') : undefined;
   if (!apiKey) return null;
   if (geminiClient !== undefined) return geminiClient;
   try {
@@ -318,6 +329,8 @@ export interface TextGenerationRequest {
   /** Resolved by the AI engine; legacy callers may omit this. */
   providerModelId?: string;
   providerModelProvider?: TextProvider;
+  taskType?: TaskType;
+  powerLevel?: PowerLevel;
 }
 
 /**
@@ -326,7 +339,11 @@ export interface TextGenerationRequest {
  * @param preferred - The provider to prioritize; `auto` or an unsupported value uses the default order.
  * @returns The ordered list of text providers.
  */
-function textOrder(preferred?: TextProvider): TextProvider[] {
+function textOrder(preferred?: TextProvider, taskType?: TaskType, powerLevel?: PowerLevel): TextProvider[] {
+  if ((!preferred || preferred === "auto") && taskType) {
+    const selected = routeTask(taskType, { powerLevel }).selectedEngine;
+    if (selected === "openai" || selected === "anthropic" || selected === "gemini") preferred = selected;
+  }
   const order: TextProvider[] = ['openai', 'anthropic', 'gemini'];
   if (preferred && preferred !== 'auto' && (order as string[]).includes(preferred)) {
     return [preferred, ...order.filter((p) => p !== preferred)];
@@ -334,25 +351,39 @@ function textOrder(preferred?: TextProvider): TextProvider[] {
   return order;
 }
 
+async function withProviderTimeout<T>(operation: Promise<T>, milliseconds: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('ETIMEDOUT: AI provider request timed out')), milliseconds);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function generateText(req: TextGenerationRequest): Promise<string> {
   let lastError: any = null;
   const providers =
     req.allowProviderFallback === false && req.preferred && req.preferred !== "auto"
       ? [req.preferred]
-      : textOrder(req.preferred);
+      : textOrder(req.preferred, req.taskType, req.powerLevel);
   for (const provider of providers) {
     const key = `text:${provider}`;
     if (onCooldown(key)) continue;
     try {
       req.onProviderAttempt?.(provider);
-      const text = await callTextProvider(provider, req);
+      const text = await withProviderTimeout(callTextProvider(provider, req), 15_000);
       if (text) return text;
     } catch (err: any) {
       lastError = err;
       const msg = err?.message || String(err);
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
       console.warn(`[AI Gateway] ${provider} text failed: ${msg.slice(0, 140)}`);
     }
   }
@@ -394,8 +425,8 @@ async function callOpenAIText(req: TextGenerationRequest): Promise<string | null
     { role: 'user', content: req.prompt },
   ];
   const ladder = pickModelsForTier(
-    OPENAI_TEXT_LADDER,
-    req.tier || 'standard',
+    req.powerLevel || req.taskType ? getOpenAITextModels(req.powerLevel, req.taskType) : OPENAI_TEXT_LADDER,
+    req.powerLevel || req.taskType ? 'max' : req.tier || 'standard',
     parseModelList(process.env.OPENAI_TEXT_MODELS),
     req.providerModelProvider === 'openai' ? req.providerModelId : process.env.OPENAI_MODEL || undefined
   );
@@ -406,11 +437,13 @@ async function callOpenAIText(req: TextGenerationRequest): Promise<string | null
       console.log(`[AI Gateway] OpenAI ${model} on cooldown — stepping down the ladder.`);
       continue;
     }
+    const isReasoning = /^o[134]/.test(model);
     const params: any = {
       model,
-      messages,
-      temperature: req.temperature ?? 0.7,
-      max_tokens: tierMaxTokens(req.tier, req.maxTokens),
+      messages: isReasoning ? messages.map((message) => message.role === 'system' ? { ...message, role: 'developer' } : message) : messages,
+      ...(isReasoning
+        ? { max_completion_tokens: tierMaxTokens(req.tier, req.maxTokens) }
+        : { temperature: req.temperature ?? 0.7, max_tokens: tierMaxTokens(req.tier, req.maxTokens) }),
     };
     if (req.jsonSchema) {
       params.response_format = {
@@ -473,8 +506,8 @@ async function callAnthropicText(req: TextGenerationRequest): Promise<string | n
       ? 'Respond with valid JSON only. No markdown code fences.'
       : undefined;
   const ladder = pickModelsForTier(
-    ANTHROPIC_TEXT_LADDER,
-    req.tier || 'standard',
+    req.powerLevel || req.taskType ? getAnthropicModels(req.powerLevel, req.taskType) : ANTHROPIC_TEXT_LADDER,
+    req.powerLevel || req.taskType ? 'max' : req.tier || 'standard',
     parseModelList(process.env.ANTHROPIC_TEXT_MODELS),
     req.providerModelProvider === 'anthropic' ? req.providerModelId : process.env.ANTHROPIC_MODEL || undefined
   );
@@ -534,8 +567,8 @@ async function callGeminiText(req: TextGenerationRequest): Promise<string | null
     req.requireJson && !req.jsonSchema ? '\nRespond with valid JSON only, no markdown.' : ''
   }`;
   const models = pickModelsForTier(
-    GEMINI_TEXT_LADDER,
-    req.tier || 'standard',
+    req.powerLevel || req.taskType ? getGeminiTextModels(req.powerLevel) : GEMINI_TEXT_LADDER,
+    req.powerLevel || req.taskType ? 'max' : req.tier || 'standard',
     req.providerModelProvider === 'gemini' && req.providerModelId
       ? [req.providerModelId]
       : parseModelList(process.env.GEMINI_TEXT_MODELS)
@@ -558,7 +591,7 @@ async function callGeminiText(req: TextGenerationRequest): Promise<string | null
 // ── Image generation ──────────────────────────────────────────────────────
 export interface ImageGenerationRequest {
   prompt: string;
-  aspectRatio?: '1:1' | '16:9' | '9:16';
+  aspectRatio?: '1:1' | '16:9' | '9:16' | '4:5' | '3:4';
   size?: string;
   preferred?: ImageProvider;
   /** Optional observability hook used by the AI engine; it does not affect execution. */
@@ -568,6 +601,8 @@ export interface ImageGenerationRequest {
   /** Resolved by the AI engine; legacy callers may omit this. */
   providerModelId?: string;
   providerModelProvider?: ImageProvider;
+  taskType?: TaskType;
+  powerLevel?: PowerLevel;
 }
 
 export interface ImageGenerationResult {
@@ -576,7 +611,11 @@ export interface ImageGenerationResult {
   format?: string;
 }
 
-function imageOrder(preferred?: ImageProvider): ImageProvider[] {
+function imageOrder(preferred?: ImageProvider, taskType?: TaskType, powerLevel?: PowerLevel): ImageProvider[] {
+  if ((!preferred || preferred === "auto") && taskType) {
+    const selected = routeTask(taskType, { powerLevel }).selectedEngine;
+    if (selected === "openai" || selected === "gemini" || selected === "higgsfield") preferred = selected;
+  }
   const order: ImageProvider[] = ['openai', 'gemini', 'higgsfield'];
   if (preferred && preferred !== 'auto' && (order as string[]).includes(preferred)) {
     return [preferred, ...order.filter((p) => p !== preferred)];
@@ -591,20 +630,20 @@ export async function generateImage(
   const providers =
     req.allowProviderFallback === false && req.preferred && req.preferred !== "auto"
       ? [req.preferred]
-      : imageOrder(req.preferred);
+      : imageOrder(req.preferred, req.taskType, req.powerLevel);
   for (const provider of providers) {
     const key = `image:${provider}`;
     if (onCooldown(key)) continue;
     try {
       req.onProviderAttempt?.(provider);
-      const result = await callImageProvider(provider, req);
+      const result = await withProviderTimeout(callImageProvider(provider, req), 25_000);
       if (result) return result;
     } catch (err: any) {
       lastError = err;
       const msg = err?.message || String(err);
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
       console.warn(`[AI Gateway] ${provider} image failed: ${msg.slice(0, 140)}`);
     }
   }
@@ -640,71 +679,116 @@ async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenera
     '1:1': '1024x1024',
     '16:9': '1536x1024',
     '9:16': '1024x1536',
+    '4:5': '1024x1536',
+    '3:4': '1024x1536',
   };
-  const resp = await client.images.generate({
-    model: req.providerModelProvider === 'openai' && req.providerModelId
-      ? req.providerModelId
-      : OPENAI_IMAGE_MODEL,
-    prompt: req.prompt,
-    size: sizeMap[req.aspectRatio || '1:1'] as any,
-    quality: 'high',
-  });
-  const item = resp.data?.[0];
-  if (item?.b64_json) {
-    return { imageUrl: `data:image/png;base64,${item.b64_json}`, engine: 'openai', format: 'png' };
+  const models = [...new Set([
+    ...(req.providerModelProvider === 'openai' && req.providerModelId ? [req.providerModelId] : []),
+    ...getOpenAIImageModels(),
+  ])];
+  let lastErr: any = null;
+
+  for (const model of models) {
+    const key = `image:openai:${model}`;
+    if (onCooldown(key)) continue;
+
+    try {
+      const isDalle2 = model === 'dall-e-2';
+      const size = sizeMap[req.aspectRatio || '1:1'] || '1024x1024';
+      const dalleSize = size === '1536x1024' ? '1792x1024' : size === '1024x1536' ? '1024x1792' : size;
+      const resp = await client.images.generate({
+        model,
+        prompt: req.prompt,
+        size: (isDalle2 ? '1024x1024' : model === 'dall-e-3' ? dalleSize : size) as any,
+        quality: model.startsWith('dall-e-') ? 'standard' : 'high',
+      });
+      const item = resp.data?.[0];
+      if (item?.b64_json) {
+        return { imageUrl: `data:image/png;base64,${item.b64_json}`, engine: 'openai', format: 'png' };
+      }
+      if (item?.url) {
+        return { imageUrl: item.url, engine: 'openai' };
+      }
+    } catch (err: any) {
+      lastErr = err;
+      const msg = err?.message || String(err);
+      console.warn(`[AI Gateway] OpenAI image model ${model} error: ${msg.slice(0, 140)}`);
+      const kind = classifyError(msg);
+      if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
+    }
   }
-  if (item?.url) {
-    return { imageUrl: item.url, engine: 'openai' };
-  }
+
+  if (lastErr) throw lastErr;
   return null;
 }
 
-/**
- * Generates an image with Gemini using the configured image models and aspect ratio.
- *
- * @param req - The image generation request, including the prompt and optional size
- * @returns The generated image as a data URL, or `null` when no image is available
- */
 async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenerationResult | null> {
   const ai = getGeminiClient();
   if (!ai) return null;
-  const imageModels =
-    req.providerModelProvider === 'gemini' && req.providerModelId
-      ? [req.providerModelId]
-      : parseModelList(process.env.GEMINI_IMAGE_MODELS).length > 0
+  const models = req.providerModelProvider === 'gemini' && req.providerModelId
+    ? [req.providerModelId]
+    : parseModelList(process.env.GEMINI_IMAGE_MODELS).length
       ? parseModelList(process.env.GEMINI_IMAGE_MODELS)
-      : GEMINI_IMAGE_MODELS;
-  for (const model of imageModels) {
+      : getGeminiImageModels();
+
+  for (const model of models) {
     const key = `image:gemini:${model}`;
     if (onCooldown(key)) continue;
     try {
-      const config: any = { imageConfig: { aspectRatio: req.aspectRatio || '1:1' } };
-      if (model === 'gemini-3.1-flash-image' && req.size && ['512px', '1K', '2K', '4K'].includes(req.size)) {
-        config.imageConfig.imageSize = req.size;
-      }
-      const response = await ai.models.generateContent({
-        model,
-        contents: { parts: [{ text: req.prompt }] },
-        config,
-      });
-      const candidates = response.candidates;
-      if (candidates && candidates.length > 0 && candidates[0].content?.parts) {
-        for (const part of candidates[0].content.parts) {
-          if (part.inlineData && part.inlineData.data) {
-            const mime = part.inlineData.mimeType || 'image/png';
-            return {
-              imageUrl: `data:${mime};base64,${part.inlineData.data}`,
-              engine: 'gemini',
-              format: 'png',
-            };
+      if (model.startsWith('imagen-')) {
+        const response = await ai.models.generateImages({
+          model,
+          prompt: req.prompt,
+          config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/png',
+            aspectRatio: (req.aspectRatio as any) || '1:1',
+          },
+        });
+        const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+        if (imageBytes) {
+          return {
+            imageUrl: `data:image/png;base64,${imageBytes}`,
+            engine: 'gemini',
+            format: 'png',
+          };
+        }
+      } else {
+        const config: any = { imageConfig: { aspectRatio: req.aspectRatio || '1:1' } };
+        if (model.includes('flash-image') && req.size && ['512px', '1K', '2K', '4K'].includes(req.size)) {
+          config.imageConfig.imageSize = req.size;
+        }
+        const response = await ai.models.generateContent({
+          model,
+          contents: { parts: [{ text: req.prompt }] },
+          config,
+        });
+        const candidates = response.candidates;
+        if (candidates && candidates.length > 0 && candidates[0].content?.parts) {
+          for (const part of candidates[0].content.parts) {
+            if (part.inlineData && part.inlineData.data) {
+              const mime = part.inlineData.mimeType || 'image/png';
+              return {
+                imageUrl: `data:${mime};base64,${part.inlineData.data}`,
+                engine: 'gemini',
+                format: 'png',
+              };
+            }
           }
         }
       }
     } catch (err: any) {
       const msg = err?.message || String(err);
+      if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+        console.log(`[Gemini API] Fatal error for ${model}: API Key is invalid. Aborting provider permanently.`);
+        geminiKeyInvalid = true;
+        geminiClient = null;
+        throw err;
+      }
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
       else console.warn(`[AI Gateway] Gemini image model ${model}: ${msg.slice(0, 120)}`);
     }
   }
@@ -714,22 +798,39 @@ async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenera
 async function callHiggsfieldImage(req: ImageGenerationRequest): Promise<ImageGenerationResult | null> {
   ensureHiggsfieldConfig();
   if (!higgsfieldConfigured && !process.env.HF_CREDENTIALS) return null;
-  const response = await higgsfield.subscribe(
-    req.providerModelProvider === 'higgsfield' && req.providerModelId
-      ? req.providerModelId
-      : HIGGSFIELD_ENDPOINT,
-    {
-    input: {
-      prompt: req.prompt,
-      aspect_ratio: req.aspectRatio || '1:1',
-      safety_tolerance: 2,
-    },
-    withPolling: true,
+  const endpoints = [...new Set([
+    ...(req.providerModelProvider === 'higgsfield' && req.providerModelId ? [req.providerModelId] : []),
+    ...getHiggsfieldEndpoints(),
+  ])];
+  let lastErr: any = null;
+
+  for (const endpoint of endpoints) {
+    const key = `image:higgsfield:${endpoint}`;
+    if (onCooldown(key)) continue;
+
+    try {
+      const response = await higgsfield.subscribe(endpoint, {
+        input: {
+          prompt: req.prompt,
+          aspect_ratio: req.aspectRatio || '1:1',
+          safety_tolerance: 2,
+        },
+        withPolling: true,
+      });
+      if (response && response.status === 'completed') {
+        const url = response.images?.[0]?.url;
+        if (url) return { imageUrl: url, engine: 'higgsfield' };
+      }
+    } catch (err: any) {
+      lastErr = err;
+      const msg = err?.message || String(err);
+      console.warn(`[AI Gateway] Higgsfield endpoint ${endpoint} error: ${msg.slice(0, 140)}`);
+      const kind = classifyError(msg);
+      if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
     }
-  );
-  if (response && response.status === 'completed') {
-    const url = response.images?.[0]?.url;
-    if (url) return { imageUrl: url, engine: 'higgsfield' };
   }
+
+  if (lastErr) throw lastErr;
   return null;
 }

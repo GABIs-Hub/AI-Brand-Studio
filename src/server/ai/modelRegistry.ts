@@ -38,7 +38,7 @@ function resolveTextAlias(alias: Exclude<ProductModelAlias, "nano-banana">): Mod
       ? firstConfigured("OPENAI_TEXT_MODELS", "OPENAI_MODEL")
       : provider === "anthropic"
         ? firstConfigured("ANTHROPIC_TEXT_MODELS", "ANTHROPIC_MODEL")
-        : firstConfigured("GEMINI_TEXT_MODELS");
+        : firstConfigured("GEMINI_TEXT_MODELS", "GEMINI_MODEL");
   return {
     alias,
     provider,
@@ -54,7 +54,7 @@ function resolveImageAlias(preferredProvider?: ImageProvider): ModelResolution {
   // product-level image alias separately from provider model IDs.
   const configuredProviders: Array<{ provider: ImageProvider; configuration: { value?: string; key: string } }> = [
     { provider: "openai", configuration: firstConfigured("OPENAI_IMAGE_MODEL") },
-    { provider: "gemini", configuration: firstConfigured("GEMINI_IMAGE_MODELS") },
+    { provider: "gemini", configuration: firstConfigured("GEMINI_IMAGE_MODELS", "GEMINI_IMAGE_MODEL") },
     { provider: "higgsfield", configuration: firstConfigured("HIGGSFIELD_ENDPOINT") },
   ];
   const selected = preferredProvider && preferredProvider !== "auto"

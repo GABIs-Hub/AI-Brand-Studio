@@ -40,14 +40,14 @@ export function LogoRenderSkeleton({
           >
             {/* Top Bar Skeleton */}
             <div className="flex items-center justify-between">
-              <div className="h-3 w-28 bg-gray-200 dark:bg-zinc-800 rounded-xs" />
-              <div className="h-3 w-12 bg-gray-200 dark:bg-zinc-800 rounded-xs" />
+              <div className="h-3 w-28 bg-gray-200 dark:bg-zinc-800 rounded-xl-xs" />
+              <div className="h-3 w-12 bg-gray-200 dark:bg-zinc-800 rounded-xl-xs" />
             </div>
 
             {/* Center Canvas Wireframe */}
             <div className="h-36 bg-gray-100 dark:bg-zinc-900/60 flex items-center justify-center relative overflow-hidden">
-              <div className="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-700 rounded-lg flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-800" />
+              <div className="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-gray-300 dark:border-zinc-700 rounded-xl-lg flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl-full bg-gray-200 dark:bg-zinc-800" />
               </div>
               {/* Shimmer sweep */}
               <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite] bg-gradient-to-r from-transparent via-white/20 dark:via-white/5 to-transparent" />
@@ -55,9 +55,9 @@ export function LogoRenderSkeleton({
 
             {/* Bottom Details Skeleton */}
             <div className="space-y-2 pt-2">
-              <div className="h-4 w-3/4 bg-gray-200 dark:bg-zinc-800 rounded-xs" />
-              <div className="h-3 w-full bg-gray-100 dark:bg-zinc-800/60 rounded-xs" />
-              <div className="h-3 w-2/3 bg-gray-100 dark:bg-zinc-800/60 rounded-xs" />
+              <div className="h-4 w-3/4 bg-gray-200 dark:bg-zinc-800 rounded-xl-xs" />
+              <div className="h-3 w-full bg-gray-100 dark:bg-zinc-800/60 rounded-xl-xs" />
+              <div className="h-3 w-2/3 bg-gray-100 dark:bg-zinc-800/60 rounded-xl-xs" />
             </div>
           </div>
         ))}
@@ -84,8 +84,8 @@ export function LogoRenderSkeleton({
         {/* Animated Wireframe Bounding Box */}
         <div className="relative w-40 h-40 flex items-center justify-center">
           {/* Outer rotating guide ring */}
-          <div className="absolute inset-0 border border-white/20 rounded-full animate-[spin_10s_linear_infinite]" />
-          <div className="absolute inset-2 border border-dashed border-amber-400/30 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+          <div className="absolute inset-0 border border-white/20 rounded-xl-full animate-[spin_10s_linear_infinite]" />
+          <div className="absolute inset-2 border border-dashed border-amber-400/30 rounded-xl-full animate-[spin_15s_linear_infinite_reverse]" />
 
           {/* Center Pulsing Geometric Prism Box */}
           <div className="w-24 h-24 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-white/30 rounded-xl shadow-2xl flex items-center justify-center relative overflow-hidden group">
@@ -113,13 +113,13 @@ export function LogoRenderSkeleton({
             <span className="text-[9px] uppercase tracking-[0.3em] font-black text-amber-400 block animate-pulse">
               Synthesizing &bull; {presetName}
             </span>
-            <h4 className="text-base font-serif italic text-white">
+            <h4 className="text-base font-display text-white">
               Rendering Photorealistic Emblem for {brandName}
             </h4>
           </div>
 
           {/* Stepper Progress Bar */}
-          <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-white/10 h-1.5 rounded-xl-full overflow-hidden">
             <div
               className="bg-gradient-to-r from-amber-500 to-amber-300 h-full transition-all duration-700 ease-out"
               style={{ width: `${((currentStepIndex + 1) / RENDERING_STEPS.length) * 100}%` }}
@@ -139,7 +139,7 @@ export function LogoRenderSkeleton({
             {RENDERING_STEPS.map((_, idx) => (
               <div
                 key={idx}
-                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                className={`w-1.5 h-1.5 rounded-xl-full transition-all duration-300 ${
                   idx <= currentStepIndex ? 'bg-amber-400 scale-110' : 'bg-white/20'
                 }`}
               />

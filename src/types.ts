@@ -62,6 +62,32 @@ export interface ImageryStyle {
   donts: string[];
 }
 
+export interface RebrandEvolutionPoint {
+  title: string;
+  before: string;
+  after: string;
+  strategicWhy: string;
+}
+
+export interface RebrandStory {
+  isRebrand: boolean;
+  previousBrandName?: string;
+  previousLogo?: string;
+  previousLogoType?: 'image' | 'svg' | 'description';
+  previousTypography?: {
+    headingFont?: string;
+    bodyFont?: string;
+  };
+  previousColors?: string[];
+  rebrandMode: 'impress_me' | 'custom_prompt';
+  customPrompt?: string;
+  rebrandTitle: string;
+  rebrandBio: string; // The short bio behind the rebranding, why they are moving towards that new phase
+  strategicDiagnosis?: string;
+  keyEvolutionPoints: RebrandEvolutionPoint[];
+  createdAt?: string;
+}
+
 export interface BrandBible {
   id: string;
   userId?: string;
@@ -85,6 +111,27 @@ export interface BrandBible {
   generatedLogoImageUrl?: string;
   generatedLogoResolution?: string;
   version?: string;
+  rebrandStory?: RebrandStory;
+  // Context-Aware Strategic & AI Director Fields
+  powerLevel?: 'lite' | 'pro' | 'legacy';
+  productsServices?: string;
+  geographicMarket?: string;
+  brandArchetype?: string;
+  competitiveEnvironment?: string;
+  directorMetadata?: {
+    model: string;
+    provider: string;
+    routingRationale: string;
+    latencyMs?: number;
+    powerLevel?: string;
+  };
+  photographyDirection?: {
+    lens: string;
+    lighting: string;
+    materials: string;
+    composition?: string;
+    colorGrade?: string;
+  };
 }
 
 export type MilestoneCategory = 'genesis' | 'checkpoint' | 'refinement' | 'pivot' | 'ai_enhancement' | 'identity_refresh';
@@ -184,6 +231,28 @@ export interface GenerateBrandRequest {
     logoConcept?: string;
     values?: string[];
   };
+  // Rebrand Feature Specific Fields
+  isRebrand?: boolean;
+  currentLogo?: string;
+  currentLogoType?: 'image' | 'svg' | 'description';
+  currentTypography?: {
+    headingFont?: string;
+    bodyFont?: string;
+  };
+  preferredTypography?: {
+    headingFont?: string;
+    bodyFont?: string;
+  };
+  rebrandMode?: 'impress_me' | 'custom_prompt';
+  customRebrandPrompt?: string;
+  // Context-Aware Strategic Fields
+  powerLevel?: 'lite' | 'pro' | 'legacy';
+  productsServices?: string;
+  geographicMarket?: string;
+  brandArchetype?: string;
+  competitiveEnvironment?: string;
+  primaryColorPreference?: string;
+  tonePreference?: string;
 }
 
 export type LogoArchetype =

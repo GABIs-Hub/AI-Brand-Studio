@@ -88,7 +88,7 @@ export function BrandDeckPresentationModal({
             >
               {brand.brandName}
             </h1>
-            <p className="text-xl sm:text-2xl font-serif italic opacity-85 leading-relaxed">
+            <p className="text-xl sm:text-2xl font-display opacity-85 leading-relaxed">
               &ldquo;{brand.tagline}&rdquo;
             </p>
           </div>
@@ -96,13 +96,13 @@ export function BrandDeckPresentationModal({
           <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-[#1A1A1A]/20 dark:border-[#F9F7F2]/20 text-xs opacity-75">
             <div>
               <span className="font-bold block">Strategic Positioning:</span>
-              <span className="truncate max-w-md block font-serif italic">{brand.positioningStatement}</span>
+              <span className="truncate max-w-md block font-display">{brand.positioningStatement}</span>
             </div>
             <div className="flex items-center gap-2">
               {brand.palette.map((c) => (
                 <div
                   key={'cover-dot-' + c.hex}
-                  className="w-4 h-4 rounded-full border border-black/10"
+                  className="w-4 h-4 rounded-xl-full border border-black/10"
                   style={{ backgroundColor: c.hex }}
                   title={c.name}
                 />
@@ -132,7 +132,7 @@ export function BrandDeckPresentationModal({
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block mb-2">
                   Mission Statement
                 </span>
-                <p className="text-sm sm:text-base leading-relaxed opacity-90 font-serif italic">
+                <p className="text-sm sm:text-base leading-relaxed opacity-90 font-display">
                   {brand.mission}
                 </p>
               </div>
@@ -206,7 +206,7 @@ export function BrandDeckPresentationModal({
                 <span className="text-[9px] uppercase tracking-widest font-black opacity-50 block mb-1">
                   Symbolism &amp; Rationale
                 </span>
-                <p className="text-xs leading-relaxed opacity-90 font-serif italic">{brand.logo.symbolism}</p>
+                <p className="text-xs leading-relaxed opacity-90 font-display">{brand.logo.symbolism}</p>
               </div>
 
               <div className="p-4 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-200 dark:border-zinc-800">
@@ -258,7 +258,7 @@ export function BrandDeckPresentationModal({
                       </span>
                     </div>
 
-                    <div className="p-2 bg-black/70 text-white rounded-xs">
+                    <div className="p-2 bg-black/70 text-white rounded-xl-xs">
                       <span className="text-xs font-bold block">{c.name}</span>
                       <span className="text-[9px] font-mono block opacity-80">{c.hex}</span>
                       <span className="text-[7px] font-mono block mt-1 text-emerald-400">
@@ -360,12 +360,12 @@ export function BrandDeckPresentationModal({
       {/* Top Deck Control Bar */}
       <div className="p-4 sm:px-8 bg-black/60 border-b border-white/10 flex items-center justify-between text-white">
         <div className="flex items-center gap-3">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+          <span className="w-2.5 h-2.5 rounded-xl-full bg-amber-400 animate-pulse" />
           <div>
             <span className="text-xs uppercase tracking-[0.25em] font-black block">
               Presentation Deck &bull; {brand.brandName}
             </span>
-            <span className="text-[10px] text-gray-400 font-serif italic">
+            <span className="text-[10px] text-gray-400 font-display">
               Slide {currentSlide + 1} of {slides.length}: {slides[currentSlide].title}
             </span>
           </div>
@@ -374,8 +374,8 @@ export function BrandDeckPresentationModal({
         {/* Action Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden sm:flex items-center gap-1 text-[9px] font-mono text-gray-400 mr-2">
-            <span className="px-1.5 py-0.5 bg-white/10 rounded-xs">&larr; / &rarr; Navigate</span>
-            <span className="px-1.5 py-0.5 bg-white/10 rounded-xs">ESC Exit</span>
+            <span className="px-1.5 py-0.5 bg-white/10 rounded-xl-xs">&larr; / &rarr; Navigate</span>
+            <span className="px-1.5 py-0.5 bg-white/10 rounded-xl-xs">ESC Exit</span>
           </div>
 
           <button
@@ -421,7 +421,7 @@ export function BrandDeckPresentationModal({
           ))}
         </div>
 
-        <span className="hidden sm:block text-[9px] uppercase tracking-[0.3em] font-bold opacity-50 font-serif italic whitespace-nowrap">
+        <span className="hidden sm:block text-[9px] uppercase tracking-[0.3em] font-bold opacity-50 font-display whitespace-nowrap">
           Created with GABI
         </span>
 

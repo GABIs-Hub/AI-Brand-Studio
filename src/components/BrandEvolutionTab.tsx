@@ -223,7 +223,7 @@ export function BrandEvolutionTab({
               Identity Lineage & Versioning
             </span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
+          <h2 className="text-3xl sm:text-4xl font-display text-[#1A1A1A] dark:text-[#F9F7F2]">
             Brand Evolution
           </h2>
           <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 max-w-2xl mt-2 leading-relaxed font-sans">
@@ -234,7 +234,7 @@ export function BrandEvolutionTab({
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <button
             onClick={() => setIsCheckpointModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-[10px] uppercase tracking-widest font-bold border border-[#1A1A1A] dark:border-[#F9F7F2]/30 bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] hover:bg-black dark:hover:bg-white transition-all cursor-pointer rounded-none"
+            className="flex items-center gap-2 px-4 py-2.5 text-[10px] uppercase tracking-widest font-bold border border-[#1A1A1A] dark:border-[#F9F7F2]/30 bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] hover:bg-black dark:hover:bg-white transition-all cursor-pointer rounded-xl"
             id="create-checkpoint-btn"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -249,7 +249,7 @@ export function BrandEvolutionTab({
           <span className="text-[9px] uppercase tracking-widest font-black text-gray-400">
             Total Iterations
           </span>
-          <div className="text-2xl font-bold font-serif text-gray-900 dark:text-[#F9F7F2]">
+          <div className="text-2xl font-bold font-display text-gray-900 dark:text-[#F9F7F2]">
             {milestones.length}
           </div>
           <p className="text-[10px] text-gray-500 dark:text-gray-500">Saved identity snapshots</p>
@@ -259,7 +259,7 @@ export function BrandEvolutionTab({
           <span className="text-[9px] uppercase tracking-widest font-black text-gray-400">
             Active Release
           </span>
-          <div className="text-2xl font-bold font-serif text-emerald-600 dark:text-emerald-400">
+          <div className="text-2xl font-bold font-display text-emerald-600 dark:text-emerald-400">
             {milestones[0]?.versionLabel || 'v1.0'}
           </div>
           <p className="text-[10px] text-gray-500 dark:text-gray-500">Current dashboard state</p>
@@ -301,7 +301,7 @@ export function BrandEvolutionTab({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold border transition-all rounded-none cursor-pointer ${
+              className={`px-2.5 py-1 text-[9px] uppercase tracking-widest font-bold border transition-all rounded-xl cursor-pointer ${
                 selectedCategory === cat.id
                   ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
                   : 'bg-transparent text-gray-600 dark:text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400'
@@ -367,7 +367,7 @@ export function BrandEvolutionTab({
               >
                 {/* Timeline Circular Milestone Node */}
                 <div
-                  className={`relative z-10 shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-md ${
+                  className={`relative z-10 shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-xl-full flex items-center justify-center border-2 transition-all duration-300 shadow-md ${
                     isLatest
                       ? 'bg-[#1A1A1A] text-white border-emerald-500 dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-emerald-400 ring-4 ring-emerald-500/20'
                       : isGenesis
@@ -383,7 +383,7 @@ export function BrandEvolutionTab({
                   {/* Card Header Bar */}
                   <div className="p-4 sm:p-6 pb-3 border-b border-gray-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50 dark:bg-zinc-900/30">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-black bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] px-2 py-0.5 rounded-none">
+                      <span className="font-mono text-xs font-black bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] px-2 py-0.5 rounded-xl">
                         {milestone.versionLabel}
                       </span>
                       <span
@@ -410,7 +410,7 @@ export function BrandEvolutionTab({
                   {/* Card Body */}
                   <div className="p-4 sm:p-6 space-y-4">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-[#F9F7F2] font-serif">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-[#F9F7F2] font-display">
                         {milestone.title}
                       </h3>
                       <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-300 mt-1 leading-relaxed font-sans">
@@ -590,7 +590,7 @@ export function BrandEvolutionTab({
                 <span className="text-[9px] uppercase tracking-widest font-black text-purple-600 dark:text-purple-400">
                   Version Control
                 </span>
-                <h3 className="text-lg font-bold font-serif text-gray-900 dark:text-[#F9F7F2]">
+                <h3 className="text-lg font-bold font-display text-gray-900 dark:text-[#F9F7F2]">
                   Record Milestone Checkpoint
                 </h3>
               </div>
@@ -735,7 +735,7 @@ function DiffInspectorModal({
           <div className="flex items-center gap-3">
             <Split className="w-5 h-5 text-emerald-400" />
             <div>
-              <h3 className="font-serif italic text-lg text-white">Visual Version Diff Inspector</h3>
+              <h3 className="font-display text-lg text-white">Visual Version Diff Inspector</h3>
               <p className="text-[10px] text-gray-400 font-mono">
                 Comparing <span className="text-white font-bold">{milestone.versionLabel}</span> vs.{' '}
                 <span className="text-emerald-400 font-bold">Current Active Brand</span>

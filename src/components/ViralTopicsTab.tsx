@@ -108,6 +108,10 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
           throw new Error('Viral topics service returned an unexpected response format.');
         }
       }
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
 
       if (!response.ok || !data) {
         throw new Error(data?.error || 'Failed to generate viral topics.');
@@ -160,7 +164,7 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
                 Tailored for {brand.brandName}
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
+            <h2 className="text-2xl sm:text-3xl font-display text-[#1A1A1A] dark:text-[#F9F7F2]">
               Eye-Catching Topic &amp; Viral Hook Lab
             </h2>
             <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
@@ -281,7 +285,7 @@ export function ViralTopicsTab({ brand, onSendToSocialTemplate }: ViralTopicsTab
                 </div>
 
                 {/* Headline */}
-                <h3 className="font-serif italic text-lg sm:text-xl text-[#1A1A1A] dark:text-[#F9F7F2] leading-snug">
+                <h3 className="font-display text-lg sm:text-xl text-[#1A1A1A] dark:text-[#F9F7F2] leading-snug">
                   "{hook.headline}"
                 </h3>
 

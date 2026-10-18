@@ -18,47 +18,39 @@ export function FloatingAiDirector({
 
   return (
     <div
-      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 pointer-events-auto"
+      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex items-center pointer-events-auto"
       id="floating-ai-director-container"
     >
       <button
         type="button"
         onClick={onToggle}
-        className={`group flex items-center gap-2.5 p-2.5 sm:px-4 sm:py-3 border shadow-2xl transition-all duration-200 cursor-pointer ${
+        className={`group relative flex items-center justify-center w-12 h-12 rounded-full border shadow-xl transition-all duration-200 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-amber-500/50 ${
           isOpen
-            ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2]'
-            : 'bg-[#1A1A1A] text-white hover:bg-black dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:hover:bg-white border-[#1A1A1A] dark:border-[#F9F7F2]'
+            ? 'bg-[#1A1A1A] text-white border-[#1A1A1A] dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:border-[#F9F7F2] scale-95'
+            : 'bg-[#1A1A1A] text-white hover:bg-black hover:scale-105 dark:bg-[#F9F7F2] dark:text-[#1A1A1A] dark:hover:bg-white border-[#1A1A1A] dark:border-[#F9F7F2]'
         }`}
-        title={isOpen ? 'Close AI Brand Director' : 'Open AI Brand Director Co-Pilot'}
+        title={isOpen ? 'Close AI Brand Director' : `Open AI Brand Director (${brand.brandName})`}
         aria-label="Toggle AI Brand Director"
         id="floating-ai-director-btn"
       >
-        <div className="relative flex items-center justify-center">
-          {isOpen ? (
-            <X className="w-4 h-4 transition-transform group-hover:rotate-90" />
-          ) : (
-            <Bot className="w-4 h-4 text-amber-400 dark:text-amber-600 group-hover:scale-110 transition-transform" />
-          )}
-          {!isOpen && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse ring-2 ring-black dark:ring-white" />
-          )}
-        </div>
+        {isOpen ? (
+          <X className="w-5 h-5 transition-transform group-hover:rotate-90" />
+        ) : (
+          <Bot className="w-5 h-5 text-amber-400 dark:text-amber-600 transition-transform group-hover:scale-110" />
+        )}
 
-        <div className="flex flex-col text-left">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-[0.25em] font-black leading-none">
-              AI Director
-            </span>
-            <span className="hidden md:inline-block px-1 py-0.2 text-[7px] font-mono uppercase bg-white/20 dark:bg-black/10 text-white dark:text-black font-bold">
-              Gemini
-            </span>
-          </div>
-          {brand && !isOpen && (
-            <span className="hidden sm:inline-block text-[8px] opacity-75 font-serif italic truncate max-w-[130px] leading-tight mt-0.5">
-              {brand.brandName}
-            </span>
-          )}
-        </div>
+        {/* Live Active Status Indicator Dot */}
+        {!isOpen && (
+          <span
+            className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-[#1A1A1A] dark:ring-[#F9F7F2] animate-pulse"
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Subtle Accessible Hover Tooltip */}
+        <span className="pointer-events-none absolute right-14 whitespace-nowrap bg-[#1A1A1A] dark:bg-[#F9F7F2] text-white dark:text-[#1A1A1A] text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded shadow-lg opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150">
+          AI Director
+        </span>
       </button>
     </div>
   );

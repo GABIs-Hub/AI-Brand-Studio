@@ -166,7 +166,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           {/* Brand A Selector */}
           <div className="flex-1 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-none bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[10px] font-black flex items-center justify-center shrink-0">
+            <span className="w-6 h-6 rounded-xl bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[10px] font-black flex items-center justify-center shrink-0">
               A
             </span>
             <div className="flex-1 relative">
@@ -202,7 +202,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
 
           {/* Brand B Selector */}
           <div className="flex-1 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-none bg-amber-500 text-black text-[10px] font-black flex items-center justify-center shrink-0">
+            <span className="w-6 h-6 rounded-xl bg-amber-500 text-black text-[10px] font-black flex items-center justify-center shrink-0">
               B
             </span>
             <div className="flex-1 relative">
@@ -334,7 +334,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
                           {brandA.industry}
                         </span>
                       </div>
-                      <h4 className="text-lg font-serif italic font-bold text-[#1A1A1A] dark:text-[#F9F7F2] mt-1">
+                      <h4 className="text-lg font-display font-bold text-[#1A1A1A] dark:text-[#F9F7F2] mt-1">
                         {brandA.brandName}
                       </h4>
                     </div>
@@ -353,7 +353,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
                     </button>
                   </div>
 
-                  <p className="text-xs text-gray-700 dark:text-zinc-300 font-serif italic border-l-2 border-amber-400 pl-2.5 py-0.5">
+                  <p className="text-xs text-gray-700 dark:text-zinc-300 font-display border-l-2 border-amber-400 pl-2.5 py-0.5">
                     "{brandA.tagline || 'No tagline recorded.'}"
                   </p>
 
@@ -388,7 +388,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
                           {brandB.industry}
                         </span>
                       </div>
-                      <h4 className="text-lg font-serif italic font-bold text-[#1A1A1A] dark:text-[#F9F7F2] mt-1">
+                      <h4 className="text-lg font-display font-bold text-[#1A1A1A] dark:text-[#F9F7F2] mt-1">
                         {brandB.brandName}
                       </h4>
                     </div>
@@ -407,7 +407,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
                     </button>
                   </div>
 
-                  <p className="text-xs text-gray-700 dark:text-zinc-300 font-serif italic border-l-2 border-amber-400 pl-2.5 py-0.5">
+                  <p className="text-xs text-gray-700 dark:text-zinc-300 font-display border-l-2 border-amber-400 pl-2.5 py-0.5">
                     "{brandB.tagline || 'No tagline recorded.'}"
                   </p>
 
@@ -502,7 +502,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
                         dangerouslySetInnerHTML={{ __html: sanitizeSvg(brandA.logo.primaryLogoSvg) }}
                       />
                     ) : (
-                      <span className="text-3xl font-serif font-black">{brandA.brandName.slice(0, 2)}</span>
+                      <span className="text-3xl font-display font-black">{brandA.brandName.slice(0, 2)}</span>
                     )}
                   </div>
 
@@ -593,7 +593,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
                         dangerouslySetInnerHTML={{ __html: sanitizeSvg(brandB.logo.primaryLogoSvg) }}
                       />
                     ) : (
-                      <span className="text-3xl font-serif font-black">{brandB.brandName.slice(0, 2)}</span>
+                      <span className="text-3xl font-display font-black">{brandB.brandName.slice(0, 2)}</span>
                     )}
                   </div>
 
@@ -904,7 +904,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
                     </p>
                   </div>
 
-                  <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-serif italic">
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-display">
                     "{brandA.typography?.rationale || 'Selected for timeless typographic contrast and editorial poise.'}"
                   </p>
                 </div>
@@ -966,7 +966,7 @@ ${brandB.palette.map((c) => `- ${c.role}: ${c.name} (${c.hex}) - ${c.usage}`).jo
                     </p>
                   </div>
 
-                  <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-serif italic">
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-400 font-display">
                     "{brandB.typography?.rationale || 'Selected for timeless typographic contrast and editorial poise.'}"
                   </p>
                 </div>

@@ -12,13 +12,16 @@
     "start": "node dist/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "env:check": "tsx scripts/envCheck.ts",
     "db:migrate": "tsx db/migrate.ts",
     "db:verify": "tsx db/verify.ts",
     "db:backup": "tsx db/backup.ts",
     "db:restore": "tsx db/restore.ts",
     "lint": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "env:check": "tsx scripts/envCheck.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
@@ -35,6 +38,7 @@
     "bcryptjs": "^3.0.3",
     "dompurify": "^3.4.14",
     "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.2",
     "express": "^4.21.2",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
@@ -42,6 +46,7 @@
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "openai": "^7.10.0",
+    "pptxgenjs": "^4.0.1",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^6.2.3"
@@ -55,6 +60,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "autoprefixer": "^10.4.21",
+    "drizzle-kit": "^0.31.10",
     "esbuild": "^0.25.0",
     "jsdom": "^30.0.1",
     "tailwindcss": "^4.1.14",

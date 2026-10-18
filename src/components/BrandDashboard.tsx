@@ -12,9 +12,12 @@ import { BrandEvolutionTab } from './BrandEvolutionTab';
 import { MockupsTab } from './MockupsTab';
 import { SocialTemplatesTab } from './SocialTemplatesTab';
 import { ViralTopicsTab } from './ViralTopicsTab';
+import { AiMockupsStudio } from './AiMockupsStudio';
+import { MotionVideoStudio } from './MotionVideoStudio';
 import { BrandAuditTab } from './BrandAuditTab';
 import { DesignSystemSandbox } from './DesignSystemSandbox';
 import { FontLoader } from './FontLoader';
+import { RebrandStoryTab } from './RebrandStoryTab';
 import {
   LayoutDashboard,
   Palette,
@@ -38,6 +41,11 @@ import {
   Clock,
   Box,
   Info,
+  Bookmark,
+  Check,
+  RefreshCw,
+  Camera,
+  Video,
 } from 'lucide-react';
 
 interface BrandDashboardProps {
@@ -56,6 +64,7 @@ interface BrandDashboardProps {
 
 export type TabType =
   | 'overview'
+  | 'rebrand_story'
   | 'logos'
   | 'design_system'
   | 'social_content'
@@ -79,7 +88,7 @@ export function BrandDashboard({
   const [isProMode, setIsProMode] = useState(viewModeOverride ? viewModeOverride === 'studio' : false);
   const [selectedTopicHeadline, setSelectedTopicHeadline] = useState<string | undefined>(undefined);
   const [designSubTab, setDesignSubTab] = useState<'palette' | 'typography' | 'sandbox'>('palette');
-  const [socialSubTab, setSocialSubTab] = useState<'templates' | 'topics'>('templates');
+  const [socialSubTab, setSocialSubTab] = useState<'templates' | 'mockups' | 'video' | 'topics'>('templates');
   const [mockupSubTab, setMockupSubTab] = useState<'mockups' | 'usage'>('mockups');
   const [strategySubTab, setStrategySubTab] = useState<'tone' | 'audit' | 'evolution' | 'history'>('tone');
 
@@ -104,6 +113,9 @@ export function BrandDashboard({
 
   const mainTabs = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, desc: 'Brand Kit & Summary' },
+    ...(brand.rebrandStory
+      ? [{ id: 'rebrand_story', label: 'Rebrand Story', icon: RefreshCw, desc: 'Why We Evolved & Bio' }]
+      : []),
     { id: 'logos', label: 'Logo & Marks', icon: Shield, desc: 'Styles & Vector Exports' },
     { id: 'design_system', label: 'Colors & Fonts', icon: Palette, desc: 'Palette & Typography' },
     { id: 'social_content', label: 'Social & Content', icon: Share2, desc: 'Templates & Viral Hooks' },
@@ -116,6 +128,10 @@ export function BrandDashboard({
     overview: {
       title: 'Brand Overview',
       guide: 'The complete identity at a glance — mission, positioning, personality, and values. Use this as the single source of truth for the brand.',
+    },
+    rebrand_story: {
+      title: 'Rebrand Story & Strategic Evolution',
+      guide: 'The narrative and strategic reasoning behind this brand transformation — why you are moving toward this new phase, before/after asset comparison, and official press announcement copy.',
     },
     logos: {
       title: 'Logo & Marks',
@@ -173,23 +189,41 @@ export function BrandDashboard({
             <span className="text-[10px] uppercase tracking-[0.25em] font-black bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] px-2 py-0.5">
               {brand.industry || 'Brand Identity'}
             </span>
-            <span className="text-xs font-serif italic text-gray-500 dark:text-zinc-400">
+            <span className="text-xs font-display text-gray-500 dark:text-zinc-400">
               "{brand.tagline}"
             </span>
           </div>
         </div>
 
-        {/* Right Controls: Upgrade Brand + View Mode Pill */}
+        {/* Right Controls: Save to Library / Status + Upgrade Brand + View Mode Pill */}
         <div className="flex items-center gap-2.5 self-end sm:self-auto">
+          {savedBrands.some((b) => b.id === brand.id) ? (
+            <span className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-[9px] uppercase tracking-widest font-black">
+              <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden sm:inline">In Library</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onSelectBrand(brand)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-black text-[9px] uppercase tracking-widest font-black transition-colors cursor-pointer shadow-xs"
+              title="Save this brand into your library"
+            >
+              <Bookmark className="w-3 h-3" />
+              <span>Save to Library</span>
+            </button>
+          )}
+
           {onUpgradeBrand && (
             <button
               type="button"
               onClick={() => onUpgradeBrand(brand)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A] text-[9px] uppercase tracking-widest font-black hover:opacity-85 transition-opacity cursor-pointer shadow-xs"
-              title="Upgrade and modernize this brand identity"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 text-black text-[9px] uppercase tracking-widest font-black hover:bg-amber-300 transition-colors cursor-pointer shadow-xs"
+              title="Rebrand and modernize with custom prompts or GABI's reasoning"
+              id="btn-rebrand-top"
             >
-              <Layers className="w-3 h-3" />
-              <span>Upgrade Brand</span>
+              <RefreshCw className="w-3 h-3" />
+              <span>Rebrand</span>
             </button>
           )}
 
@@ -275,7 +309,17 @@ export function BrandDashboard({
       {/* Tab Content Area */}
       <div className="min-h-[500px]">
         {/* 1. Overview Tab */}
-        {activeTab === 'overview' && <BrandOverviewTab brand={brand} />}
+        {activeTab === 'overview' && (
+          <BrandOverviewTab
+            brand={brand}
+            onNavigateToRebrandStory={() => setActiveTab('rebrand_story')}
+          />
+        )}
+
+        {/* Rebrand Story Tab */}
+        {activeTab === 'rebrand_story' && (
+          <RebrandStoryTab brand={brand} onTriggerRebrand={onUpgradeBrand} />
+        )}
 
         {/* 2. Logo & Marks Tab */}
         {activeTab === 'logos' && (
@@ -302,7 +346,7 @@ export function BrandDashboard({
                 <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Design Foundation
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic">
+                <p className="text-xs text-gray-500 dark:text-zinc-400 font-display">
                   Curated 5-color palette and Google Font typographic pairings.
                 </p>
               </div>
@@ -363,7 +407,7 @@ export function BrandDashboard({
                 <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Social Media &amp; Content Engine
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic">
+                <p className="text-xs text-gray-500 dark:text-zinc-400 font-display">
                   Ready-to-post Instagram/LinkedIn templates and high-engagement topic ideas.
                 </p>
               </div>
@@ -383,6 +427,30 @@ export function BrandDashboard({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setSocialSubTab('mockups')}
+                  className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                    socialSubTab === 'mockups'
+                      ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <Camera className="w-3 h-3" />
+                  <span>AI Mockups</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSocialSubTab('video')}
+                  className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                    socialSubTab === 'video'
+                      ? 'bg-[#1A1A1A] text-white dark:bg-[#F9F7F2] dark:text-[#1A1A1A]'
+                      : 'text-gray-600 dark:text-gray-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <Video className="w-3 h-3" />
+                  <span>Motion &amp; Video</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSocialSubTab('topics')}
                   className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     socialSubTab === 'topics'
@@ -396,12 +464,19 @@ export function BrandDashboard({
               </div>
             </div>
 
-            {socialSubTab === 'templates' ? (
+            {socialSubTab === 'templates' && (
               <SocialTemplatesTab
                 brand={brand}
                 initialTopicHeadline={selectedTopicHeadline}
               />
-            ) : (
+            )}
+            {socialSubTab === 'mockups' && (
+              <AiMockupsStudio brand={brand} />
+            )}
+            {socialSubTab === 'video' && (
+              <MotionVideoStudio brand={brand} />
+            )}
+            {socialSubTab === 'topics' && (
               <ViralTopicsTab
                 brand={brand}
                 onSendToSocialTemplate={handleSendToSocial}
@@ -418,7 +493,7 @@ export function BrandDashboard({
                 <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Brand Applications &amp; Guidelines
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic">
+                <p className="text-xs text-gray-500 dark:text-zinc-400 font-display">
                   Real-world merchandise mockups and essential visual dos &amp; don'ts.
                 </p>
               </div>
@@ -467,7 +542,7 @@ export function BrandDashboard({
                 <h3 className="text-xs uppercase tracking-[0.25em] font-black text-[#1A1A1A] dark:text-[#F9F7F2]">
                   Brand Voice &amp; Health
                 </h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic">
+                <p className="text-xs text-gray-500 dark:text-zinc-400 font-display">
                   Tone guidelines, messaging pillars, brand health audit, and saved history.
                 </p>
               </div>
@@ -607,7 +682,7 @@ export function BrandDashboard({
                           <div className="space-y-4">
                             <div className="flex justify-between items-start">
                               <div>
-                                <span className="text-[9px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-300 px-2 py-0.5 rounded-none border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
+                                <span className="text-[9px] uppercase tracking-widest font-black bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-zinc-300 px-2 py-0.5 rounded-xl border border-gray-300 dark:border-gray-300 dark:border-zinc-700">
                                   {saved.industry}
                                 </span>
                               </div>
@@ -619,10 +694,10 @@ export function BrandDashboard({
                             </div>
 
                             <div>
-                              <h3 className="font-serif italic text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
+                              <h3 className="font-display text-2xl text-[#1A1A1A] dark:text-[#F9F7F2]">
                                 {saved.brandName}
                               </h3>
-                              <p className="text-xs text-gray-500 dark:text-zinc-400 font-serif italic mt-1 line-clamp-1">
+                              <p className="text-xs text-gray-500 dark:text-zinc-400 font-display mt-1 line-clamp-1">
                                 "{saved.tagline}"
                               </p>
                             </div>
@@ -632,7 +707,7 @@ export function BrandDashboard({
                               {saved.palette.slice(0, 5).map((color, idx) => (
                                 <div
                                   key={idx}
-                                  className="w-5 h-5 rounded-none border border-black/10 shadow-xs"
+                                  className="w-5 h-5 rounded-xl border border-black/10 shadow-xs"
                                   style={{ backgroundColor: color.hex }}
                                   title={`${color.role}: ${color.hex}`}
                                 />

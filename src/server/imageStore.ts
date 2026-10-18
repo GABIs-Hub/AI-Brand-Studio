@@ -40,7 +40,10 @@ export async function uploadImageToStore(
   keyPrefix: string
 ): Promise<string> {
   const client = getS3();
-  if (!client) throw new Error('Image storage (R2) is not configured.');
+  if (!client) {
+     console.warn('[ImageStore] R2 not configured. Returning data URL directly.');
+     return dataUrl;
+  }
 
   const [meta, b64] = dataUrl.split(',');
   const mime = (meta.match(/^data:(.*?);base64/) || [])[1] || 'image/png';

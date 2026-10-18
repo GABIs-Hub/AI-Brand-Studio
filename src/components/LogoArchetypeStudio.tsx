@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrandBible, LogoVariation, LogoArchetype } from '../types';
 import { sanitizeSvg } from '../utils/sanitizeSvg';
 import { LogoRenderSkeleton } from './LogoRenderSkeleton';
+import { AnimatedDottedBorder } from './AnimatedDottedBorder';
 import {
   Sparkles,
   Download,
@@ -104,6 +105,10 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
           throw new Error('Logo variations service returned an unexpected response format.');
         }
       }
+      const _contentType = response.headers.get('content-type') || '';
+      if (_contentType.includes('text/html')) {
+        throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
+      }
 
       if (!response.ok || !data) {
         throw new Error(data?.error || 'Failed to generate logo variations.');
@@ -165,7 +170,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                 6 Archetypes Active
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2]">
+            <h2 className="text-2xl sm:text-3xl font-display text-[#1A1A1A] dark:text-[#F9F7F2]">
               Elevated Logo Archetype Studio
             </h2>
             <p className="text-xs text-gray-600 dark:text-gray-600 dark:text-zinc-400 mt-1 max-w-2xl">
@@ -192,7 +197,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
             value={customStylePrompt}
             onChange={(e) => setCustomStylePrompt(e.target.value)}
             placeholder="Direct the aesthetic (e.g., 'Emphasize architectural symmetry with subtle golden ratio curves' or 'High-fashion editorial elegance')..."
-            className="flex-1 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 px-4 py-2 text-xs font-serif italic text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 focus:outline-hidden focus:border-[#1A1A1A] dark:focus:border-[#F9F7F2]"
+            className="flex-1 bg-gray-50 dark:bg-zinc-900/60 border border-gray-200 dark:border-gray-200 dark:border-zinc-700 px-4 py-2 text-xs font-display text-[#1A1A1A] dark:text-[#F9F7F2] placeholder-gray-400 focus:outline-hidden focus:border-[#1A1A1A] dark:focus:border-[#F9F7F2]"
           />
           <button
             onClick={() => fetchVariations(customStylePrompt)}
@@ -224,14 +229,13 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                 const isPrimaryActive = brand.logo.primaryLogoSvg.includes(v.concept) || appliedId === v.id;
 
                 return (
-                  <div
+                  <AnimatedDottedBorder
                     key={v.id}
+                    isActive={isSelected}
                     onClick={() => setSelectedVariation(v)}
-                    className={`bg-white dark:bg-[#1C1C1A] border transition-all cursor-pointer flex flex-col justify-between group ${
-                      isSelected
-                        ? 'border-[#1A1A1A] dark:border-[#F9F7F2] shadow-lg ring-1 ring-[#1A1A1A] dark:ring-[#F9F7F2]'
-                        : 'border-gray-200 dark:border-gray-200 dark:border-zinc-800 hover:border-gray-400 dark:hover:border-zinc-600'
-                    }`}
+                    className="bg-white dark:bg-[#1C1C1A] flex flex-col justify-between group h-full shadow-xs"
+                    label={isPrimaryActive ? 'Active' : undefined}
+                    accentColor={isPrimaryActive ? '#10B981' : undefined}
                   >
                   {/* Card Top Banner */}
                   <div className="p-4 border-b border-gray-100 dark:border-zinc-800/80 flex items-center justify-between bg-gray-50/50 dark:bg-zinc-900/30">
@@ -261,7 +265,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                   <div className="p-4 border-t border-gray-100 dark:border-zinc-800 space-y-3">
                     <div>
                       <h4 className="text-xs font-bold text-[#1A1A1A] dark:text-[#F9F7F2]">{v.title}</h4>
-                      <p className="text-[11px] text-gray-500 dark:text-zinc-400 line-clamp-2 mt-1 font-serif italic">
+                      <p className="text-[11px] text-gray-500 dark:text-zinc-400 line-clamp-2 mt-1 font-display">
                         {v.concept}
                       </p>
                     </div>
@@ -305,7 +309,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
                       </button>
                     </div>
                   </div>
-                </div>
+                </AnimatedDottedBorder>
               );
             })}
           </div>
@@ -357,7 +361,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
               </div>
 
               {/* Rationale & Geometric Construction */}
-              <div className="space-y-4 text-xs font-serif italic text-gray-700 dark:text-zinc-300">
+              <div className="space-y-4 text-xs font-display text-gray-700 dark:text-zinc-300">
                 <div>
                   <span className="text-[9px] uppercase tracking-widest font-sans font-bold text-gray-400 not-italic block mb-1">
                     Design Concept
