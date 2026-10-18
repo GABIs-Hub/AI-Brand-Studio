@@ -1,0 +1,700 @@
+﻿Folder PATH listing
+Volume serial number and root path: D:\GABI\Wrks\VsCode Wrks\AI-Brand-Studio
+|---.claude
+|   +---settings.local.json
+|---.freebuff
+|   |---e2e-gabi.log.err
+|   |---project-id
+|   +---run.md
+|---.git
+|   |---gk
+|   |   +---config
+|   |---hooks
+|   |   |---applypatch-msg.sample
+|   |   |---commit-msg.sample
+|   |   |---fsmonitor-watchman.sample
+|   |   |---post-update.sample
+|   |   |---pre-applypatch.sample
+|   |   |---pre-commit.sample
+|   |   |---pre-merge-commit.sample
+|   |   |---prepare-commit-msg.sample
+|   |   |---pre-push.sample
+|   |   |---pre-rebase.sample
+|   |   |---pre-receive.sample
+|   |   |---push-to-checkout.sample
+|   |   |---sendemail-validate.sample
+|   |   +---update.sample
+|   |---info
+|   |   |---exclude
+|   |   +---refs
+|   |---logs
+|   |   |---refs
+|   |   |   |---heads
+|   |   |   |   |---feat
+|   |   |   |   |   +---architecture-remediation
+|   |   |   |   |---dev
+|   |   |   |   +---main
+|   |   |   +---remotes
+|   |   |       +---origin
+|   |   |           |---coderabbit
+|   |   |           |   +---add-pull-request-tests
+|   |   |           |       +---be54c3be
+|   |   |           |---coderabbitai
+|   |   |           |   +---docstrings
+|   |   |           |       +---ad6a6b9
+|   |   |           |---feat
+|   |   |           |   +---architecture-remediation
+|   |   |           |---dev
+|   |   |           |---HEAD
+|   |   |           +---main
+|   |   +---HEAD
+|   |---objects
+|   |   |---04
+|   |   |   +---a017764c806e20a6624abb1721c4ab3a78f7d5
+|   |   |---05
+|   |   |   |---85b46fd265f0a8d8fc667a958ca4745a1d038a
+|   |   |   +---bababe651ca78e73b5b47cdbf88d76ba72e0e7
+|   |   |---07
+|   |   |   |---8ff3fefb376d1d0f3ac60e48947bc3704c1bc4
+|   |   |   |---c4b2b482a945828ee38d944098ddb85581e9d7
+|   |   |   +---cf40b3412060c41bb31c049a90414742b0a79a
+|   |   |---08
+|   |   |   |---552a74d5ea4e55bd8da3ba9506e429bdd48810
+|   |   |   |---64d0755d23ef213036ff77e9e7cf0eba3bd25a
+|   |   |   |---acc393d825f3d0b9430c54a188831aeb2abc9e
+|   |   |   +---cb404899f9c33c9e5bc12581cefa6705349c76
+|   |   |---09
+|   |   |   +---b4faccd1c1051b6093ef395bf468b40cfad0b1
+|   |   |---0a
+|   |   |   |---89479b26809d2af34a3e9bd3e72d683b50a4a2
+|   |   |   +---e72f4afc7b6a4337a8e061dd87705674f00a60
+|   |   |---10
+|   |   |   +---8ed5be01d21a75fbae3cb1c4c2a2e0f37ff517
+|   |   |---15
+|   |   |   +---41cb7cb107302f49dae7e24b10acf4edc792b8
+|   |   |---18
+|   |   |   +---d3f0367b99957dffe79bc7d71d4153766e1184
+|   |   |---19
+|   |   |   +---eb7bcf61ba895b5216b0c5fdea3d01239c6225
+|   |   |---1a
+|   |   |   +---c1fed3c7684c24f1612d7e2df64a5b4a6019f2
+|   |   |---1b
+|   |   |   |---e8318b2d86a712c0991fd7b4402900eef5dc8c
+|   |   |   +---f983467ddbdb20f8c9464e14e5784908c0e59f
+|   |   |---1c
+|   |   |   |---bcc72f6bdd2aeb4fae2669015c1d624ade19a8
+|   |   |   +---f945671a61f302e28faed8a1f678c270baed94
+|   |   |---1e
+|   |   |   |---02707e121998a0e56f25d5f9b189942b0e2532
+|   |   |   +---bd0490f43eaa622ca85efe8542133386493273
+|   |   |---1f
+|   |   |   +---402442a80c2d3ff1373216b63180429ed87faa
+|   |   |---21
+|   |   |   |---a383552f8fc03a768a27ce9b6d82b10163fe56
+|   |   |   +---cfee18df516bf259742512501d091d4c884139
+|   |   |---22
+|   |   |   |---128a7d64d57821e3c661a13f31fa21e5b0510a
+|   |   |   +---a0ff7e66d8200839ab052a201acac447f2c10e
+|   |   |---23
+|   |   |   |---37a5a867bbb8adb1a584da3abaf70da2a2c148
+|   |   |   +---d52d283fdc594f5bc0a1e957dec8c4d4a43bea
+|   |   |---25
+|   |   |   |---9edcfef807b614be9d760b801bb3f27c3acf87
+|   |   |   +---d12e1a2809556c45d405f59dc389fdb47813c4
+|   |   |---26
+|   |   |   |---a3481226ad8bc4c956f93125583501ffcfd36a
+|   |   |   +---be1dfcddf4824dad784ae2164f6eb8028feb02
+|   |   |---27
+|   |   |   +---809d7d95089d6ebf9faba8fe227656fe7e4d19
+|   |   |---28
+|   |   |   |---ad07a9f6b1e8cb9a0a6402dce130f5743bd273
+|   |   |   +---e0d2174073036f56aae3ee45bfc96882d74491
+|   |   |---29
+|   |   |   |---3e0627d8718bbe06da86c39286c21d08273e47
+|   |   |   +---711c5b92937ba551a494336e213e62c7fe29ed
+|   |   |---2a
+|   |   |   +---9c0f8a6733fb79dddd3d5d0be459c76a2d60d4
+|   |   |---2b
+|   |   |   |---56b874726a228aca77d722894b55d0d3840789
+|   |   |   +---f8d7a3106499f9d56b41566ac321ce423c5d2d
+|   |   |---2d
+|   |   |   +---83a05ef3ac63bdf5cddcee052d0e9acacca760
+|   |   |---2e
+|   |   |   +---5a182e4f0e3dce77395e805140597f9601abf5
+|   |   |---2f
+|   |   |   |---4bc2a242d1d2373bd3b80298cfcb0101c1f00e
+|   |   |   |---b924d70487b4fb6583fd46ace624be79788b4c
+|   |   |   +---bb0f835581a9510ef26488716e56ef90337e6b
+|   |   |---31
+|   |   |   |---3f8820bd698656a6d954dd292853db16de344c
+|   |   |   |---46bdfe33472dd09e190dd6805701ef323ebd7f
+|   |   |   +---7ba10820f0f5622cef9ef206a4a6cb468ef3c4
+|   |   |---33
+|   |   |   +---5e6b540c5f1504ffc710436b4e78f52ab0d8ea
+|   |   |---34
+|   |   |   +---a9863cb7df9b9c0056e6de0022c11367b06464
+|   |   |---35
+|   |   |   +---433a467af2dc72af95fbc9c2b0e7158ebefdc9
+|   |   |---38
+|   |   |   +---6d6ac73b3ebb312f2900d43ae1dd4774ac42aa
+|   |   |---3b
+|   |   |   +---8c30e534ab293d673481c4df2ca0113a95473a
+|   |   |---3d
+|   |   |   |---82bbb334b0c5ebbb1005f833001568c4e7502a
+|   |   |   +---db5c9a11ade61bb8ff26fd05785dda1ee7bdbe
+|   |   |---3f
+|   |   |   +---a30d445c8e818b782d13e1ba52fcf0c0c0b063
+|   |   |---41
+|   |   |   |---0e34992745acbfe659cd0666f8b82005a7ab86
+|   |   |   |---de1ebfe20790fa73140f23b138befd57d35091
+|   |   |   +---f604ac31d16d2725d283f454b4340155c12568
+|   |   |---43
+|   |   |   +---d283e4fc55e3169357ff7874abb3aa7dfd2120
+|   |   |---44
+|   |   |   |---7db8e3fa59568639a93b7f763e6310708030bc
+|   |   |   +---9441ec9149e03c233b8812fdfd63816a732980
+|   |   |---47
+|   |   |   |---53b41e0923faad503363fbe9085601bdaaac8e
+|   |   |   |---704c03c983cc74245057f542674af9700dfb29
+|   |   |   |---b6ad304ed7692f20f3c6c7e6854b7533423e8c
+|   |   |   +---e2a62ede82095600451e79756b4acbee4f970d
+|   |   |---49
+|   |   |   |---b9ddd056492c350fca790da104152e516e6f15
+|   |   |   +---bd92d2c1eec92c61595f7a71d079d4b8571d9f
+|   |   |---4a
+|   |   |   +---f716b2af0b796f3f2bf452bbcc01094082857c
+|   |   |---4b
+|   |   |   |---b8cd1c96f172924d9b0af0fa533b0088d39524
+|   |   |   +---c26cf677862817364b08c10861b6a3cad52f51
+|   |   |---4c
+|   |   |   |---06c90c9fae70c0851c37a2faa7170a4699cdc9
+|   |   |   |---27e6e9fd3ebf6df7a11725312b12b5cea8cce5
+|   |   |   +---fffb1507c7d54d327a8ec20f6b7f9af9112886
+|   |   |---4f
+|   |   |   +---06541ebac6c238967587eb01bd639e1e557a66
+|   |   |---51
+|   |   |   +---9bb7f52392f867be64bd3299be833d12138a2a
+|   |   |---52
+|   |   |   |---0f4b9a9b820c7cadd6fa0a973d5b3ad892200a
+|   |   |   |---56e23100a986742b6be222161985d1cf3308d2
+|   |   |   +---6d7416f3a7993b0a9328db81ceefc0b87b54c9
+|   |   |---54
+|   |   |   +---4a23d3a9251ef4e46d250447ad24a7c622ad3b
+|   |   |---55
+|   |   |   |---a20f9d46369bdc9fda6cb90faf2180bf7c3f4c
+|   |   |   +---bbf8aaaaeeae6b0cabb3ad3e1dd87d2b464b69
+|   |   |---56
+|   |   |   +---bec4c2888bd782756f7d779fe636edf17086ba
+|   |   |---57
+|   |   |   +---3b8d11831e55222909064698ef4aee4354a19b
+|   |   |---58
+|   |   |   |---e17732e9726b0826747c48d2b4175a1fa262a2
+|   |   |   |---f18184a7f2be9319f42f0fab4f4d8efb198be7
+|   |   |   +---f8bcb69d07a8603e4b7a0dea061b474e7fe0b7
+|   |   |---5a
+|   |   |   +---56bb369110f72feb2c1b227e030262e4f4b5ce
+|   |   |---5b
+|   |   |   |---1f3edeebb132d267d2ac596615e5614bfd7693
+|   |   |   +---aee3dc0823b86e29df99a9f6d70957f9d210fe
+|   |   |---5c
+|   |   |   +---74d89679494f5bf69c8a364c9b1a2d1a7b043b
+|   |   |---5e
+|   |   |   |---502b2407831195cb0ef4d74058e916728c0bca
+|   |   |   +---6d876646674f7b9ec2c0f843238f6de42df065
+|   |   |---60
+|   |   |   +---dbc3cd492d9fef3466c5b41086e70a92c3988b
+|   |   |---63
+|   |   |   +---3922ac4d2bca98942a0eeef7eb41e0f9fc50de
+|   |   |---64
+|   |   |   +---cf6793f7ffae1e2f1eff1194e08f3f18a0b547
+|   |   |---65
+|   |   |   +---20dcc9b59927712a5ea44fa1367aad45c0da67
+|   |   |---66
+|   |   |   |---04f060240a91fa73c5bde60690c979d24f2fec
+|   |   |   |---c885a83d852a6887af1a6329371cecd9fdf42a
+|   |   |   +---cc342d97d30654443d6b3f1d4d3d07f2fc4633
+|   |   |---67
+|   |   |   +---f62f481cdde751f4a196187384953fd158b34d
+|   |   |---68
+|   |   |   |---10ae7aebd2e44ce3203dffea38a10a12d34bff
+|   |   |   |---3fc3d9e26fd2fa2ca11c531e37f658f7957e98
+|   |   |   +---40c588801e7892ee2961378d9a21e9f0d0e58d
+|   |   |---69
+|   |   |   |---3819eaa9453cce98b71c6efda17c70f9c7b410
+|   |   |   |---8407cb6b4c4eb31cecb3e4e83f971593d6e1c9
+|   |   |   +---dc02cde627b44bdb42a159ea18a6105e05def5
+|   |   |---6a
+|   |   |   +---cf01932e0f41f3b29c7a57c933a89e17758f89
+|   |   |---6d
+|   |   |   +---54ae97ad81ff35a47f6c6962d39686dd6ac1cb
+|   |   |---6e
+|   |   |   +---7ad7ad7d472f09f958133a60aa0dc1b9bd04d1
+|   |   |---6f
+|   |   |   +---25693482fe8fcab51fece0472e8a12cc29d559
+|   |   |---70
+|   |   |   +---a8c1b0510985acd5d722eff3d412dc1755e2c9
+|   |   |---72
+|   |   |   +---94f20341dce30c386967220ec11b08f94ed9b1
+|   |   |---73
+|   |   |   |---b0c818488ccdfaaffc4368d2339c6ed742a7dd
+|   |   |   +---b421b84688bdea738d41a82fd6179953153946
+|   |   |---74
+|   |   |   +---afbd373a87a376ec89fd63b803124daa51f947
+|   |   |---75
+|   |   |   +---10755267e5fceaafd95cc8f540609630f76f77
+|   |   |---76
+|   |   |   |---12cd09b845d908c55c69b8fff543a07513dd0f
+|   |   |   |---6a7b97725a14d93b1e3d5d7c74ea461d290673
+|   |   |   +---82fc8cf5f78c98d95433c8c1020c64cbcd49b0
+|   |   |---77
+|   |   |   +---dec26f68bdbd18ac6eda41b44a4b5e44764b4b
+|   |   |---78
+|   |   |   +---6f20c0afb697f3c18c016e4db7db27b0a0820a
+|   |   |---79
+|   |   |   +---f442c38330b6bf827d18f49a06c36a118fbc48
+|   |   |---7e
+|   |   |   +---084512d0ee3cb2b1887a065074a1b3346d62cf
+|   |   |---7f
+|   |   |   +---74eaaf9004c679078574951feee3f0a324c4e3
+|   |   |---80
+|   |   |   +---e028d48c2f4aa00a16ad2e99ffa950d323b309
+|   |   |---83
+|   |   |   |---4a693e661061d2ad1c694d95990f1a6546b227
+|   |   |   +---91702ffa090955f282ec4abaab979ca8eeab87
+|   |   |---84
+|   |   |   +---9b0a0e9de91166add4de7bc88e1df5cf12e593
+|   |   |---86
+|   |   |   +---1cc7476248f3d9a22c475e783a527ba17a1c72
+|   |   |---87
+|   |   |   +---a4915fd7c1ec95c0ab1cae98148c7b45249265
+|   |   |---8b
+|   |   |   +---a0261f3eaa2c4cce1ddcd62ce0149615daec63
+|   |   |---8c
+|   |   |   +---6ca96f9ad58b5d362418a73426cbc3c9e799a3
+|   |   |---8d
+|   |   |   |---903532102258905527f080b773ffbfc24f4c09
+|   |   |   +---b62a6a99a9133eb047194c7fe28d6f91d35cb9
+|   |   |---8f
+|   |   |   +---1a3fab9c12f367d6c7be2dc0408947dc428478
+|   |   |---90
+|   |   |   +---7a1e0a81697359c35006466b07330f09966391
+|   |   |---91
+|   |   |   |---29cf589e8847864f25f806dea1093b4f4f7d5c
+|   |   |   |---a43c88b88cf786ddace7030c79c4d4bffd0304
+|   |   |   |---c16558d5b25e026639e5028c548a346ab77817
+|   |   |   +---ef17cada12ec3d30bd515fd1d59d542a4862d7
+|   |   |---92
+|   |   |   |---33f37d33786dabc00c9c57194496ac259760ec
+|   |   |   +---72466002b5f242d3cdc992b4005af298628f60
+|   |   |---93
+|   |   |   +---083d971990a4ffbd9aadca6a1a625cfabf7864
+|   |   |---94
+|   |   |   |---08889387de0f61101c69467662637f7df0632c
+|   |   |   +---f40dfec6126df4609685732204f82e9f00dcd9
+|   |   |---95
+|   |   |   +---b54e54f80b1611b85310f92bd881599acc6594
+|   |   |---96
+|   |   |   +---073333b439c34331e695632d7bdee52020a38b
+|   |   |---97
+|   |   |   +---d53b2b6a8621050407e9fc82d4142153f86656
+|   |   |---98
+|   |   |   +---b7de8ed5deac6967365530f25fafc8c4d98504
+|   |   |---99
+|   |   |   |---6ec57cfba9ff2de44b30394fdbb9997c8d5162
+|   |   |   +---dff334ea4d67882a72aa0bef65432a1aba662c
+|   |   |---9a
+|   |   |   +---f0790473e2587a3952a95dffcf6458916f9279
+|   |   |---9b
+|   |   |   +---9e0453beeda64d275f35b8805fd7b0f8e4d15c
+|   |   |---9c
+|   |   |   |---99bfd72f7296f154f4a617747cb6f978518296
+|   |   |   +---bff57532fba7428851bf579953e312f1f8b161
+|   |   |---9d
+|   |   |   |---2e6c0e52a4a616cb3fb5964514bc26dd8a052a
+|   |   |   |---391c0aca3f56a4f92f95737bcb628984912129
+|   |   |   |---4b9a66c05ddd9f0f7de55a62e2deb7bdc18792
+|   |   |   +---f3d19b66f119db4af006d379a10bdfca1d6e0f
+|   |   |---9e
+|   |   |   |---06efbdb3757082776cd46c0dfcc393a1f2a1c5
+|   |   |   +---b0db11509d0be959883ff45532c7c1b57d298f
+|   |   |---9f
+|   |   |   |---63f691548e937ced5c0f40a0a084fdd05e8965
+|   |   |   +---c72672b942a7ed3fb7110529cad1b4a2e3714e
+|   |   |---a0
+|   |   |   +---b5fc28614a64af1059bd6b5818b8dde446729e
+|   |   |---a3
+|   |   |   +---c26f636589283b3e8476718cc8ed8573018bfb
+|   |   |---a5
+|   |   |   +---4ca7a69b0ff13ae3838d255c3b6ebe9cd22762
+|   |   |---a6
+|   |   |   |---4bfb2bee1442dcba7b34e05959a25a4b53393c
+|   |   |   +---eced1865a498bc98318f1b8b71b0ab34ba9d19
+|   |   |---a7
+|   |   |   +---48fd07e636ec37cd19626c4082f02d7ddbb50e
+|   |   |---a8
+|   |   |   |---2eb7b8a19ad836ad1c58305c12f461eaafbc0d
+|   |   |   +---6e5f4c8e6d2f205758704e951655459c2ceacc
+|   |   |---a9
+|   |   |   |---89e0a6386178d71336d0ebaaebbd2615c05393
+|   |   |   +---d5d71df91b9b8bc634fa8dcf93d0afd24a04a3
+|   |   |---ad
+|   |   |   |---45f873db63c8f9bbfa3949dc38016e08aeed5a
+|   |   |   |---6a6b9c8a9abb3bb663c35fba307db095584de1
+|   |   |   +---a1d65933b12ea53fa8fafb5c2202e09d0d2426
+|   |   |---ae
+|   |   |   |---8026bd6055011c7e39bf10145ec1b9a57c411d
+|   |   |   +---bd1f395cf4704c320b08d4ba3ad73148cefd6c
+|   |   |---af
+|   |   |   +---299ec6ba27d678e751dd48f14c4a3c2b42bafa
+|   |   |---b0
+|   |   |   |---41f2bf6ea8524cfe2376cb140804c42d264a71
+|   |   |   +---ecc0cd75ed24f05400ee0035db0dd66d1e8841
+|   |   |---b2
+|   |   |   |---7252091584c6b0639e6da44badb85f1b7fedab
+|   |   |   +---b4feb98ae2eafb5550795f691a4ede395b1291
+|   |   |---b3
+|   |   |   +---c01d21b748d9033d509ad64e3afb40483df7da
+|   |   |---b5
+|   |   |   +---e16cec366de2b97bb57c1d6feaa15a33a84c2f
+|   |   |---b6
+|   |   |   +---bf0c48ae8554387d635d0409e5bfbc4faf7e87
+|   |   |---b7
+|   |   |   +---19014ed413383e3ebb42a7ac698db2e1fd860b
+|   |   |---b8
+|   |   |   |---56fe55a50d5f4d21f375abfa9cb8890c683ed7
+|   |   |   +---d4b03cc27620c38bba89ae0b50c24558843fc8
+|   |   |---b9
+|   |   |   |---7c6534ff99e54e57cc028137d81ab579423d66
+|   |   |   +---eb4a9946e3e5bf394f1b3208a6c6d15bcc8309
+|   |   |---ba
+|   |   |   |---2c090a465f9b2a74eccc38b38d1317972a336e
+|   |   |   |---37c420418ae4a6c99770adcf9d388f1417123a
+|   |   |   |---a8e74d28854a3899afd71f8f3456b746827ccf
+|   |   |   |---d4c4578efbc175e91c86e13e08ceccb002c7f5
+|   |   |   +---ecdb384e1e9281fadc695de947ac4469a3e9f0
+|   |   |---bb
+|   |   |   +---2027030ea3bfebbce7527f63d57ea39b1c9157
+|   |   |---bc
+|   |   |   +---753a24e826082afb69e1383f851e3a7ece45c2
+|   |   |---bd
+|   |   |   +---d541b54bafc65d6e81edad7dadb8edd926b5ef
+|   |   |---be
+|   |   |   +---ce89bf46e78d76c1594a66472a353cfb3bf1fb
+|   |   |---c2
+|   |   |   |---3effab32ea581a38d23f49b96ea2d9a663eff1
+|   |   |   +---ac5550d3ae0bb4f1721c2d2179cb41d28a17d8
+|   |   |---c3
+|   |   |   |---489b5e3d4b03091adc05d832544cc7b8746acc
+|   |   |   |---b1d519442d98e0deaec0076fda581e16528f4b
+|   |   |   +---cba106f133ae6b62c8f97301a5504ae909c1a6
+|   |   |---c4
+|   |   |   |---8458ecb3f361ce518eb269c5b1d06b23cc1df0
+|   |   |   |---964d2184f6af93d91bdb9c1753b58b0715af3d
+|   |   |   +---d98c46c778085c06917c643bf96d4a60e552ac
+|   |   |---c6
+|   |   |   |---3ff9b6f9b1a76f4b91905226e64608207ff556
+|   |   |   +---4d4b72d8d5225815b937e251dffaa77a8e3908
+|   |   |---c7
+|   |   |   |---072f2dae827bbd7a7dd39f110cde3b6c845f1c
+|   |   |   +---8e3e545a3a3e5f17b65e8c83eb6ddfeb349ac9
+|   |   |---c8
+|   |   |   +---a99285d8f2137ff619de339ceae1b717cc62eb
+|   |   |---c9
+|   |   |   +---7ad22db279123796460d9325ab2d0d743956a7
+|   |   |---ca
+|   |   |   |---55949523f47afeb8d13e9bd5219e10e7d2f8e0
+|   |   |   +---69952d26a9c74e48e5286883eaeaa46625bc42
+|   |   |---cb
+|   |   |   |---aebcaf7b6d2a3522085415933faf7b1c3582ff
+|   |   |   +---b3e59586468fef6069e3f04a3383bb39af15ee
+|   |   |---cd
+|   |   |   |---efbfbcd2b2e2ef9219ff6da1b2bb49bf322573
+|   |   |   +---fc9f2eb9f6eec1f4c07ee1a552601dc35f79fb
+|   |   |---cf
+|   |   |   |---7ebff23df51a6d5f6643fd0cd55f6880c20bd9
+|   |   |   +---9d5e24f9684a032a425cde3b0e01eeecb9bf45
+|   |   |---d0
+|   |   |   +---68b377f45076ee69c5c8c2c6dc400f6d06839b
+|   |   |---d1
+|   |   |   |---0f5df410744b9c01f843ce34c4585ff89fc855
+|   |   |   |---18f95b3dd201c2283d39df4acabd38569d1a4f
+|   |   |   |---7177873d0ece06a979b5dce82378703fd49855
+|   |   |   |---81856718323fa2e08b9ab6d5082688690f02db
+|   |   |   +---d78480f63d2099991e578b3a28629c030eef1b
+|   |   |---d3
+|   |   |   |---a5ff699162f1cdb5983eeb431cdc7851ee56df
+|   |   |   +---c034b5105113516353f06edddf8d6679eeb5e5
+|   |   |---d5
+|   |   |   |---648d12e12332a222357897c8199ed6514ad637
+|   |   |   +---d689b09d95ecb8fd0af0908472298d9296715e
+|   |   |---d6
+|   |   |   |---78f36c6a99ee697d4c61139cb254cbba16d365
+|   |   |   +---f3b8f344e835b8e3fa0beb40a3c8b75a1b8af7
+|   |   |---db
+|   |   |   +---6558d7fc75803f3a76d203980de94072c11dac
+|   |   |---dc
+|   |   |   |---667a771ccbf2c21165865dfe6434a851da991b
+|   |   |   +---8c962573f486ccf730e07b90c1477d18fa987f
+|   |   |---de
+|   |   |   |---81af0f96db0903fc42ecdbdd93486f9277b5c2
+|   |   |   +---83ea89e569826bddac38ca680af34032c1f432
+|   |   |---e0
+|   |   |   |---105a7d67a3640c31cbcaa96165246ff0a86dfe
+|   |   |   +---451dc61ce35f21bf549dc44ff9babd607cd079
+|   |   |---e1
+|   |   |   +---fff150d670c7668de093220c9f0286f6043a33
+|   |   |---e3
+|   |   |   +---617151c80735aea303211866fae3a307a78c39
+|   |   |---e4
+|   |   |   +---9a2210449a686b8d2cf7a5b81ad9fb6e3c37b0
+|   |   |---e5
+|   |   |   |---72668c52ecffb8b713cce515b9164b924baf3d
+|   |   |   |---8d39d480c2ae104c102c95a9658c8fd5896fa9
+|   |   |   +---cdad9193e98cf29e4b94407d28f13d93f33966
+|   |   |---e6
+|   |   |   |---0db3fe575a8511ef5123d54d44c1dcd0a1559b
+|   |   |   +---77bf6558be57c1f7abab1e22746d63b87786f8
+|   |   |---e7
+|   |   |   +---05267404f1b7e6cb1a7c8439482d01623077d5
+|   |   |---e8
+|   |   |   +---5322f0dc2e8151f33cca792c8fcc898f8cf4c3
+|   |   |---e9
+|   |   |   +---d7699add735e9269137dcee5ae1f8525408be4
+|   |   |---ec
+|   |   |   +---36e375cc28cdb5a7939f77e79bea45e2ec0a38
+|   |   |---ed
+|   |   |   |---30ce2ba9a414a2ecc3191bafd133bbbb707f48
+|   |   |   |---99c25d9676bcb864b287994d6ec38b19fa66c5
+|   |   |   |---c14f90de3df625b35954181ea4ceec4fb52fc5
+|   |   |   +---f3e9c38911776188823ede184be6a06c699284
+|   |   |---ee
+|   |   |   |---04710266e4612fe01f41607d49e98a3a1b2845
+|   |   |   +---d80cd0dcc6e7ba5e1cf8e28073013d0e0bf76f
+|   |   |---f1
+|   |   |   |---82d3f4567ddaaa2470367a20961446d8b47c34
+|   |   |   +---8fc374e39722704141dbbdbff594dee1960bde
+|   |   |---f2
+|   |   |   +---67d3304eb0594dcbae5664b5db7221b0daa414
+|   |   |---f5
+|   |   |   +---57548d14b61074b46922761c1cb1fb67f3afe4
+|   |   |---f6
+|   |   |   |---4118ef4abb19ffdf33c557ce131f018f71eee9
+|   |   |   +---7075a4a6689463b95db84a5f51b10d7bbe3860
+|   |   |---f7
+|   |   |   |---568e98c0b9a4f41d9692c181f6fa5c0f130ce4
+|   |   |   |---8068c45976b8932ca94a1d5561768aaa9215b2
+|   |   |   +---c441a7ab7e7d5c180af997b47478a4b9a5168f
+|   |   |---f8
+|   |   |   +---8266a54677354f4d0a185835525758f551c121
+|   |   |---f9
+|   |   |   |---2919d79ce907596b4d2ef7039818fae2f2f5cc
+|   |   |   |---6e7f567d16b3c26f33adb88464f0279eb99985
+|   |   |   |---94b5e30ba5df57e8fd5a8a46a2186ec75d3615
+|   |   |   +---c333e3fb4ab388b67bcf15d900bb4c18052c7b
+|   |   |---fa
+|   |   |   +---168213eb07e850dc08c8bfb30f3eca90c19ba6
+|   |   |---fc
+|   |   |   +---db650660d94f1645092b1791477d5fc1d9bc42
+|   |   |---fe
+|   |   |   +---a1939e740e169caa7c324a11e3ad1781f8e2e4
+|   |   |---info
+|   |   |   |---commit-graphs
+|   |   |   |   |---commit-graph-chain
+|   |   |   |   |---graph-2bb173072f3cda231aa5b6bb3734cd6c7fa95cd5.graph
+|   |   |   |   +---graph-87cd4b1477d9cd7eeaa6e9af579a616aaae1598d.graph
+|   |   |   +---packs
+|   |   +---pack
+|   |       |---multi-pack-index
+|   |       |---pack-5e768a49807fa5e46c93d7e6d3926318f721f399.idx
+|   |       |---pack-5e768a49807fa5e46c93d7e6d3926318f721f399.pack
+|   |       |---pack-5e768a49807fa5e46c93d7e6d3926318f721f399.rev
+|   |       |---pack-dee40c9c7c8e61499d5d9f70d04fabe7b4811e73.idx
+|   |       |---pack-dee40c9c7c8e61499d5d9f70d04fabe7b4811e73.pack
+|   |       +---pack-dee40c9c7c8e61499d5d9f70d04fabe7b4811e73.rev
+|   |---refs
+|   |   |---agents
+|   |   |---codex
+|   |   |   +---turn-diffs
+|   |   |       +---checkpoints
+|   |   |           |---281d326a782e495bf336451c3bd8f5aa
+|   |   |           |   +---4efa8fbcab63eb6b7bb7d0d5f402b81e
+|   |   |           |       +---1790012338223
+|   |   |           |           +---ad820154-1222-4078-8e87-381840579edf
+|   |   |           |---940f422609458980500444596d8cd2a2
+|   |   |           |   +---acb33604223e367f8c0b96092d157d96
+|   |   |           |       +---1790064287460
+|   |   |           |           +---33e131b9-cafc-49cf-8f9f-42a779a5de2e
+|   |   |           |---9ecb8555b475ecd002de76ac7daa6d3d
+|   |   |           |   +---7cc83e5384dafaee26ee4b6fe7ebd39b
+|   |   |           |       +---1789998598747
+|   |   |           |           +---1fc6b845-9b00-43e9-aff4-eb5dfcbc961a
+|   |   |           +---ce89c7bf52a8455b82bd6c23fbff22a8
+|   |   |               +---790c4bb6ed20e0388a8cc2ce11662a40
+|   |   |                   +---1790072157816
+|   |   |                       +---e98fa7da-ffb2-4708-ba44-2120a587eba8
+|   |   |---heads
+|   |   |   |---feat
+|   |   |   |   +---architecture-remediation
+|   |   |   |---dev
+|   |   |   +---main
+|   |   |---remotes
+|   |   |   +---origin
+|   |   |       |---coderabbit
+|   |   |       |   +---add-pull-request-tests
+|   |   |       |       +---be54c3be
+|   |   |       |---coderabbitai
+|   |   |       |   +---docstrings
+|   |   |       |       +---ad6a6b9
+|   |   |       |---feat
+|   |   |       |   +---architecture-remediation
+|   |   |       |---dev
+|   |   |       |---HEAD
+|   |   |       +---main
+|   |   +---tags
+|   |---COMMIT_EDITMSG
+|   |---config
+|   |---description
+|   |---FETCH_HEAD
+|   |---HEAD
+|   |---index
+|   |---ORIG_HEAD
+|   +---packed-refs
+|---db
+|   |---backup.ts
+|   |---migrate.ts
+|   |---restore.ts
+|   |---schema.sql
+|   +---verify.ts
+|---dist
+|   |---assets
+|   |   |---html2canvas.esm-QH1iLAAe.js
+|   |   |---index.es-Dn6xkynE.js
+|   |   |---index-B-WJk6-G.css
+|   |   +---index-D236hv7u.js
+|   |---gabi-favicon.svg
+|   |---gabi-og.svg
+|   |---index.html
+|   |---server.js
+|   +---server.js.map
+|---public
+|   |---gabi-favicon.svg
+|   +---gabi-og.svg
+|---scripts
+|   |---envCheck.test.ts
+|   |---envCheck.ts
+|   |---envCheckCore.test.ts
+|   |---envCheckCore.ts
+|   +---envCheckRunner.ts
+|---src
+|   |---components
+|   |   |---AccountModal.tsx
+|   |   |---AiBrandAssistant.tsx
+|   |   |---AssetUsageGuideTab.tsx
+|   |   |---BrandAuditTab.tsx
+|   |   |---BrandComparisonDashboard.tsx
+|   |   |---BrandDashboard.tsx
+|   |   |---BrandDeckPresentationModal.tsx
+|   |   |---BrandEvolutionTab.tsx
+|   |   |---BrandInputForm.tsx
+|   |   |---BrandOverviewTab.tsx
+|   |   |---ColorAccessibilityMatrix.tsx
+|   |   |---CoTPromptRefinementStudio.tsx
+|   |   |---DesignSystemSandbox.tsx
+|   |   |---ExportModal.tsx
+|   |   |---FaviconGenerator.tsx
+|   |   |---FloatingAiDirector.tsx
+|   |   |---FontLoader.tsx
+|   |   |---Header.tsx
+|   |   |---LogoArchetypeStudio.tsx
+|   |   |---LogoRenderSkeleton.tsx
+|   |   |---LogoTab.tsx
+|   |   |---MockupsTab.tsx
+|   |   |---PaletteTab.tsx
+|   |   |---PopularBrandResearchStudio.tsx
+|   |   |---ProjectTour.tsx
+|   |   |---Render3DStudio.tsx
+|   |   |---SimpleBrandView.tsx
+|   |   |---SocialTemplatesTab.tsx
+|   |   |---ToneTab.tsx
+|   |   |---TypographyTab.tsx
+|   |   +---ViralTopicsTab.tsx
+|   |---data
+|   |   |---curatedPopularBrands.ts
+|   |   |---defaultBrands.ts
+|   |   +---presets.ts
+|   |---lib
+|   |   |---authClient.ts
+|   |   |---brandValidation.test.ts
+|   |   |---brandValidation.ts
+|   |   |---evolution.test.ts
+|   |   |---evolution.ts
+|   |   |---share.test.ts
+|   |   +---share.ts
+|   |---server
+|   |   |---ai
+|   |   |   |---adapters.test.ts
+|   |   |   |---adapters.ts
+|   |   |   |---capabilityRegistry.test.ts
+|   |   |   |---capabilityRegistry.ts
+|   |   |   |---engine.test.ts
+|   |   |   |---engine.ts
+|   |   |   |---errors.ts
+|   |   |   |---modelRegistry.test.ts
+|   |   |   +---modelRegistry.ts
+|   |   |---routes
+|   |   |   |---ai.integration.test.ts
+|   |   |   |---ai.ts
+|   |   |   +---core.ts
+|   |   |---security
+|   |   |   |---originPolicy.test.ts
+|   |   |   |---originPolicy.ts
+|   |   |   |---requestSecurity.test.ts
+|   |   |   +---requestSecurity.ts
+|   |   |---aiGateway.ladder.test.ts
+|   |   |---aiGateway.providers.test.ts
+|   |   |---aiGateway.ts
+|   |   |---auth.ts
+|   |   |---authSecret.test.ts
+|   |   |---authSecret.ts
+|   |   |---brandPayload.test.ts
+|   |   |---brandPayload.ts
+|   |   |---db.ts
+|   |   |---env.test.ts
+|   |   |---env.ts
+|   |   |---imageStore.ts
+|   |   |---index.ts
+|   |   |---logoHistory.test.ts
+|   |   |---logoHistory.ts
+|   |   |---mail.test.ts
+|   |   |---mail.ts
+|   |   |---proceduralBrands.test.ts
+|   |   +---proceduralBrands.ts
+|   |---types
+|   |   |---api.test.ts
+|   |   |---api.ts
+|   |   +---brandCaseStudies.ts
+|   |---utils
+|   |   |---brandAssetKit.ts
+|   |   |---colorEngine.test.ts
+|   |   |---colorEngine.ts
+|   |   |---faviconUtils.ts
+|   |   |---imageExport.ts
+|   |   |---sanitizeSvg.test.ts
+|   |   +---sanitizeSvg.ts
+|   |---App.tsx
+|   |---index.css
+|   |---main.tsx
+|   +---types.ts
+|---state
+|---.env
+|---.env.example
+|---.gitignore
+|---index.html
+|---package.json
+|---package-lock.json
+|---PROJECT_STATUS.md
+|---project-tree.txt
+|---README.md
+|---tsconfig.json
+|---vite.config.ts
++---vitest.config.ts

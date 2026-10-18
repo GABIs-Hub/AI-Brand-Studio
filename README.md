@@ -156,6 +156,8 @@ Setup steps:
 
 **Backups & restores** (no `psql` required):
 
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/GABIs-Hub/AI-Brand-Studio?utm_source=oss&utm_medium=github&utm_campaign=GABIs-Hub%2FAI-Brand-Studio&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 ```bash
 npm run db:backup                          # → db/backups/gabi-backup-<timestamp>.json
 npm run db:restore -- db/backups/gabi-backup-<timestamp>.json
