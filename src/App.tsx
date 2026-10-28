@@ -500,7 +500,7 @@ export default function App() {
       if (contentType.includes('text/html')) {
         throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
       }
-      
+
 
       if (!res.ok) {
         let errorDetail = 'Failed to generate brand identity.';
@@ -560,7 +560,7 @@ export default function App() {
   };
 
   // Handle Delete Brand
-  
+
   const handleUpdateBrand = async (updatedBrand: BrandBible) => {
     setActiveBrand(updatedBrand);
     setSavedBrands((prev) => {
@@ -571,7 +571,7 @@ export default function App() {
       writeSavedBrands(updated);
       return updated;
     });
-    
+
     if (user) {
       try {
         await saveBrandToCloud({ ...updatedBrand, userId: user.id });
@@ -631,7 +631,7 @@ export default function App() {
       if (contentType.includes('text/html')) {
         throw new Error('Server is currently unavailable or restarting. Please try again in a few seconds.');
       }
-      
+
 
       if (!res.ok) {
         let errorDetail = 'Failed to generate AI logo rendering.';

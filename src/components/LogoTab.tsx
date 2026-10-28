@@ -61,7 +61,7 @@ export function LogoTab({
   const [customPrompt, setCustomPrompt] = useState(logo.aiImagePrompt || '');
   const [copiedSvg, setCopiedSvg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === 'image/svg+xml') {
@@ -245,15 +245,15 @@ export function LogoTab({
                 </div>
               </div>
 
-              
+
               {/* Edit Logo */}
               <div className="flex items-center gap-2">
-                <input 
-                  type="file" 
-                  accept=".svg" 
-                  className="hidden" 
-                  ref={fileInputRef} 
-                  onChange={handleFileUpload} 
+                <input
+                  type="file"
+                  accept=".svg"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
                 />
                 <button
                   type="button"

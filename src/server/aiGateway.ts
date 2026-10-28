@@ -10,20 +10,130 @@ import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
 import { higgsfield, config as higgsfieldConfig } from '@higgsfield/client/v2';
 
+import { routeTask } from './aiDirector';
 import {
-  TextProvider,
-  ImageProvider,
-  TaskType,
-  PowerLevel,
-  getAnthropicModels,
-  getOpenAITextModels,
-  getOpenAIImageModels,
-  getGeminiTextModels,
-  getGeminiImageModels,
-  getHiggsfieldEndpoints,
+  getAnthropicModels, getOpenAITextModels, getGeminiTextModels,
+  getOpenAIImageModels, getGeminiImageModels, getHiggsfieldEndpoints,
+  type TaskType, type PowerLevel,
 } from './aiModels';
+export type { TaskType, PowerLevel } from './aiModels';
 
-export type { TextProvider, ImageProvider, TaskType, PowerLevel };
+export type TextProvider = 'auto' | 'openai' | 'anthropic' | 'gemini';
+export type ImageProvider = 'auto' | 'openai' | 'gemini' | 'higgsfield';
+
+// ── Model ladders ──────────────────────────────────────────────────────────
+// Each text provider exposes a LADDER: biggest/strongest model first, cheapest
+// last. Requests declare a task tier ('max' | 'standard' | 'lite') and get the
+// strongest slice of the ladder; the per-model cascade walks DOWN the ladder
+// when a model is quota-limited/busy, so a small request never gets stuck
+// behind a flagship model and a big request always starts with the best one.
+//
+// Env overrides (comma-separated, strongest first):
+//   OPENAI_TEXT_MODELS / ANTHROPIC_TEXT_MODELS / GEMINI_TEXT_MODELS
+// The old singular overrides (OPENAI_MODEL / ANTHROPIC_MODEL) still work and
+// replace the FIRST rung of their ladder (backward compatible).
+export type TaskTier = 'max' | 'standard' | 'lite';
+
+const OPENAI_TEXT_LADDER = ['gpt-5.6-astra', 'gpt-4o', 'gpt-4o-mini'];
+const ANTHROPIC_TEXT_LADDER = ['claude-fable-5.1', 'claude-sonnet-4-5', 'claude-3-5-haiku-latest'];
+const GEMINI_TEXT_LADDER = ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1';
+const HIGGSFIELD_ENDPOINT =
+  process.env.HIGGSFIELD_ENDPOINT || 'flux-pro/kontext/max/text-to-image';
+const GEMINI_IMAGE_MODELS = ['gemini-3.1-flash-image', 'gemini-3.1-flash-lite-image'];
+
+/**
+ * Parses a comma-separated model list.
+ *
+ * @param value - The model list to parse.
+ * @returns The trimmed, non-empty model names, or an empty array when `value` is unset or empty.
+ */
+export function parseModelList(value: string | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((m) => m.trim())
+    .filter((m) => m.length > 0);
+}
+
+/**
+ * Selects the models to try for a task tier, ordered by preference.
+ *
+ * @param defaults - Default model ladder ordered from strongest to cheapest
+ * @param tier - Task tier determining how many models to include
+ * @param envLadder - Parsed environment override ladder that replaces `defaults` when provided
+ * @param singularEnvModel - Legacy model override pinned to the front of the ladder
+ * @returns The deduplicated models selected for the requested tier
+ */
+export function pickModelsForTier(
+  defaults: string[],
+  tier: TaskTier,
+  envLadder: string[],
+  singularEnvModel?: string
+): string[] {
+  let ladder = envLadder.length > 0 ? [...envLadder] : [...defaults];
+  if (singularEnvModel) {
+    // Not in the ladder -> replaces the top rung; already present -> pinned to
+    // the front. Either way the legacy override is always tried first.
+    const without = ladder.filter((m) => m !== singularEnvModel);
+    ladder = [
+      singularEnvModel,
+      ...(ladder.includes(singularEnvModel) ? without : without.slice(1)),
+    ];
+  }
+  const deduped = [...new Set(ladder)];
+  if (tier === 'max') return deduped;
+  if (tier === 'standard') return deduped.slice(0, Math.max(1, deduped.length - 1));
+  return deduped.slice(-1);
+}
+
+// Per-model circuit breakers (shared by every provider's ladder walk).
+const modelCooldowns = new Map<string, number>();
+/**
+ * Determines whether a model is currently subject to a cooldown.
+ *
+ * @param key - The model cooldown key
+ * @returns `true` if the cooldown is active, `false` otherwise.
+ */
+function onModelCooldown(key: string): boolean {
+  return Date.now() < (modelCooldowns.get(key) || 0);
+}
+/**
+ * Sets the expiration time for a model cooldown.
+ *
+ * @param key - The model cooldown key
+ * @param ms - The cooldown duration in milliseconds
+ */
+function setModelCooldown(key: string, ms: number) {
+  modelCooldowns.set(key, Date.now() + ms);
+}
+
+/**
+ * Selects the token budget for a text-generation request.
+ *
+ * @param tier - The requested task tier.
+ * @param requested - An optional positive token budget that takes precedence.
+ * @returns The requested budget when positive; otherwise, 8192 for the `max` tier or 4096 for other tiers.
+ */
+function tierMaxTokens(tier: TaskTier | undefined, requested?: number): number {
+  if (requested && requested > 0) return requested;
+  return tier === 'max' ? 8192 : 4096;
+}
+
+/**
+ * Determines whether an error message indicates an authentication or credential failure.
+ *
+ * @param message - The error message to classify
+ * @returns `true` if the message indicates an authentication or credential failure, `false` otherwise.
+ */
+function isAuthError(message: string): boolean {
+  return (
+    /\b401\b/.test(message) ||
+    /\b403\b/.test(message) ||
+    /invalid[ _-]?(api[ _-])?key/i.test(message) ||
+    /unauthorized|incorrect api key|authentication/i.test(message)
+  );
+}
 
 // ── Circuit breakers ──────────────────────────────────────────────────────
 const providerCooldowns = new Map<string, number>();
@@ -66,25 +176,25 @@ function classifyError(message: string): 'quota' | 'busy' | null {
 // ── Lazy client factories ─────────────────────────────────────────────────
 let openaiClient: OpenAI | null = null;
 function getOpenAI(): OpenAI | null {
-  const rawKey = process.env.OPENAI_API_KEY?.trim();
-  const key = rawKey ? rawKey.replace(/^["']|["']$/g, '') : undefined;
-  if (!key) return null;
-  if (!openaiClient) openaiClient = new OpenAI({ apiKey: key });
+  if (!process.env.OPENAI_API_KEY) return null;
+  if (!openaiClient) openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   return openaiClient;
 }
 
 let anthropicClient: Anthropic | null = null;
 function getAnthropic(): Anthropic | null {
-  const rawKey = process.env.ANTHROPIC_API_KEY?.trim();
-  const key = rawKey ? rawKey.replace(/^["']|["']$/g, '') : undefined;
-  if (!key) return null;
-  if (!anthropicClient) anthropicClient = new Anthropic({ apiKey: key });
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!anthropicClient) anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   return anthropicClient;
 }
 
 let geminiClient: GoogleGenAI | null | undefined;
 let geminiKeyInvalid = false;
-
+/**
+ * Gets the configured Gemini API client.
+ *
+ * @returns The cached Gemini client, or `null` when no API key is configured or client initialization fails.
+ */
 export function getGeminiClient(): GoogleGenAI | null {
   if (geminiKeyInvalid) return null;
   const rawKey = process.env.GEMINI_API_KEY?.trim();
@@ -106,12 +216,15 @@ export function getGeminiClient(): GoogleGenAI | null {
 }
 
 let higgsfieldConfigured = false;
+/**
+ * Configures the Higgsfield client from available environment credentials.
+ */
 function ensureHiggsfieldConfig() {
   if (higgsfieldConfigured) return;
   const creds =
-    process.env.HF_CREDENTIALS?.trim() ||
-    (process.env.HF_API_KEY?.trim() && process.env.HF_API_SECRET?.trim()
-      ? `${process.env.HF_API_KEY.trim()}:${process.env.HF_API_SECRET.trim()}`
+    process.env.HF_CREDENTIALS ||
+    (process.env.HF_API_KEY && process.env.HF_API_SECRET
+      ? `${process.env.HF_API_KEY}:${process.env.HF_API_SECRET}`
       : '');
   if (creds) {
     try {
@@ -123,19 +236,26 @@ function ensureHiggsfieldConfig() {
   }
 }
 
-// ── Gemini helper (moved from server.ts, kept for compatibility) ──────────
-const modelCooldowns = new Map<string, number>();
+/**
+ * Generates content using Gemini models in order with retry and cooldown-based fallback.
+ *
+ * @param params - The content and optional generation configuration for the request.
+ * @param models - The Gemini models to try, in fallback order.
+ * @returns The first response containing generated text.
+ * @throws The last encountered error when all models fail.
+ */
 
 export async function generateContentWithFallback(
   ai: GoogleGenAI,
   params: { contents: any; config?: any },
-  models: string[] = getGeminiTextModels()
+  models: string[] = GEMINI_TEXT_LADDER
 ) {
   let lastError: any = null;
   const now = Date.now();
 
   for (const model of models) {
-    const cooldownUntil = modelCooldowns.get(model) || 0;
+    const key = `gemini:${model}`;
+    const cooldownUntil = modelCooldowns.get(key) || 0;
     if (now < cooldownUntil) {
       const remainingSec = Math.ceil((cooldownUntil - now) / 1000);
       console.log(
@@ -165,7 +285,7 @@ export async function generateContentWithFallback(
         const errMsg = error?.message || String(error);
         const kind = classifyError(errMsg);
         if (kind === 'quota') {
-          modelCooldowns.set(model, Date.now() + COOLDOWN_QUOTA);
+          setModelCooldown(key, COOLDOWN_QUOTA);
           console.log(`[Gemini API] Quota limit reached for ${model}. Cooldown set. Cascading.`);
           break;
         }
@@ -174,18 +294,10 @@ export async function generateContentWithFallback(
             await new Promise((resolve) => setTimeout(resolve, 350));
             continue;
           }
-          modelCooldowns.set(model, Date.now() + COOLDOWN_BUSY);
+          setModelCooldown(key, COOLDOWN_BUSY);
           console.log(`[Gemini API] Model ${model} remains busy. Cooldown set. Cascading.`);
           break;
         }
-        
-        if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid')) {
-          console.log(`[Gemini API] Fatal error for ${model}: API Key is invalid. Aborting provider permanently.`);
-          geminiKeyInvalid = true;
-          geminiClient = null;
-          throw error;
-        }
-
         console.log(`[Gemini API] Notice for ${model}: ${errMsg.slice(0, 100)}... Cascading.`);
         break;
       }
@@ -194,8 +306,6 @@ export async function generateContentWithFallback(
 
   throw lastError || new Error('All Gemini models were temporarily unreachable.');
 }
-
-import { routeTask } from './aiDirector';
 
 // ── Text generation ───────────────────────────────────────────────────────
 export interface TextGenerationRequest {
@@ -206,69 +316,87 @@ export interface TextGenerationRequest {
   preferred?: TextProvider;
   temperature?: number;
   maxTokens?: number;
+  /**
+   * Task size: 'max' = flagship work (Brand Bible) — start at the top of every
+   * ladder; 'standard' = mid-weight tasks; 'lite' = chat/short tasks — the
+   * cheapest rung only. Default: 'standard'.
+   */
+  tier?: TaskTier;
+  /** Optional observability hook used by the AI engine; it does not affect execution. */
+  onProviderAttempt?: (provider: TextProvider) => void;
+  /** When false, an explicitly selected provider is not cascaded to others. */
+  allowProviderFallback?: boolean;
+  /** Resolved by the AI engine; legacy callers may omit this. */
+  providerModelId?: string;
+  providerModelProvider?: TextProvider;
   taskType?: TaskType;
   powerLevel?: PowerLevel;
 }
 
+/**
+ * Determines the text provider order, prioritizing the requested provider when specified.
+ *
+ * @param preferred - The provider to prioritize; `auto` or an unsupported value uses the default order.
+ * @returns The ordered list of text providers.
+ */
 function textOrder(preferred?: TextProvider, taskType?: TaskType, powerLevel?: PowerLevel): TextProvider[] {
-  // If user explicitly pinned a provider, respect their preference
-  if (preferred && preferred !== 'auto') {
-    const base: TextProvider[] = ['gemini', 'openai', 'anthropic'];
-    return [preferred, ...base.filter((p) => p !== preferred)];
+  if ((!preferred || preferred === "auto") && taskType) {
+    const selected = routeTask(taskType, { powerLevel }).selectedEngine;
+    if (selected === "openai" || selected === "anthropic" || selected === "gemini") preferred = selected;
   }
-
-  // Otherwise, use AI Director's intelligent routing
-  if (taskType) {
-    const decision = routeTask(taskType, { powerLevel });
-    const selected = decision.selectedEngine;
-    if (selected === 'gemini' || selected === 'openai' || selected === 'anthropic') {
-      const remaining: TextProvider[] = (['gemini', 'openai', 'anthropic'] as TextProvider[]).filter(
-        (p) => p !== selected
-      );
-      return [selected, ...remaining];
-    }
+  const order: TextProvider[] = ['openai', 'anthropic', 'gemini'];
+  if (preferred && preferred !== 'auto' && (order as string[]).includes(preferred)) {
+    return [preferred, ...order.filter((p) => p !== preferred)];
   }
+  return order;
+}
 
-  // Default context cascade: Gemini (high speed + 3.7 reasoning) -> OpenAI -> Claude
-  return ['gemini', 'openai', 'anthropic'];
+async function withProviderTimeout<T>(operation: Promise<T>, milliseconds: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('ETIMEDOUT: AI provider request timed out')), milliseconds);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function generateText(req: TextGenerationRequest): Promise<string> {
   let lastError: any = null;
-  const order = textOrder(req.preferred, req.taskType, req.powerLevel);
-  for (let i = 0; i < order.length; i++) {
-    const provider = order[i];
+  const providers =
+    req.allowProviderFallback === false && req.preferred && req.preferred !== "auto"
+      ? [req.preferred]
+      : textOrder(req.preferred, req.taskType, req.powerLevel);
+  for (const provider of providers) {
     const key = `text:${provider}`;
-    if (onCooldown(key)) {
-      console.log(`[Telemetry] Skipping text provider ${provider} (circuit breaker active).`);
-      continue;
-    }
+    if (onCooldown(key)) continue;
     try {
-      // 15 second timeout for text generation to prevent UI hanging
-      const fetchPromise = callTextProvider(provider, req);
-      const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error(`ETIMEDOUT: ${provider} text request timed out after 15s`)), 15000)
-      );
-      
-      const text = await Promise.race([fetchPromise, timeoutPromise]);
-      if (text) {
-        if (i > 0) {
-          console.log(`[Telemetry] AI Director fallback cascade successfully engaged: switched to ${provider}.`);
-        }
-        return text;
-      }
+      req.onProviderAttempt?.(provider);
+      const text = await withProviderTimeout(callTextProvider(provider, req), 15_000);
+      if (text) return text;
     } catch (err: any) {
       lastError = err;
       const msg = err?.message || String(err);
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
       else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
-      console.log(`[Telemetry] AI Circuit Breaker tripped for ${provider} (text). Error: ${msg.slice(0, 140)}`);
+      console.warn(`[AI Gateway] ${provider} text failed: ${msg.slice(0, 140)}`);
     }
   }
   throw lastError || new Error('All AI text providers are unavailable.');
 }
 
+/**
+ * Generates text using the selected provider.
+ *
+ * @param provider - The text-generation provider to use
+ * @param req - The text-generation request
+ * @returns The generated text, or `null` when the provider is unsupported
+ */
 async function callTextProvider(provider: TextProvider, req: TextGenerationRequest): Promise<string | null> {
   switch (provider) {
     case 'openai':
@@ -282,38 +410,41 @@ async function callTextProvider(provider: TextProvider, req: TextGenerationReque
   }
 }
 
+/**
+ * Generates text with OpenAI using the configured model fallback ladder.
+ *
+ * @param req - Text generation request, including the prompt and optional output constraints.
+ * @returns The generated text, or `null` when OpenAI is not configured.
+ * @throws The last model error when all configured OpenAI models fail.
+ */
 async function callOpenAIText(req: TextGenerationRequest): Promise<string | null> {
   const client = getOpenAI();
   if (!client) return null;
-  const candidateModels = getOpenAITextModels(req.powerLevel, req.taskType);
-  let lastErr: any = null;
-
-  for (const model of candidateModels) {
-    const key = `text:openai:${model}`;
-    if (onCooldown(key)) continue;
-
-    const isReasoning = model.startsWith('o1') || model.startsWith('o3');
-    const messages: any[] = [];
-    if (req.system) {
-      messages.push({
-        role: isReasoning ? 'developer' : 'system',
-        content: req.system,
-      });
+  const messages: any[] = [
+    ...(req.system ? [{ role: 'system', content: req.system }] : []),
+    { role: 'user', content: req.prompt },
+  ];
+  const ladder = pickModelsForTier(
+    req.powerLevel || req.taskType ? getOpenAITextModels(req.powerLevel, req.taskType) : OPENAI_TEXT_LADDER,
+    req.powerLevel || req.taskType ? 'max' : req.tier || 'standard',
+    parseModelList(process.env.OPENAI_TEXT_MODELS),
+    req.providerModelProvider === 'openai' ? req.providerModelId : process.env.OPENAI_MODEL || undefined
+  );
+  let lastError: any = null;
+  for (const model of ladder) {
+    const cooldownKey = `openai:${model}`;
+    if (onModelCooldown(cooldownKey)) {
+      console.log(`[AI Gateway] OpenAI ${model} on cooldown — stepping down the ladder.`);
+      continue;
     }
-    messages.push({ role: 'user', content: req.prompt });
-
+    const isReasoning = /^o[134]/.test(model);
     const params: any = {
       model,
-      messages,
+      messages: isReasoning ? messages.map((message) => message.role === 'system' ? { ...message, role: 'developer' } : message) : messages,
+      ...(isReasoning
+        ? { max_completion_tokens: tierMaxTokens(req.tier, req.maxTokens) }
+        : { temperature: req.temperature ?? 0.7, max_tokens: tierMaxTokens(req.tier, req.maxTokens) }),
     };
-
-    if (isReasoning) {
-      params.max_completion_tokens = req.maxTokens || 4096;
-    } else {
-      params.max_tokens = req.maxTokens || 4096;
-      params.temperature = req.temperature ?? 0.7;
-    }
-
     if (req.jsonSchema) {
       params.response_format = {
         type: 'json_schema',
@@ -322,58 +453,75 @@ async function callOpenAIText(req: TextGenerationRequest): Promise<string | null
     } else if (req.requireJson) {
       params.response_format = { type: 'json_object' };
     }
-
     try {
       const resp = await client.chat.completions.create(params);
-      const content = resp.choices?.[0]?.message?.content || null;
-      if (content) return content;
+      return resp.choices?.[0]?.message?.content || null;
     } catch (err: any) {
-      lastErr = err;
-      const msg = err?.message || String(err);
-      console.warn(`[AI Gateway] OpenAI text model ${model} error: ${msg.slice(0, 140)}`);
-      const kind = classifyError(msg);
-      if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
-
-      // Some models reject structured-output schemas; retry plain before cascading to next model
+      // Some models reject structured-output schemas; retry plain before cascading.
       if (req.jsonSchema || req.requireJson) {
         try {
           const retryParams = { ...params };
           delete retryParams.response_format;
-          const retryResp = await client.chat.completions.create(retryParams);
-          const retryText = retryResp.choices?.[0]?.message?.content || null;
-          if (retryText) return retryText;
-        } catch {
-          // cascade to next candidate model
+          const resp = await client.chat.completions.create(retryParams);
+          return resp.choices?.[0]?.message?.content || null;
+        } catch (retryErr: any) {
+          err = retryErr;
         }
+      }
+      lastError = err;
+      const msg = err?.message || String(err);
+      const kind = classifyError(msg);
+      if (kind === 'quota') {
+        setModelCooldown(cooldownKey, COOLDOWN_QUOTA);
+        console.log(`[AI Gateway] OpenAI ${model} quota-limited — stepping down the ladder.`);
+      } else if (kind === 'busy') {
+        setModelCooldown(cooldownKey, COOLDOWN_BUSY);
+        console.log(`[AI Gateway] OpenAI ${model} busy — stepping down the ladder.`);
+      } else if (isAuthError(msg)) {
+        console.warn(`[AI Gateway] OpenAI auth failed — giving up on the provider.`);
+        break;
+      } else {
+        // Unknown-model / bad-request errors are often model-specific — step down.
+        console.log(`[AI Gateway] OpenAI ${model} unavailable (${msg.slice(0, 100)}) — stepping down the ladder.`);
       }
     }
   }
-
-  if (lastErr) throw lastErr;
-  return null;
+  throw lastError || new Error('All OpenAI text models were unavailable.');
 }
 
+/**
+ * Generates text with Anthropic using the model ladder selected for the request tier.
+ *
+ * @param req - The text generation request, including the prompt and optional JSON response requirements
+ * @returns The generated text, or `null` if Anthropic is unavailable or produces no text
+ * @throws Throws when all configured Anthropic models fail
+ */
 async function callAnthropicText(req: TextGenerationRequest): Promise<string | null> {
   const client = getAnthropic();
   if (!client) return null;
-  const candidateModels = getAnthropicModels(req.powerLevel, req.taskType);
   const needsJson = Boolean(req.jsonSchema || req.requireJson);
   const system = req.system
     ? req.system + (needsJson ? '\n\nRespond with valid JSON only. No markdown code fences.' : '')
     : needsJson
       ? 'Respond with valid JSON only. No markdown code fences.'
       : undefined;
-
-  let lastErr: any = null;
-  for (const model of candidateModels) {
-    const key = `text:anthropic:${model}`;
-    if (onCooldown(key)) continue;
-
+  const ladder = pickModelsForTier(
+    req.powerLevel || req.taskType ? getAnthropicModels(req.powerLevel, req.taskType) : ANTHROPIC_TEXT_LADDER,
+    req.powerLevel || req.taskType ? 'max' : req.tier || 'standard',
+    parseModelList(process.env.ANTHROPIC_TEXT_MODELS),
+    req.providerModelProvider === 'anthropic' ? req.providerModelId : process.env.ANTHROPIC_MODEL || undefined
+  );
+  let lastError: any = null;
+  for (const model of ladder) {
+    const cooldownKey = `anthropic:${model}`;
+    if (onModelCooldown(cooldownKey)) {
+      console.log(`[AI Gateway] Claude ${model} on cooldown — stepping down the ladder.`);
+      continue;
+    }
     try {
       const resp = await client.messages.create({
         model,
-        max_tokens: req.maxTokens || 4096,
+        max_tokens: tierMaxTokens(req.tier, req.maxTokens),
         system,
         messages: [{ role: 'user', content: req.prompt }],
         temperature: req.temperature ?? 0.7,
@@ -382,21 +530,35 @@ async function callAnthropicText(req: TextGenerationRequest): Promise<string | n
         .filter((block: any) => block.type === 'text')
         .map((block: any) => block.text)
         .join('');
-      if (text) return text;
+      return text || null;
     } catch (err: any) {
-      lastErr = err;
+      lastError = err;
       const msg = err?.message || String(err);
-      console.warn(`[AI Gateway] Anthropic model ${model} error: ${msg.slice(0, 140)}`);
       const kind = classifyError(msg);
-      if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
+      if (kind === 'quota') {
+        setModelCooldown(cooldownKey, COOLDOWN_QUOTA);
+        console.log(`[AI Gateway] Claude ${model} quota-limited — stepping down the ladder.`);
+      } else if (kind === 'busy') {
+        setModelCooldown(cooldownKey, COOLDOWN_BUSY);
+        console.log(`[AI Gateway] Claude ${model} busy — stepping down the ladder.`);
+      } else if (isAuthError(msg)) {
+        console.warn(`[AI Gateway] Claude auth failed — giving up on the provider.`);
+        break;
+      } else {
+        // Unknown-model / bad-request errors are often model-specific — step down.
+        console.log(`[AI Gateway] Claude ${model} unavailable (${msg.slice(0, 100)}) — stepping down the ladder.`);
+      }
     }
   }
-
-  if (lastErr) throw lastErr;
-  return null;
+  throw lastError || new Error('All Claude text models were unavailable.');
 }
 
+/**
+ * Generates text with Gemini using the requested task tier and output format.
+ *
+ * @param req - The text generation request, including the prompt and optional JSON configuration.
+ * @returns The generated text, or `null` when the Gemini client is unavailable or no text is returned.
+ */
 async function callGeminiText(req: TextGenerationRequest): Promise<string | null> {
   const ai = getGeminiClient();
   if (!ai) return null;
@@ -404,8 +566,13 @@ async function callGeminiText(req: TextGenerationRequest): Promise<string | null
   const prompt = `${req.system ? req.system + '\n\n' : ''}${req.prompt}${
     req.requireJson && !req.jsonSchema ? '\nRespond with valid JSON only, no markdown.' : ''
   }`;
-  const models = getGeminiTextModels(req.powerLevel);
-
+  const models = pickModelsForTier(
+    req.powerLevel || req.taskType ? getGeminiTextModels(req.powerLevel) : GEMINI_TEXT_LADDER,
+    req.powerLevel || req.taskType ? 'max' : req.tier || 'standard',
+    req.providerModelProvider === 'gemini' && req.providerModelId
+      ? [req.providerModelId]
+      : parseModelList(process.env.GEMINI_TEXT_MODELS)
+  );
   const response = await generateContentWithFallback(
     ai,
     {
@@ -424,9 +591,16 @@ async function callGeminiText(req: TextGenerationRequest): Promise<string | null
 // ── Image generation ──────────────────────────────────────────────────────
 export interface ImageGenerationRequest {
   prompt: string;
-  aspectRatio?: '1:1' | '16:9' | '9:16';
+  aspectRatio?: '1:1' | '16:9' | '9:16' | '4:5' | '3:4';
   size?: string;
   preferred?: ImageProvider;
+  /** Optional observability hook used by the AI engine; it does not affect execution. */
+  onProviderAttempt?: (provider: ImageProvider) => void;
+  /** When false, an explicitly selected provider is not cascaded to others. */
+  allowProviderFallback?: boolean;
+  /** Resolved by the AI engine; legacy callers may omit this. */
+  providerModelId?: string;
+  providerModelProvider?: ImageProvider;
   taskType?: TaskType;
   powerLevel?: PowerLevel;
 }
@@ -438,58 +612,39 @@ export interface ImageGenerationResult {
 }
 
 function imageOrder(preferred?: ImageProvider, taskType?: TaskType, powerLevel?: PowerLevel): ImageProvider[] {
-  if (preferred && preferred !== 'auto') {
-    const base: ImageProvider[] = ['higgsfield', 'openai', 'gemini'];
-    return [preferred, ...base.filter((p) => p !== preferred)];
+  if ((!preferred || preferred === "auto") && taskType) {
+    const selected = routeTask(taskType, { powerLevel }).selectedEngine;
+    if (selected === "openai" || selected === "gemini" || selected === "higgsfield") preferred = selected;
   }
-
-  if (taskType === 'photorealistic_mockup') {
-    const decision = routeTask(taskType, { powerLevel });
-    const selected = decision.selectedEngine as ImageProvider;
-    if (['higgsfield', 'openai', 'gemini'].includes(selected)) {
-      const remaining: ImageProvider[] = (['higgsfield', 'openai', 'gemini'] as ImageProvider[]).filter(
-        (p) => p !== selected
-      );
-      return [selected, ...remaining];
-    }
+  const order: ImageProvider[] = ['openai', 'gemini', 'higgsfield'];
+  if (preferred && preferred !== 'auto' && (order as string[]).includes(preferred)) {
+    return [preferred, ...order.filter((p) => p !== preferred)];
   }
-
-  return ['higgsfield', 'openai', 'gemini'];
+  return order;
 }
 
 export async function generateImage(
   req: ImageGenerationRequest
 ): Promise<ImageGenerationResult> {
   let lastError: any = null;
-  const order = imageOrder(req.preferred, req.taskType, req.powerLevel);
-  for (let i = 0; i < order.length; i++) {
-    const provider = order[i];
+  const providers =
+    req.allowProviderFallback === false && req.preferred && req.preferred !== "auto"
+      ? [req.preferred]
+      : imageOrder(req.preferred, req.taskType, req.powerLevel);
+  for (const provider of providers) {
     const key = `image:${provider}`;
-    if (onCooldown(key)) {
-      console.log(`[Telemetry] Skipping image provider ${provider} (circuit breaker active).`);
-      continue;
-    }
+    if (onCooldown(key)) continue;
     try {
-      // 25 second timeout for image generation
-      const fetchPromise = callImageProvider(provider, req);
-      const timeoutPromise = new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error(`ETIMEDOUT: ${provider} image request timed out after 25s`)), 25000)
-      );
-      
-      const result = await Promise.race([fetchPromise, timeoutPromise]);
-      if (result) {
-        if (i > 0) {
-          console.log(`[Telemetry] Successfully fell back to ${provider} for image generation.`);
-        }
-        return result;
-      }
+      req.onProviderAttempt?.(provider);
+      const result = await withProviderTimeout(callImageProvider(provider, req), 25_000);
+      if (result) return result;
     } catch (err: any) {
       lastError = err;
       const msg = err?.message || String(err);
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
       else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
-      console.log(`[Telemetry] AI Circuit Breaker tripped for ${provider} (image). Error: ${msg.slice(0, 140)}`);
+      console.warn(`[AI Gateway] ${provider} image failed: ${msg.slice(0, 140)}`);
     }
   }
   throw lastError || new Error('All AI image providers are unavailable.');
@@ -511,6 +666,12 @@ async function callImageProvider(
   }
 }
 
+/**
+ * Generates an image with OpenAI using the requested prompt and aspect ratio.
+ *
+ * @param req - The image generation request containing the prompt and optional aspect ratio
+ * @returns The generated image as a data URL or hosted URL, or `null` when OpenAI is unavailable or returns no image
+ */
 async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenerationResult | null> {
   const client = getOpenAI();
   if (!client) return null;
@@ -518,8 +679,13 @@ async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenera
     '1:1': '1024x1024',
     '16:9': '1536x1024',
     '9:16': '1024x1536',
+    '4:5': '1024x1536',
+    '3:4': '1024x1536',
   };
-  const models = getOpenAIImageModels();
+  const models = [...new Set([
+    ...(req.providerModelProvider === 'openai' && req.providerModelId ? [req.providerModelId] : []),
+    ...getOpenAIImageModels(),
+  ])];
   let lastErr: any = null;
 
   for (const model of models) {
@@ -528,11 +694,13 @@ async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenera
 
     try {
       const isDalle2 = model === 'dall-e-2';
+      const size = sizeMap[req.aspectRatio || '1:1'] || '1024x1024';
+      const dalleSize = size === '1536x1024' ? '1792x1024' : size === '1024x1536' ? '1024x1792' : size;
       const resp = await client.images.generate({
         model,
         prompt: req.prompt,
-        size: (isDalle2 ? '1024x1024' : (sizeMap[req.aspectRatio || '1:1'] || '1024x1024')) as any,
-        quality: isDalle2 ? 'standard' : 'high',
+        size: (isDalle2 ? '1024x1024' : model === 'dall-e-3' ? dalleSize : size) as any,
+        quality: model.startsWith('dall-e-') ? 'standard' : 'high',
       });
       const item = resp.data?.[0];
       if (item?.b64_json) {
@@ -547,7 +715,7 @@ async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenera
       console.warn(`[AI Gateway] OpenAI image model ${model} error: ${msg.slice(0, 140)}`);
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
     }
   }
 
@@ -558,7 +726,11 @@ async function callOpenAIImage(req: ImageGenerationRequest): Promise<ImageGenera
 async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenerationResult | null> {
   const ai = getGeminiClient();
   if (!ai) return null;
-  const models = getGeminiImageModels();
+  const models = req.providerModelProvider === 'gemini' && req.providerModelId
+    ? [req.providerModelId]
+    : parseModelList(process.env.GEMINI_IMAGE_MODELS).length
+      ? parseModelList(process.env.GEMINI_IMAGE_MODELS)
+      : getGeminiImageModels();
 
   for (const model of models) {
     const key = `image:gemini:${model}`;
@@ -616,7 +788,7 @@ async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenera
       }
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
       else console.warn(`[AI Gateway] Gemini image model ${model}: ${msg.slice(0, 120)}`);
     }
   }
@@ -626,7 +798,10 @@ async function callGeminiImage(req: ImageGenerationRequest): Promise<ImageGenera
 async function callHiggsfieldImage(req: ImageGenerationRequest): Promise<ImageGenerationResult | null> {
   ensureHiggsfieldConfig();
   if (!higgsfieldConfigured && !process.env.HF_CREDENTIALS) return null;
-  const endpoints = getHiggsfieldEndpoints();
+  const endpoints = [...new Set([
+    ...(req.providerModelProvider === 'higgsfield' && req.providerModelId ? [req.providerModelId] : []),
+    ...getHiggsfieldEndpoints(),
+  ])];
   let lastErr: any = null;
 
   for (const endpoint of endpoints) {
@@ -652,7 +827,7 @@ async function callHiggsfieldImage(req: ImageGenerationRequest): Promise<ImageGe
       console.warn(`[AI Gateway] Higgsfield endpoint ${endpoint} error: ${msg.slice(0, 140)}`);
       const kind = classifyError(msg);
       if (kind === 'quota') setCooldown(key, COOLDOWN_QUOTA);
-      else if (kind === 'busy') setCooldown(key, COOLDOWN_BUSY);
+      else if (kind === 'busy' || msg.includes('ETIMEDOUT')) setCooldown(key, COOLDOWN_BUSY);
     }
   }
 

@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev": "tsx src/server/index.ts",
-    "build": "vite build && esbuild src/server/index.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
+    "build": "vite build && esbuild src/server/index.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js",
+    "start": "node dist/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "db:migrate": "tsx db/migrate.ts",
@@ -20,7 +20,8 @@
     "test": "vitest run",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "env:check": "tsx scripts/envCheck.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

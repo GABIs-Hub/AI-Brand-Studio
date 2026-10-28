@@ -262,7 +262,7 @@ export const INDUSTRY_INTELLIGENCE: Record<string, IndustryCreativeDirection> = 
  */
 export function resolveIndustryDirection(industryInput?: string, missionInput?: string): IndustryCreativeDirection {
   const combined = `${industryInput || ''} ${missionInput || ''}`.toLowerCase();
-  
+
   for (const [key, profile] of Object.entries(INDUSTRY_INTELLIGENCE)) {
     for (const kw of profile.categoryKeywords) {
       if (combined.includes(kw)) {
