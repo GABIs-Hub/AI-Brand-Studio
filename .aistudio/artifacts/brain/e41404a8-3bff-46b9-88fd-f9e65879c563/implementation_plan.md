@@ -21,7 +21,7 @@ GABI operates at the intersection of seven distinct algorithmic disciplines:
 2. **Computational Geometry & Vector Synthesis:** Polar coordinate mapping, Bézier curve interpolation, golden ratio spiral generation, and SVG polygon tessellation.
 3. **Autoregressive Sequence Modeling:** Multi-head scaled dot-product attention, Rotary Positional Embeddings (RoPE), top-$p$ nucleus sampling, and Chain-of-Thought search trees.
 4. **Continuous-Time Diffusion & Flow Matching:** Latent Diffusion Models (LDM), score-based generative modeling, rectified flow matching, and ordinary differential equation (ODE) trajectory solvers.
-5. **Cryptography & Security:** Adaptive key derivation functions (bcrypt), cryptographically secure pseudo-random number generation (CSPRNG), constant-time string equality, and sliding-window rate limiting.
+5. **Cryptography & Security:** Adaptive key derivation functions (bcrypt), cryptographically secure pseudo-random number generation (CSPRNG), bcrypt password verification, and fixed-window rate limiting.
 6. **Vector Search & Information Retrieval:** Approximate Nearest Neighbor (ANN) search via Hierarchical Navigable Small World (HNSW) graphs and cosine similarity in dense embedding spaces.
 7. **Typographic Mathematics:** Exponential modular scales, baseline grid alignment, and font metrics normalization.
 
@@ -39,8 +39,8 @@ GABI operates at the intersection of seven distinct algorithmic disciplines:
 │ • sRGB <-> OKLCH Matrices│ • HNSW Vector Indexing    │ • SHA-256 for Passwords         │
 │ • Modular Type Scaling   │ • Flow Matching ODE Solve │ • Levenshtein for Semantics     │
 │ • Cubic Bézier Curves    │ • MinHash / LSH Shingling │ • GANs for Image Synthesis      │
-│ • bcrypt (Cost = 12)     │ • Token Bucket Traffic    │ • Recurrent Neural Nets (RNN)   │
-│ • Sliding Window Counter │ • Ast-based HTML/CSS Diffs│ • Fixed Window Rate Limiting    │
+│ • bcrypt (Cost = 10)     │ • Token Bucket Traffic    │ • Recurrent Neural Nets (RNN)   │
+│ • Fixed Window Counter   │ • Ast-based HTML/CSS Diffs│ • MD5 / SHA-1 for Credentials    │
 │ • Autoregressive MHA/GQA │ • Cosine Semantic Rank    │ • Plain Heuristic Contrast      │
 │ • Latent Diffusion / RFM │ • Speculative Decoding    │ • Simple Grid Brute Force       │
 └──────────────────────────┴───────────────────────────┴─────────────────────────────────┘
@@ -52,7 +52,7 @@ GABI operates at the intersection of seven distinct algorithmic disciplines:
 
 ### 3.1 Color Science, Optics & Accessibility
 * **Currently Used:**
-  * **Gamma Expansion Function:** Converts non-linear 8-bit sRGB values to linear photometric values:
+  * **Gamma Expansion Function:** Normalizes each non-linear 8-bit sRGB channel to the 0–1 range by dividing by 255 ($C_{sRGB} = C_{8bit} / 255$), then applies the following formula to obtain linear photometric values:
     $$C_{linear} = \begin{cases} \frac{C_{sRGB}}{12.92} & \text{if } C_{sRGB} \le 0.04045 \\ \left(\frac{C_{sRGB} + 0.055}{1.055}\right)^{2.4} & \text{otherwise} \end{cases}$$
   * **Relative Photometric Luminance ($Y$):** Calculated according to CIE 1931 standard observer weights ($L = 0.2126 R_{lin} + 0.7152 G_{lin} + 0.0722 B_{lin}$).
   * **WCAG 2.1 Contrast Ratio Formula:**
@@ -115,19 +115,18 @@ GABI operates at the intersection of seven distinct algorithmic disciplines:
 
 ### 3.5 Cryptography, Authentication & Traffic Protection
 * **Currently Used:**
-  * **bcrypt Adaptive Key Derivation Function:** Salted, multi-round Blowfish-based key stretching algorithm ($2^{12} = 4096$ iterations) resistant to hardware/ASIC acceleration.
+  * **bcrypt Adaptive Key Derivation Function:** Salted, multi-round Blowfish-based key stretching algorithm with cost factor 10 ($2^{10} = 1024$ iterations), used by both registration and password reset.
   * **CSPRNG (Cryptographically Secure Pseudo-Random Number Generation):** Entropy-backed pseudorandom bytes for session tokens and single-use verification identifiers.
-  * **Constant-Time Comparison (`crypto.timingSafeEqual`):** Prevents microsecond timing side-channel attacks during hash and token verification.
-  * **Sliding Window Counter Rate Limiting:**
-    * Tracks timestamped request intervals per client IP.
-    * Smooths boundary spikes that defeat traditional fixed-window counters.
+  * **Password Verification (`bcryptjs.compare`):** Checks passwords against stored bcrypt hashes. `consumeAuthToken` delegates token lookup to the database adapter's `useVerificationToken`; the application provides no `crypto.timingSafeEqual` guarantee for token comparison.
+  * **Fixed-Window Counter Rate Limiting:**
+    * Stores a bucket start time and request count per limiter label and client IP; the next request resets the bucket after 60 seconds.
+    * Can allow up to twice the configured request limit in a short burst spanning a window boundary.
     * Background epoch garbage collector cleans inactive IP buckets every 120,000 ms.
 * **Scheduled for Implementation:**
   * **Argon2id Key Derivation:** Winner of the Password Hashing Competition; incorporates both memory-hardness (preventing GPU parallel attacks) and data-dependent time penalties.
   * **Token Bucket Algorithm with Redis:** Replaces single-instance in-memory map for distributed cluster rate-limiting.
 * **Algorithms Rejected:**
   * *MD5, SHA-1, and Unsalted SHA-256 for Credentials:* Subject to rainbow-table lookup and billion-hash/second GPU dictionary attacks.
-  * *Fixed-Window Rate Limiting:* Vulnerable to twice the burst capacity at window boundaries.
 
 ---
 

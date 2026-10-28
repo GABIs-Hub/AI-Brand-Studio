@@ -220,10 +220,10 @@ GABI combines frontend and backend into a single Node.js runtime, eliminating CO
   - Email/Password authentication with salted `bcryptjs` passwords.
   - Google OAuth provider (configured when `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are set).
   - Password reset and email verification workflows powered by **Resend** (with local console fallbacks).
-- **Neon PostgreSQL Persistence (`src/server/db.ts`)**:
-  - Connection pooling via `@neondatabase/serverless`.
-  - Brand Bibles saved per authenticated user.
-  - Fallback to browser local storage for guest / unauthenticated users.
+- **In-Memory Mock Stores (`src/server/db.ts`)**:
+  - Brand and account data are held in process-local maps; `getSql()` is a mock and `isDbConfigured()` returns `false`, disabling the Neon auth adapter.
+  - There is no active Neon connection pool or per-user database persistence. Server-side brand and account data are lost when the process restarts.
+  - Guest brand libraries use browser local storage, with session storage retaining the full state (`src/App.tsx`).
 
 ---
 
@@ -291,26 +291,27 @@ CREATE INDEX IF NOT EXISTS brands_name_idx ON brands (brand_name);
 
 ### Database CLI Commands
 - `npm run db:migrate`: Executes `db/migrate.ts` to run DDL migrations without requiring the external `psql` binary.
-- `npm run db:verify`: Tests connection, ensures tables exist, and verifies foreign-key cascades.
+- `npm run db:verify`: Runs a connection query (`select 1 as ok`) and lists public table names; it does not check required tables or foreign-key cascades.
 - `npm run db:backup`: Generates a timestamped JSON backup in `db/backups/`.
-- `npm run db:restore`: Restores data from the latest backup.
+- `npm run db:restore -- db/backups/gabi-backup-<timestamp>.json [--force]`: Requires an explicit backup path. Add `--force` to replace a non-empty database; existing data is deleted before the backup is restored.
 - `npm run db:studio`: Launches Drizzle Studio GUI for visual database management.
 
 ---
 
 ## 7. Security & API Protection
 
-1. **Origin Enforcement**: Cross-origin API calls are blocked if `APP_URL` is configured in production (`src/server/index.ts`). Same-origin browser calls pass transparently.
-2. **Sliding-Window Rate Limiting**:
+1. **Origin Enforcement**: Whenever `APP_URL` is set, in any environment, the middleware compares the `Origin` header using `origin.startsWith(APP_URL)` (`src/server/index.ts`). This string-prefix check can accept attacker-controlled origins sharing that prefix. Requests without an `Origin` header are allowed.
+2. **Fixed-Window Rate Limiting**:
    - General AI Generation endpoints: **30 requests/min** per IP.
    - Heavy Image Synthesis endpoints: **6 requests/min** per IP.
    - Account Security (password reset/email verification): **10 requests/min** per IP.
+   - Each bucket stores a start time and request count and resets on the next request after 60 seconds, allowing up to twice the limit in a short burst spanning a window boundary.
    - In-memory buckets pruned automatically every 2 minutes.
 3. **Strict Secret Fail-Fast**:
    - `AUTH_SECRET` must be at least 32 characters long in production; server halts during boot if insecure (`src/server/auth.ts`).
 4. **SVG & Content Sanitization**:
-   - Client and server sanitize all rendered and uploaded SVGs using DOMPurify (`src/utils/sanitizeSvg.ts`).
-   - `src/lib/brandValidation.ts` enforces non-crashing schema validation on every Brand Bible loaded from disk, cloud, or AI generation.
+   - `sanitizeSvg` uses DOMPurify in client-side SVG rendering paths (`src/utils/sanitizeSvg.ts`); it does not provide server-side sanitization of uploaded SVGs.
+   - `src/lib/brandValidation.ts` provides client-side BrandBible validation for imports, browser storage, AI generation, and fetched cloud rows. The `PUT /api/brands/:id` route only checks for `id` and `brandName` before saving; it does not call `sanitizeBrandBible`.
 
 ---
 
@@ -396,8 +397,8 @@ The codebase has complete test and compilation coverage:
 For the incoming AI agent or software engineer, the remaining priorities are:
 
 ### Priority 1: Server-Side Brand Validation Route Guard
-- **Status**: The pure sanitizer `src/lib/brandValidation.ts` guards all frontend imports, but the Express endpoint `PUT /api/brands/:id` currently saves payloads straight into Postgres.
-- **Action**: Import `validateBrandBible` into `src/server/index.ts` and pass `req.body` through it before running `upsertBrand()`.
+- **Status**: The pure sanitizer `src/lib/brandValidation.ts` provides client-side validation, but the Express endpoint `PUT /api/brands/:id` currently saves payloads into the in-memory brand store after only checking for `id` and `brandName`.
+- **Action**: Import the exported `sanitizeBrandBible` helper into `src/server/index.ts`, call it with `req.body`, and return a 400 response if the result is `null`. Pass the sanitized result to `upsertBrand()`.
 
 ### Priority 2: Direct Cloudflare R2 Upload Pipeline for Brand Assets
 - **Status**: `src/server/imageStore.ts` contains S3 client scaffolding, but asset exports currently download directly via browser memory blob.
