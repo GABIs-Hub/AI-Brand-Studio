@@ -358,7 +358,7 @@ export function AccountModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
       id="account-hub-modal"
     >
-      <div className="bg-[#F9F7F2] dark:bg-[#181816] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 text-[#1A1A1A] dark:text-[#F9F7F2] w-full max-w-5xl h-[92vh] max-h-[850px] shadow-2xl flex flex-col overflow-hidden relative">
+      <div className="bg-[#F9F7F2] dark:bg-[#181816] border border-[#1A1A1A] dark:border-[#F9F7F2]/20 text-[#1A1A1A] dark:text-[#F9F7F2] w-full max-w-5xl h-[92vh] max-h-212.5 shadow-2xl flex flex-col overflow-hidden relative">
         {/* Top Header Bar */}
         <div className="px-6 py-4 border-b border-[#1A1A1A] dark:border-[#F9F7F2]/20 flex items-center justify-between gap-4 bg-white/40 dark:bg-zinc-900/40">
           <div className="flex items-center gap-3">
