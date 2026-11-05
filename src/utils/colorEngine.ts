@@ -330,11 +330,23 @@ export function generateHarmoniousPalette(seed: PaletteSeed): BrandPalette {
  * `seedHue` over `${brandName}|${industry}|${aesthetic}` keeps generation
  * deterministic while guaranteeing every brand gets a distinct identity.
  */
-export function paletteFromBrandContext(brandName: string, industry: string, aesthetic: string, primaryHex?: string): BrandPalette {
-  const scheme = schemeForAesthetic(aesthetic);
+export function paletteFromBrandContext(
+  brandName: string,
+  industry: string,
+  aesthetic: string,
+  primaryHex?: string,
+  direction?: { seedHex?: string; harmony?: HarmonyScheme }
+): BrandPalette {
+  const context = `${brandName || "brand"}|${industry || "general"}|${aesthetic || "modern"}`;
+  const baseHue = direction?.seedHex
+    ? rgbToHsl(hexToRgb(direction.seedHex)).h
+    : seedHue(context);
+  const hueVariation = direction?.seedHex ? (hashString(context) % 31) - 15 : 0;
+  const hue = (baseHue + hueVariation + 360) % 360;
+  const scheme = direction?.harmony || schemeForAesthetic(aesthetic);
   const tuning = tuningForAesthetic(aesthetic);
   return generateHarmoniousPalette({
-    hue: seedHue(`${brandName || "brand"}|${industry || "general"}|${aesthetic || "modern"}`),
+    hue,
     scheme,
     saturation: tuning.sat,
     lightness: tuning.light,

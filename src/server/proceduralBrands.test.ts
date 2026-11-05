@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { synthesizeProceduralBrand, generateProceduralLogoVariations } from './proceduralBrands';
 import { contrastRatioHex } from '../utils/colorEngine';
+import { DEFAULT_INDUSTRY_DIRECTION, resolveIndustryDirection } from './industryContext';
 
 describe('synthesizeProceduralBrand', () => {
   it('returns a complete brand bible with all required sections', () => {
@@ -74,6 +75,52 @@ describe('synthesizeProceduralBrand', () => {
     });
     expect(brand.brandName).toBe('Existing Co.');
   });
+
+  it('uses the industry profile to change strategy, palette, typography, and primary logo direction', () => {
+    const shared = {
+      brandName: 'Northstar',
+      mission: 'Make thoughtful products for people who value quality.',
+      aesthetic: 'Modern & Minimalist',
+    };
+    const fashion = synthesizeProceduralBrand({ ...shared, industry: 'Haute couture fashion' });
+    const healthcare = synthesizeProceduralBrand({ ...shared, industry: 'Healthcare and medical services' });
+
+    expect(fashion.personalityTraits.map((trait) => trait.trait)).toContain('Elegance');
+    expect(healthcare.personalityTraits.map((trait) => trait.trait)).toContain('Empathy');
+    expect(fashion.values.map((value) => value.title)).not.toEqual(healthcare.values.map((value) => value.title));
+    expect(fashion.tagline).not.toBe(healthcare.tagline);
+    expect(fashion.palette.map((color: any) => color.hex)).not.toEqual(
+      healthcare.palette.map((color: any) => color.hex)
+    );
+    expect(fashion.brandArchetype).toBe('interlocking_monogram');
+    expect(healthcare.brandArchetype).toBe('geometric_minimalist');
+    expect(fashion.logo.primaryLogoSvg).not.toBe(healthcare.logo.primaryLogoSvg);
+    expect(fashion.imageryStyle.photographyGuidance).toContain('fabric');
+    expect(healthcare.imageryStyle.photographyGuidance).toContain('clinical');
+  });
+
+  it('uses supplied market, offer, typography, tone, and a primary color in procedural output', () => {
+    const brand = synthesizeProceduralBrand({
+      brandName: 'Fieldnote',
+      mission: 'Help neighborhood growers share seasonal produce.',
+      industry: 'Specialty food and beverage',
+      targetAudience: 'Independent growers',
+      productsServices: 'A weekly farm-box subscription',
+      geographicMarket: 'the Pacific Northwest',
+      competitiveEnvironment: 'impersonal grocery delivery services',
+      primaryColorPreference: '#204060',
+      preferredTypography: { headingFont: 'Fraunces', bodyFont: 'Inter' },
+      tonePreference: 'plain-spoken and optimistic',
+    });
+
+    expect(brand.positioningStatement).toContain('A weekly farm-box subscription');
+    expect(brand.positioningStatement).toContain('the Pacific Northwest');
+    expect(brand.positioningStatement).toContain('impersonal grocery delivery services');
+    expect(brand.palette[0].hex).toBe('#204060');
+    expect(brand.typography.headingFont).toBe('Fraunces');
+    expect(brand.typography.bodyFont).toBe('Inter');
+    expect(brand.toneOfVoice[0].description).toContain('plain-spoken and optimistic');
+  });
 });
 
 describe('generateProceduralLogoVariations', () => {
@@ -99,5 +146,48 @@ describe('generateProceduralLogoVariations', () => {
     const a = generateProceduralLogoVariations(params);
     const b = generateProceduralLogoVariations(params);
     expect(a.map((v) => v.svg)).toEqual(b.map((v) => v.svg));
+  });
+
+  it('prioritizes industry-recommended logo structures and embeds a distinct industry mark', () => {
+    const fashion = generateProceduralLogoVariations({
+      brandName: 'Maison North',
+      industry: 'Fashion',
+      logoSymbol: 'monogram',
+      preferredArchetypes: ['interlocking_monogram', 'modern_wordmark'],
+    });
+    const food = generateProceduralLogoVariations({
+      brandName: 'Maison North',
+      industry: 'Food',
+      logoSymbol: 'botanical',
+      preferredArchetypes: ['modern_wordmark', 'interlocking_monogram'],
+    });
+
+    expect(fashion[0].archetype).toBe('interlocking_monogram');
+    expect(food[0].archetype).toBe('modern_wordmark');
+    expect(fashion[0].svg).not.toBe(food[0].svg);
+    expect(fashion[0].geometryDetails).toContain('Industry geometry:');
+  });
+
+  it('XML-escapes dynamic text and ignores invalid color values', () => {
+    const [variation] = generateProceduralLogoVariations({
+      brandName: '<Nova & Co>',
+      industry: 'Tech',
+      pColor: '" onload="alert(1)',
+    });
+    expect(variation.svg).toContain('&lt;Nova &amp; Co&gt;');
+    expect(variation.svg).not.toContain('onload=');
+  });
+});
+
+describe('industry direction resolution', () => {
+  it('prioritizes explicit industry over unrelated mission keywords', () => {
+    expect(resolveIndustryDirection('Haute couture fashion', 'We teach students about software').name)
+      .toBe('Fashion, Haute Couture & Luxury Goods');
+  });
+
+  it('does not classify a general niche as software by default', () => {
+    const direction = resolveIndustryDirection('Independent floral design', 'Create arrangements for weddings.');
+    expect(direction).toBe(DEFAULT_INDUSTRY_DIRECTION);
+    expect(direction.name).toBe('Independent & Cross-Industry Brands');
   });
 });

@@ -56,10 +56,10 @@ app.post("/api/generate-brand", apiRateLimiter, async (req, res) => {
       );
     }
 
-    const resolvedIndustry = industry || "Innovation & Technology";
+    const resolvedIndustry = industry?.trim() || "Independent & Cross-Industry";
     const industryDir = resolveIndustryDirection(resolvedIndustry, mission);
     const chosenColors = primaryColorPreference
-      ? [primaryColorPreference, ...(existingColors || [])]
+      ? [primaryColorPreference, ...(existingColors || []).slice(1)]
       : existingColors;
 
     // Fast-path: Legacy Mode runs the high-aesthetic deterministic synthesis engine directly
@@ -70,6 +70,13 @@ app.post("/api/generate-brand", apiRateLimiter, async (req, res) => {
         industry: resolvedIndustry,
         aesthetic,
         targetAudience,
+        productsServices,
+        geographicMarket,
+        brandArchetype,
+        competitiveEnvironment,
+        primaryColorPreference,
+        preferredTypography,
+        tonePreference,
         isExistingBrandRefresh,
         existingColors: chosenColors,
         existingTagline,
@@ -444,6 +451,13 @@ ${isRebrand ? "9. rebrandStory object: rebrandTitle, rebrandBio, strategicDiagno
       industry: resolvedIndustry,
       aesthetic,
       targetAudience,
+      productsServices,
+      geographicMarket,
+      brandArchetype,
+      competitiveEnvironment,
+      primaryColorPreference,
+      preferredTypography,
+      tonePreference,
       isExistingBrandRefresh,
       existingColors: chosenColors,
       existingTagline,
@@ -579,6 +593,10 @@ Return strict JSON schema with an array of variations.
       ndColor,
       headingFont: hFont,
       bodyFont: bFont,
+      logoSymbol: industryDir.logoSymbol,
+      preferredArchetypes: industryDir.logoArchetypes,
+      preferredArchetype: req.body?.brandArchetype,
+      logoGeometryGuidance: industryDir.logoGeometryGuidance,
     });
 
     return res.json({ variations: proceduralVariations });

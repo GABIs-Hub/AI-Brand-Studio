@@ -2,7 +2,13 @@
 // Extracted from server.ts so the pure functions can be unit-tested without
 // booting the Express server.
 
-import { hexToRgb, rgbToHex, paletteFromBrandContext } from "../utils/colorEngine";
+import {
+  contrastRatioHex,
+  hashString,
+  hexToRgb,
+  rgbToHex,
+  paletteFromBrandContext,
+} from "../utils/colorEngine";
 import { resolveIndustryDirection } from "./industryContext";
 
 function normalizeHex(hex: string): string {
@@ -12,6 +18,50 @@ function normalizeHex(hex: string): string {
 function rgbString(hex: string): string {
   const { r, g, b } = hexToRgb(hex);
   return `${r}, ${g}, ${b}`;
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function isHexColor(value: string | undefined): value is string {
+  return Boolean(value && /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(value));
+}
+
+function contrastNoteForColor(hex: string, light: string, dark: string): string {
+  if (contrastRatioHex(hex, light) >= 7) return "Passes AAA contrast on light surfaces";
+  if (contrastRatioHex(hex, light) >= 4.5) return "Passes AA contrast on light surfaces";
+  if (contrastRatioHex(hex, dark) >= 4.5) return "Passes AA contrast on dark surfaces";
+  return "Use for graphics and large text";
+}
+
+function industryGlyph(
+  symbol: ProceduralLogoVariationParams["logoSymbol"],
+  primary: string,
+  accent: string
+): string {
+  const marks: Record<NonNullable<ProceduralLogoVariationParams["logoSymbol"]>, string> = {
+    structure: `<path d="M20 53V28l18-11 18 11v25M20 28l18 11 18-11M38 39v14M28 33v20M48 33v20"/>`,
+    monogram: `<path d="M22 48c0-15 9-25 19-25 7 0 12 4 12 10 0 7-6 10-16 10-8 0-13 4-13 10 0 5 4 8 10 8 9 0 17-8 17-20"/>`,
+    network: `<path d="M25 25l13 13 14-15M25 25l-3 27 16-14 14 12M38 38l14-15"/> <circle cx="25" cy="25" r="4" fill="${accent}"/><circle cx="52" cy="23" r="4" fill="${accent}"/><circle cx="22" cy="52" r="4" fill="${accent}"/><circle cx="38" cy="38" r="4" fill="${accent}"/><circle cx="52" cy="50" r="4" fill="${accent}"/>`,
+    care: `<path d="M38 54S20 44 20 32c0-10 13-14 18-4 5-10 18-6 18 4 0 12-18 22-18 22z"/> <path d="M38 29v15M30.5 36.5h15" stroke="${accent}"/>`,
+    vault: `<path d="M38 17l19 8v14c0 11-8 18-19 23-11-5-19-12-19-23V25z"/> <path d="M38 29v24M30 34v14M46 34v14" stroke="${accent}"/>`,
+    botanical: `<path d="M38 56V37M38 43C24 43 20 34 21 24c12-1 21 4 17 19M38 38c0-14 8-21 19-21 1 12-4 21-19 21"/> <path d="M27 33l11 10M49 25L38 38" stroke="${accent}"/>`,
+    book: `<path d="M19 23c8-3 14-2 19 2v31c-5-4-11-5-19-2zM57 23c-8-3-14-2-19 2v31c5-4 11-5 19-2z"/> <path d="M24 31c4-1 7 0 10 1M24 38c4-1 7 0 10 1M52 31c-4-1-7 0-10 1M52 38c-4-1-7 0-10 1" stroke="${accent}"/>`,
+    home: `<path d="M19 37l19-17 19 17M25 34v20h26V34M34 54V41h10v13"/> <path d="M19 37l19-17 19 17" stroke="${accent}"/>`,
+    beauty: `<path d="M38 38c-13 0-16-15-5-18 5-1 8 4 5 18zM38 38c0-13 15-16 18-5 1 5-4 8-18 5zM38 38c13 0 16 15 5 18-5 1-8-4-5-18zM38 38c0 13-15 16-18 5-1-5 4-8 18-5z"/> <circle cx="38" cy="38" r="4" fill="${accent}"/>`,
+    planet: `<circle cx="38" cy="38" r="17"/> <ellipse cx="38" cy="38" rx="27" ry="10" transform="rotate(-25 38 38)"/> <circle cx="51" cy="24" r="3" fill="${accent}"/>`,
+    compass: `<circle cx="38" cy="38" r="20"/> <path d="M45 29l-5 12-12 6 5-12z" fill="${accent}" stroke="${primary}"/> <path d="M38 18v5M58 38h-5M38 58v-5M18 38h5"/>`,
+    media: `<path d="M20 25h36v27H20z"/> <path d="M34 31v15l12-7.5z" fill="${accent}" stroke="${primary}"/> <path d="M26 20h24M26 57h24" stroke="${accent}"/>`,
+    orbit: `<circle cx="38" cy="38" r="16"/> <ellipse cx="38" cy="38" rx="27" ry="9" transform="rotate(-30 38 38)"/> <circle cx="54" cy="28" r="3" fill="${accent}"/>`,
+  };
+  const selected = symbol || "orbit";
+  return `<g fill="none" stroke="${primary}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.96">${marks[selected]}</g>`;
 }
 
 export interface ProceduralLogoVariationParams {
@@ -24,6 +74,10 @@ export interface ProceduralLogoVariationParams {
   ndColor?: string;
   headingFont?: string;
   bodyFont?: string;
+  logoSymbol?: 'structure' | 'monogram' | 'network' | 'care' | 'vault' | 'botanical' | 'book' | 'home' | 'beauty' | 'planet' | 'compass' | 'media' | 'orbit';
+  preferredArchetypes?: string[];
+  preferredArchetype?: string;
+  logoGeometryGuidance?: string;
 }
 
 // Procedural Agency Logo Variations Generator (Diverse Archetypes Beyond Basic Shapes)
@@ -90,17 +144,21 @@ function getLetterformSvgPath(char: string): string {
 
 export function generateProceduralLogoVariations(params: ProceduralLogoVariationParams) {
   const brandName = params.brandName || "Aura";
-  const pColor = params.pColor || "#1A1A1A";
-  const sColor = params.sColor || "#2563EB";
-  const aColor = params.aColor || "#F59E0B";
-  const nlColor = params.nlColor || "#F9F8F6";
-  const ndColor = params.ndColor || "#111827";
-  const hFont = params.headingFont || "Plus Jakarta Sans";
-  const bFont = params.bodyFont || "Plus Jakarta Sans";
-
+  const pColor = normalizeHex(params.pColor || "#1A1A1A");
+  const sColor = normalizeHex(params.sColor || "#2563EB");
+  const aColor = normalizeHex(params.aColor || "#F59E0B");
+  const nlColor = normalizeHex(params.nlColor || "#F9F8F6");
+  const ndColor = normalizeHex(params.ndColor || "#111827");
+  const hFont = escapeXml(params.headingFont || "Plus Jakarta Sans");
+  const bFont = escapeXml(params.bodyFont || "Plus Jakarta Sans");
+  const escapedBrandName = escapeXml(brandName);
+  const industryDirection = resolveIndustryDirection(params.industry);
+  const industryName = escapeXml(industryDirection.name);
+  const glyph = industryGlyph(params.logoSymbol || industryDirection.logoSymbol, pColor, aColor);
   const initial = brandName.charAt(0).toUpperCase();
+  const escapedInitial = escapeXml(initial);
   const letterPath = getLetterformSvgPath(initial);
-  const subline = (params.industry || "Brand Identity").toUpperCase();
+  const subline = escapeXml((params.industry || "Brand Identity").toUpperCase());
 
   // 1. Negative Space Archetype: Optical illusion where positive geometry carves an inner arrow/flame
   const negativeSpaceSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%">
@@ -119,8 +177,9 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
   <g transform="translate(15, 12)">
     <rect x="0" y="0" width="76" height="76" rx="18" fill="url(#nsGrad)" mask="url(#nsCutout)" />
     <circle cx="16" cy="16" r="4" fill="${aColor}" />
+    ${glyph}
   </g>
-  <text x="110" y="50" font-family="${hFont}, sans-serif" font-size="26" font-weight="800" fill="${ndColor}" letter-spacing="-0.5">${brandName}</text>
+  <text x="110" y="50" font-family="${hFont}, sans-serif" font-size="26" font-weight="800" fill="${ndColor}" letter-spacing="-0.5">${escapedBrandName}</text>
   <text x="110" y="70" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${sColor}" letter-spacing="3.5" text-transform="uppercase">${subline}</text>
 </svg>`;
 
@@ -142,8 +201,9 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <path d="M22 54 C22 26, 42 20, 54 34 C62 44, 38 50, 28 40" fill="none" stroke="url(#monoGrad1)" stroke-width="6" stroke-linecap="round" />
     <path d="M54 22 C54 50, 34 56, 22 42 C14 32, 38 26, 48 36" fill="none" stroke="url(#monoGrad2)" stroke-width="4.5" stroke-linecap="round" opacity="0.9" />
     <circle cx="38" cy="38" r="4.5" fill="${pColor}" />
+    ${glyph}
   </g>
-  <text x="110" y="48" font-family="${hFont}, sans-serif" font-size="25" font-weight="700" fill="${ndColor}">${brandName}</text>
+  <text x="110" y="48" font-family="${hFont}, sans-serif" font-size="25" font-weight="700" fill="${ndColor}">${escapedBrandName}</text>
   <text x="110" y="68" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="600" fill="${aColor}" letter-spacing="3" text-transform="uppercase">${subline}</text>
 </svg>`;
 
@@ -171,8 +231,9 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <!-- Core luminous nucleus -->
     <circle cx="38" cy="42" r="5" fill="#FFFFFF" />
     <circle cx="38" cy="42" r="2.5" fill="${aColor}" />
+    ${glyph}
   </g>
-  <text x="112" y="49" font-family="${hFont}, sans-serif" font-size="25" font-weight="800" fill="${ndColor}" letter-spacing="-0.8">${brandName}</text>
+  <text x="112" y="49" font-family="${hFont}, sans-serif" font-size="25" font-weight="800" fill="${ndColor}" letter-spacing="-0.8">${escapedBrandName}</text>
   <text x="112" y="69" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${sColor}" letter-spacing="3" text-transform="uppercase">${subline}</text>
 </svg>`;
 
@@ -184,11 +245,12 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <circle cx="38" cy="38" r="30" fill="none" stroke="${sColor}" stroke-width="1.2" stroke-dasharray="3 2" />
     <!-- Inner geometric badge -->
     <polygon points="38,15 57,26 57,49 38,60 19,49 19,26" fill="${pColor}" />
-    <text x="38" y="44" font-family="${hFont}, sans-serif" font-size="18" font-weight="800" fill="#FFFFFF" text-anchor="middle">${initial}</text>
+    <text x="38" y="44" font-family="${hFont}, sans-serif" font-size="18" font-weight="800" fill="#FFFFFF" text-anchor="middle">${escapedInitial}</text>
     <circle cx="38" cy="21" r="2" fill="${aColor}" />
     <circle cx="38" cy="54" r="2" fill="${aColor}" />
+    ${glyph}
   </g>
-  <text x="108" y="46" font-family="${hFont}, sans-serif" font-size="24" font-weight="700" fill="${ndColor}">${brandName}</text>
+  <text x="108" y="46" font-family="${hFont}, sans-serif" font-size="24" font-weight="700" fill="${ndColor}">${escapedBrandName}</text>
   <text x="108" y="66" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${pColor}" letter-spacing="3" text-transform="uppercase">${subline}</text>
 </svg>`;
 
@@ -200,8 +262,9 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <circle cx="35" cy="42" r="12" fill="${sColor}" opacity="0.85" />
     <line x1="12" y1="42" x2="58" y2="42" stroke="${nlColor}" stroke-width="2.5" />
     <circle cx="35" cy="14" r="4" fill="${aColor}" />
+    ${glyph}
   </g>
-  <text x="110" y="48" font-family="${hFont}, sans-serif" font-size="26" font-weight="800" fill="${ndColor}" letter-spacing="-0.5">${brandName}</text>
+  <text x="110" y="48" font-family="${hFont}, sans-serif" font-size="26" font-weight="800" fill="${ndColor}" letter-spacing="-0.5">${escapedBrandName}</text>
   <text x="110" y="68" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="600" fill="${sColor}" letter-spacing="3.5" text-transform="uppercase">${subline}</text>
 </svg>`;
 
@@ -212,13 +275,14 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
     <!-- Dynamic Letterform Initial Path -->
     <path d="${letterPath}" fill="none" stroke="#FFFFFF" stroke-width="3.75" stroke-linecap="round" stroke-linejoin="round" />
     <circle cx="44" cy="14" r="4.5" fill="${aColor}" />
+    ${glyph}
   </g>
-  <text x="96" y="52" font-family="${hFont}, sans-serif" font-size="28" font-weight="900" fill="${ndColor}" letter-spacing="-1">${brandName}</text>
+  <text x="96" y="52" font-family="${hFont}, sans-serif" font-size="28" font-weight="900" fill="${ndColor}" letter-spacing="-1">${escapedBrandName}</text>
   <circle cx="96" cy="66" r="3" fill="${sColor}" />
   <text x="106" y="69" font-family="${bFont}, sans-serif" font-size="8.5" font-weight="700" fill="${sColor}" letter-spacing="4" text-transform="uppercase">${subline}</text>
 </svg>`;
 
-  return [
+  const variations = [
     {
       id: "var-negative-space",
       title: "Negative Space Illusion Mark",
@@ -292,6 +356,23 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
       tags: ["Header Lockup", "Responsive", "High Legibility", "Digital First"],
     },
   ];
+
+  const preferred = [...new Set(
+    [params.preferredArchetype, ...(params.preferredArchetypes || [])]
+      .filter((archetype): archetype is string => Boolean(archetype))
+      .filter((archetype) => variations.some((variation) => variation.archetype === archetype))
+  )];
+  const byArchetype = new Map(variations.map((variation) => [variation.archetype, variation]));
+  const ordered = [
+    ...preferred.map((archetype) => byArchetype.get(archetype)!),
+    ...variations.filter((variation) => !preferred.includes(variation.archetype)),
+  ];
+  const guidance = params.logoGeometryGuidance || industryDirection.logoGeometryGuidance;
+  return ordered.map((variation) => ({
+    ...variation,
+    concept: `${variation.concept} Adapted for ${industryName} with its recommended ${variation.archetype.replace(/_/g, " ")} direction.`,
+    geometryDetails: `${variation.geometryDetails} Industry geometry: ${guidance}`,
+  }));
 }
 
 export interface ProceduralBrandRequest {
@@ -300,6 +381,16 @@ export interface ProceduralBrandRequest {
   industry?: string;
   aesthetic?: string;
   targetAudience?: string;
+  productsServices?: string;
+  geographicMarket?: string;
+  brandArchetype?: string;
+  competitiveEnvironment?: string;
+  primaryColorPreference?: string;
+  preferredTypography?: {
+    headingFont?: string;
+    bodyFont?: string;
+  };
+  tonePreference?: string;
   isExistingBrandRefresh?: boolean;
   existingColors?: string[];
   existingTagline?: string;
@@ -314,11 +405,26 @@ export interface ProceduralBrandRequest {
   customRebrandPrompt?: string;
 }
 
+function fontCategory(font: string): "Serif" | "Sans-Serif" | "Display" | "Monospace" {
+  if (/mono|code/i.test(font)) return "Monospace";
+  if (/fraunces|playfair|cinzel|lora|merriweather|serif/i.test(font)) return "Serif";
+  if (/display|bebas|oswald/i.test(font)) return "Display";
+  return "Sans-Serif";
+}
+
+function googleFontsUrl(fonts: Array<{ name: string; weights: string[] }>): string {
+  const uniqueFonts = [...new Map(fonts.map((font) => [font.name, font])).values()];
+  const families = uniqueFonts.map(({ name, weights }) =>
+    `family=${encodeURIComponent(name).replace(/%20/g, "+")}:wght@${weights.join(";")}`
+  );
+  return `https://fonts.googleapis.com/css2?${families.join("&")}&display=swap`;
+}
+
 // Procedural Brand Synthesis Engine (Deterministic high-aesthetic generator)
 export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
   const mission = req.mission.trim();
   const aesthetic = (req.aesthetic || "Modern & Minimalist").toLowerCase();
-  const industry = req.industry || "Creative Innovation & Technology";
+  const industry = req.industry?.trim() || "Independent & Cross-Industry";
   const audience = req.targetAudience || "Modern creators, forward-thinking professionals, and discerning global audiences";
   const industryDir = resolveIndustryDirection(industry, mission);
 
@@ -341,97 +447,52 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
     }
   }
 
-  // Generate aesthetic-tailored color palettes (or respect existing hexes if supplied)
-  let palette: any[];
-  let typography: any;
+  const suppliedColors = [
+    isHexColor(req.primaryColorPreference) ? req.primaryColorPreference : req.existingColors?.[0],
+    req.existingColors?.[1],
+    req.existingColors?.[2],
+  ];
+  const primaryHex = isHexColor(suppliedColors[0]) ? normalizeHex(suppliedColors[0]) : undefined;
+  const generatedPalette = paletteFromBrandContext(brandName, industry, aesthetic, primaryHex, {
+    seedHex: industryDir.colorPhilosophy.suggestedSeedHues[0],
+    harmony: industryDir.colorPhilosophy.harmony,
+  });
+  const palette = generatedPalette.map((color, index) => {
+    const supplied = suppliedColors[index];
+    if (index > 2 || !isHexColor(supplied)) return color;
+    const hex = normalizeHex(supplied);
+    return {
+      ...color,
+      hex,
+      rgb: rgbString(hex),
+      contrastNote: contrastNoteForColor(hex, generatedPalette[3].hex, generatedPalette[4].hex),
+    };
+  });
 
-  if (req.existingColors && req.existingColors.length >= 2) {
-    const p = req.existingColors[0] || "#1A1A1A";
-    const s = req.existingColors[1] || "#2563EB";
-    const a = req.existingColors[2] || "#F59E0B";
-    // Anchor the harmony engine on the user's primary, then override the
-    // supporting tones with their established colors; neutrals stay engine-
-    // validated so the canvas always passes contrast checks.
-    const base = paletteFromBrandContext(brandName, industry, aesthetic, p);
-    const secondaryHex = normalizeHex(s);
-    const accentHex = normalizeHex(a);
-    palette = [
-      { ...base[0], hex: normalizeHex(p), contrastNote: "Established core brand color" },
-      { ...base[1], hex: secondaryHex, rgb: rgbString(secondaryHex), contrastNote: "Established secondary color" },
-      { ...base[2], hex: accentHex, rgb: rgbString(accentHex), contrastNote: "User-supplied accent tone" },
-      base[3],
-      base[4],
-    ];
-    typography = {
-      headingFont: "Plus Jakarta Sans",
-      headingFontCategory: "Sans-Serif",
-      headingWeights: ["600", "700", "800"],
-      bodyFont: "Plus Jakarta Sans",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Space Grotesk",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
-      rationale: "Plus Jakarta Sans preserves established brand recognition while upgrading digital UI clarity across all scale steps.",
-      cssSnippet: "font-family: 'Plus Jakarta Sans', sans-serif;",
-    };
-  } else if (aesthetic.includes("organic") || aesthetic.includes("artisanal")) {
-    palette = paletteFromBrandContext(brandName, industry, aesthetic);
-    typography = {
-      headingFont: "Fraunces",
-      headingFontCategory: "Serif",
-      headingWeights: ["600", "700"],
-      bodyFont: "Plus Jakarta Sans",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Space Mono",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap",
-      rationale: "Fraunces offers tactile warmth and editorial craftsmanship, paired with Plus Jakarta Sans for crisp, modern legibility across interfaces.",
-      cssSnippet: "font-family: 'Fraunces', serif; --font-body: 'Plus Jakarta Sans', sans-serif;",
-    };
-  } else if (aesthetic.includes("luxury") || aesthetic.includes("heritage")) {
-    palette = paletteFromBrandContext(brandName, industry, aesthetic);
-    typography = {
-      headingFont: "Playfair Display",
-      headingFontCategory: "Serif",
-      headingWeights: ["600", "700"],
-      bodyFont: "Plus Jakarta Sans",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Cinzel",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap",
-      rationale: "Playfair Display delivers haute-couture elegance and timeless authority, balanced by Plus Jakarta Sans for frictionless readability.",
-      cssSnippet: "font-family: 'Playfair Display', serif; --font-body: 'Plus Jakarta Sans', sans-serif;",
-    };
-  } else if (aesthetic.includes("futuristic") || aesthetic.includes("tech")) {
-    palette = paletteFromBrandContext(brandName, industry, aesthetic);
-    typography = {
-      headingFont: "Outfit",
-      headingFontCategory: "Sans-Serif",
-      headingWeights: ["600", "700", "800"],
-      bodyFont: "Inter",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Space Grotesk",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600&display=swap",
-      rationale: "Outfit provides a hyper-modern geometric stance, perfectly grounded by Inter's industry-standard UI ergonomics.",
-      cssSnippet: "font-family: 'Outfit', sans-serif; --font-body: 'Inter', sans-serif;",
-    };
-  } else {
-    // Modern & Minimalist (Default)
-    palette = paletteFromBrandContext(brandName, industry, aesthetic);
-    typography = {
-      headingFont: "Plus Jakarta Sans",
-      headingFontCategory: "Sans-Serif",
-      headingWeights: ["600", "700", "800"],
-      bodyFont: "Plus Jakarta Sans",
-      bodyFontCategory: "Sans-Serif",
-      bodyWeights: ["400", "500", "600"],
-      accentFont: "Space Grotesk",
-      googleFontsUrl: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
-      rationale: "Plus Jakarta Sans establishes a cohesive, razor-sharp architectural layout with world-class legibility at all scale steps.",
-      cssSnippet: "font-family: 'Plus Jakarta Sans', sans-serif;",
-    };
-  }
+  const pairingIndex = hashString(`${brandName}|${industry}|${aesthetic}`) %
+    industryDir.typographyRules.recommendedPairings.length;
+  const pairing = industryDir.typographyRules.recommendedPairings[pairingIndex];
+  const headingFont = req.preferredTypography?.headingFont?.trim() || pairing.heading;
+  const bodyFont = req.preferredTypography?.bodyFont?.trim() || pairing.body;
+  const headingWeights = ["500", "600", "700"];
+  const bodyWeights = ["400", "500", "600"];
+  const typography = {
+    headingFont,
+    headingFontCategory: fontCategory(headingFont),
+    headingWeights,
+    bodyFont,
+    bodyFontCategory: fontCategory(bodyFont) === "Display" ? "Sans-Serif" as const : fontCategory(bodyFont),
+    bodyWeights,
+    accentFont: "Space Grotesk",
+    googleFontsUrl: googleFontsUrl([
+      { name: headingFont, weights: headingWeights },
+      { name: bodyFont, weights: bodyWeights },
+    ]),
+    rationale: req.preferredTypography?.headingFont || req.preferredTypography?.bodyFont
+      ? `User-selected typefaces are paired with the ${industryDir.name.toLowerCase()} guidance: ${industryDir.typographyRules.bodyStyle}.`
+      : `${pairing.rationale} ${industryDir.typographyRules.bodyStyle}.`,
+    cssSnippet: `font-family: '${headingFont}', ${fontCategory(headingFont) === "Serif" ? "serif" : "sans-serif"}; --font-body: '${bodyFont}', sans-serif;`,
+  };
 
   const pColor = palette[0].hex;
   const sColor = palette[1].hex;
@@ -450,6 +511,10 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
     ndColor,
     headingFont: typography.headingFont,
     bodyFont: typography.bodyFont,
+    logoSymbol: industryDir.logoSymbol,
+    preferredArchetypes: industryDir.logoArchetypes,
+    preferredArchetype: req.brandArchetype,
+    logoGeometryGuidance: industryDir.logoGeometryGuidance,
   });
 
   const primaryLogoSvg = variations[0].svg;
@@ -474,7 +539,34 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
     },
   ];
 
-  const positioningStatement = `${brandName} delivers uncompromising quality and visionary design to ${audience.toLowerCase()}, empowering them with refined solutions that elevate everyday standards.`;
+  const offering = req.productsServices?.trim() || mission;
+  const market = req.geographicMarket?.trim();
+  const competitiveContext = req.competitiveEnvironment?.trim();
+  const positioningStatement =
+    `For ${audience}${market ? ` in ${market}` : ""}, ${brandName} provides ${offering} in ${industryDir.name.toLowerCase()}. ` +
+    `The brand is built around ${industryDir.brandPromise}` +
+    `${competitiveContext ? `, with a point of difference in ${competitiveContext}` : ""}.`;
+  const taglineIndex = hashString(`${brandName}|${mission}|${industry}`) % industryDir.taglineOptions.length;
+  const tagline = req.existingTagline?.trim() || industryDir.taglineOptions[taglineIndex];
+  const valueIcons: Record<string, string[]> = {
+    structure: ["Layers", "Shield", "Target", "Zap"],
+    monogram: ["Sparkles", "Crown", "Layers", "Compass"],
+    network: ["Zap", "Shield", "Target", "Layers"],
+    care: ["Heart", "Shield", "Activity", "Sparkles"],
+    vault: ["Shield", "Target", "Layers", "Zap"],
+    botanical: ["Heart", "Sparkles", "Layers", "Globe"],
+    book: ["Compass", "BookOpen", "Target", "Layers"],
+    home: ["Shield", "Compass", "Target", "Heart"],
+    beauty: ["Sparkles", "Shield", "Heart", "Layers"],
+    planet: ["Globe", "Layers", "Shield", "Zap"],
+    compass: ["Compass", "Globe", "Shield", "Sparkles"],
+    media: ["Sparkles", "Target", "Layers", "Compass"],
+    orbit: ["Target", "Shield", "Layers", "Sparkles"],
+  };
+  const iconNames = valueIcons[industryDir.logoSymbol] || valueIcons.orbit;
+  const voiceStyle = req.tonePreference?.trim()
+    ? `${req.tonePreference.trim()}, balanced with ${industryDir.voice.style}`
+    : industryDir.voice.style;
 
   let rebrandStory = undefined;
   if (req.isRebrand) {
@@ -482,8 +574,8 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
     const prevName = req.brandName || "Our Brand";
 
     const rebrandBio = isCustom
-      ? `Our rebranding from ${prevName} marks a decisive strategic evolution aligned with our modern ambition: "${req.customRebrandPrompt}". This new identity unites architectural precision with elevated emotional resonance, stripping away legacy frictions to position our brand for long-term category leadership and meaningful customer connection.`
-      : `As ${prevName} enters its next chapter, we are embracing a comprehensive identity transformation. What began as an early venture has matured into an authoritative benchmark of craft, trust, and technological clarity. Moving towards this new phase allows us to shed outdated visual paradigms, sharpen our digital touchpoints, and communicate our true product excellence to a global audience.`;
+      ? `Our rebranding from ${prevName} is guided by this ambition: "${req.customRebrandPrompt}". The new identity brings that direction into the ${industryDir.name.toLowerCase()} context, with a focus on ${industryDir.brandPromise}.`
+      : `As ${prevName} enters its next chapter in ${industryDir.name.toLowerCase()}, the identity is evolving around ${industryDir.brandPromise}. The refresh brings its visual language, typography, and everyday touchpoints into closer alignment with ${audience}${market ? ` in ${market}` : ""}.`;
 
     rebrandStory = {
       isRebrand: true,
@@ -494,35 +586,35 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
       previousColors: req.existingColors,
       rebrandMode: req.rebrandMode || 'impress_me',
       customPrompt: req.customRebrandPrompt,
-      rebrandTitle: `${prevName}: The Next Strategic Era`,
+      rebrandTitle: `${prevName}: ${industryDir.name} Reframed`,
       rebrandBio,
       strategicDiagnosis: isCustom
-        ? `Executed strategic transformation following user vision: "${req.customRebrandPrompt}". Rebalanced optical weights, heightened contrast, and harmonized assets.`
-        : `Diagnostic analysis revealed legacy aesthetic constraints in typography contrast and icon scalability. Re-engineered into a high-contrast, WCAG AA compliant system with enduring geometric authority.`,
+        ? `The requested transformation is expressed through ${industryDir.logoGeometryGuidance} The strategic intent is to ${industryDir.brandPromise}.`
+        : `The previous identity needed a clearer connection to ${industryDir.name.toLowerCase()} and the people it serves. The update prioritizes ${industryDir.brandPromise} through a more relevant visual and verbal system.`,
       keyEvolutionPoints: [
         {
           title: "Visual Identity & Emblem Modernization",
           before: req.currentLogo ? "Legacy logo mark with visual clutter and multi-scale friction" : "Initial uncalibrated logo concept",
-          after: "Sculpted vector identity with mathematical geometry and negative space harmony",
-          strategicWhy: "Ensures unmistakable recognition across high-resolution displays, favicons, app icons, and physical architecture.",
+          after: variations[0].concept,
+          strategicWhy: industryDir.logoGeometryGuidance,
         },
         {
           title: "Typographic Hierarchy & Editorial Authority",
           before: req.currentTypography?.headingFont ? `Legacy ${req.currentTypography.headingFont} font stack with limited dynamic range` : "System-default typography lacking distinct brand voice",
           after: `${typography.headingFont} paired with ${typography.bodyFont}`,
-          strategicWhy: typography.rationale,
+          strategicWhy: `${typography.rationale} ${industryDir.typographyRules.headingStyle}.`,
         },
         {
           title: "Color Atmosphere & Accessibility",
           before: req.existingColors?.length ? `Legacy palette (${req.existingColors.join(', ')}) with untested contrast ratios` : "Uncalibrated primary colors",
           after: `5-Color balanced palette (${palette.map((c: any) => c.hex).join(', ')}) with 60-30-10 distribution and WCAG AA verification`,
-          strategicWhy: "Eliminates legibility barriers while projecting contemporary sophistication.",
+          strategicWhy: `${industryDir.colorPhilosophy.paletteRationale} Preserve contrast and legibility across brand surfaces.`,
         },
         {
           title: "Strategic Market Posture",
           before: "Initial utility focus with fragmented messaging",
           after: `Cohesive positioning: "${positioningStatement}"`,
-          strategicWhy: "Builds defensible brand equity and commands premium market resonance.",
+          strategicWhy: `Makes the brand promise concrete for ${audience}: ${industryDir.brandPromise}.`,
         },
       ],
       createdAt: new Date().toISOString(),
@@ -532,23 +624,16 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
   return {
     id: "brand-" + Date.now(),
     brandName,
-    tagline: req.existingTagline || `Defining the Future of ${industry.split(/\s+/)[0] || "Innovation"}`,
+    tagline,
     industry,
     mission,
-    vision: `To lead a global transformation in ${industry.toLowerCase()} by marrying timeless aesthetic craftsmanship with fearless technological execution.`,
+    vision: `${brandName} aims to be known for ${industryDir.brandPromise}, serving ${audience}${market ? ` in ${market}` : ""}.`,
     positioningStatement,
-    personalityTraits: [
-      { trait: "Innovation", rating: 4.8, minLabel: "Traditional", maxLabel: "Pioneering" },
-      { trait: "Aesthetic Precision", rating: 4.9, minLabel: "Pragmatic", maxLabel: "Obsessively Crafted" },
-      { trait: "Authority", rating: 4.6, minLabel: "Casual", maxLabel: "Commanding" },
-      { trait: "Warmth & Accessibility", rating: 4.2, minLabel: "Exclusive", maxLabel: "Empathetic" },
-    ],
-    values: [
-      { title: "Architectural Precision", description: "Every line, word, and interaction is engineered with mathematical balance and intentional restraint.", iconName: "Layers" },
-      { title: "Fearless Innovation", description: "Constantly challenging industry conventions to pioneer meaningful breakthroughs for our community.", iconName: "Zap" },
-      { title: "Radical Transparency", description: "Clear communication, honest sourcing, and ethical design principles guiding all product endeavors.", iconName: "Shield" },
-      { title: "Timeless Quality", description: "Creating enduring identity assets and products built to inspire for decades rather than fleeting trends.", iconName: "Sparkles" },
-    ],
+    personalityTraits: industryDir.personalityDefaults,
+    values: industryDir.brandValues.map((value, index) => ({
+      ...value,
+      iconName: iconNames[index] || "Sparkles",
+    })),
     palette,
     typography,
     logo: {
@@ -559,35 +644,19 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
       aiImagePrompt: variations[0].aiImagePrompt || `3D architectural glass and brushed metal emblem logomark for ${brandName}, studio lighting, clean minimal background, 8k render`,
     },
     secondaryMarks,
-    toneOfVoice: [
-      {
-        trait: "Insightful & Confident",
-        description: "Speak with calm expertise and intellectual clarity. Never preach or shout.",
-        doExample: "Precision engineering crafted for creators who value clarity above noise.",
-        dontExample: "Check out our crazy awesome tool that will blow your mind!!",
-      },
-      {
-        trait: "Empathetic & Direct",
-        description: "Address user challenges straight to the point with warm, professional respect.",
-        doExample: "Designed to remove friction from your workflow from day one.",
-        dontExample: "Our complex paradigm shifts will seamlessly synergize your outputs.",
-      },
-      {
-        trait: "Poetic & Evocative",
-        description: "Use tactile, sensory metaphors to describe aesthetics and craftsmanship.",
-        doExample: "Form follows feeling. Light meets purpose.",
-        dontExample: "We have lots of pretty colors and buttons in our UI.",
-      },
-      {
-        trait: "Decisive & Action-Oriented",
-        description: "Inspire forward momentum through clear, confident calls to action.",
-        doExample: "Begin your brand exploration.",
-        dontExample: "Click here to maybe learn more about what we do.",
-      },
-    ],
+    toneOfVoice: industryDir.personalityDefaults.map((personality, index) => ({
+      trait: `${personality.trait}: ${personality.maxLabel}`,
+      description: `Use a ${voiceStyle} voice, especially when communicating ${personality.maxLabel.toLowerCase()}.`,
+      doExample: index === 0
+        ? industryDir.voice.doExample
+        : `Describe ${offering} with specific details that demonstrate ${personality.maxLabel.toLowerCase()}.`,
+      dontExample: industryDir.voice.dontExample,
+    })),
     imageryStyle: {
-      moodboardKeywords: industryDir.categoryKeywords,
-      photographyGuidance: `${industryDir.photographyDirection.lighting}. Shot on ${industryDir.photographyDirection.lens}, featuring ${industryDir.photographyDirection.materials}. Color grade: ${industryDir.photographyDirection.colorGrade}.`,
+      moodboardKeywords: industryDir.categoryKeywords.length > 0
+        ? industryDir.categoryKeywords
+        : industryDir.iconConcepts,
+      photographyGuidance: `${industryDir.photographyDirection.lighting}. Shot on ${industryDir.photographyDirection.lens}, featuring ${industryDir.photographyDirection.materials}. Composition: ${industryDir.photographyDirection.composition}. Color grade: ${industryDir.photographyDirection.colorGrade}.`,
       dos: [
         "Use natural directional light and authentic material physics",
         "Feature high-craft architectural or tactile details without clutter",
@@ -601,7 +670,7 @@ export function synthesizeProceduralBrand(req: ProceduralBrandRequest) {
     },
     targetAudience: audience,
     powerLevel: 'legacy',
-    brandArchetype: industryDir.logoArchetypes[0] || 'geometric_minimalist',
+    brandArchetype: variations[0].archetype,
     photographyDirection: industryDir.photographyDirection,
     directorMetadata: {
       model: 'GABI Procedural Architecture Engine',

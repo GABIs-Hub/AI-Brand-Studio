@@ -89,6 +89,7 @@ export function LogoArchetypeStudio({ brand, onUpdatePrimaryLogo }: LogoArchetyp
           mission: brand.mission,
           palette: brand.palette,
           typography: brand.typography,
+          brandArchetype: brand.brandArchetype,
           stylePrompt: stylePrompt || customStylePrompt,
         }),
       });
