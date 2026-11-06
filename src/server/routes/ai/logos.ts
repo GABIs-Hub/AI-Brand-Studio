@@ -1,7 +1,7 @@
 import { Type } from "@google/genai";
 import { aiEngine } from "../../ai/engine";
 import { applyLogoHistoryToEras, getLogoHistory, matchImagesToEras } from "../../logoHistory";
-import { generateProceduralLogoVariations, synthesizeProceduralBrand } from "../../proceduralBrands";
+import { generateProceduralLogoVariations, refineProceduralLogoPromptCoT, synthesizeProceduralBrand } from "../../proceduralBrands";
 import { resolveIndustryDirection } from "../../industryContext";
 import { sendApiError, sendInternalApiError } from "../../security/requestSecurity";
 import type { Express } from "express";

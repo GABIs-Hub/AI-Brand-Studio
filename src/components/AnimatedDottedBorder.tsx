@@ -63,9 +63,9 @@ export function AnimatedDottedBorder({
         interactive && onClick ? 'cursor-pointer' : ''
       } ${
         isActive
-          ? 'bg-black/[0.02] dark:bg-white/[0.02]'
+          ? 'bg-black/2 dark:bg-white/2'
           : isHovered && interactive
-          ? 'bg-black/[0.01] dark:bg-white/[0.01]'
+          ? 'bg-black/1 dark:bg-white/1'
           : ''
       } ${className}`}
     >

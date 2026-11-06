@@ -535,12 +535,12 @@ export function AiMockupsStudio({ brand }: AiMockupsStudioProps) {
                   </div>
 
                   {/* Image Viewport */}
-                  <div className="relative overflow-hidden bg-gray-950 flex items-center justify-center min-h-[380px] max-h-[500px] border border-gray-200 dark:border-zinc-800">
+                  <div className="relative overflow-hidden bg-gray-950 flex items-center justify-center min-h-95 max-h-125 border border-gray-200 dark:border-zinc-800">
                     {active.imageUrl ? (
                       <img
                         src={active.imageUrl}
                         alt={active.title}
-                        className="w-full h-full object-contain max-h-[480px]"
+                        className="w-full h-full object-contain max-h-120"
                         referrerPolicy="no-referrer"
                       />
                     ) : (

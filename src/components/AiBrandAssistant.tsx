@@ -129,7 +129,7 @@ export function AiBrandAssistant({ brand, isOpen, onClose }: AiBrandAssistantPro
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white dark:bg-[#181816] border-l border-[#1A1A1A] dark:border-[#F9F7F2]/20 flex flex-col shadow-2xl transition-colors duration-300">
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-105 bg-white dark:bg-[#181816] border-l border-[#1A1A1A] dark:border-[#F9F7F2]/20 flex flex-col shadow-2xl transition-colors duration-300">
       {/* Drawer Header */}
       <div className="p-6 bg-[#1A1A1A] dark:bg-[#111110] text-white flex items-center justify-between border-b border-[#1A1A1A]">
         <div className="flex items-center gap-4">

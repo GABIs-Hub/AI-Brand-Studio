@@ -375,6 +375,151 @@ export function generateProceduralLogoVariations(params: ProceduralLogoVariation
   }));
 }
 
+export interface ProceduralLogoPromptRefinementInput {
+  brandName: string;
+  industry?: string;
+  mission?: string;
+  aesthetic?: string;
+  targetAudience?: string;
+  archetype?: string;
+  customDirectives?: string;
+  complexityLevel?: string;
+  currentPrompt?: string;
+  palette?: Array<{ hex?: string }>;
+  typography?: {
+    headingFont?: string;
+    bodyFont?: string;
+  };
+}
+
+export function refineProceduralLogoPromptCoT(input: ProceduralLogoPromptRefinementInput) {
+  const brandName = (input.brandName || "Northstar").trim() || "Northstar";
+  const industry = input.industry?.trim() || "Technology";
+  const mission = input.mission?.trim() || "Build a memorable, modern, high-trust identity.";
+  const aesthetic = (input.aesthetic || "Modern, Clean, High-Contrast").trim();
+  const audience = input.targetAudience?.trim() || "Discerning professionals and global audiences";
+  const complexity = input.complexityLevel?.trim() || "intricate_geometric";
+  const direction = resolveIndustryDirection(industry, mission);
+  const normalizedArchetype = (input.archetype || direction.logoArchetypes[0] || "negative_space").trim();
+
+  const paletteColors = [
+    input.palette?.find((color) => isHexColor(color.hex))?.hex || "#111827",
+    input.palette?.find((color, index) => index === 1 && isHexColor(color.hex))?.hex || "#2563EB",
+    input.palette?.find((color, index) => index === 2 && isHexColor(color.hex))?.hex || "#F59E0B",
+    input.palette?.find((color, index) => index === 3 && isHexColor(color.hex))?.hex || "#F8F8F6",
+    input.palette?.find((color, index) => index === 4 && isHexColor(color.hex))?.hex || "#0F172A",
+  ].map((hex) => normalizeHex(hex));
+
+  const typography = {
+    headingFont: input.typography?.headingFont || direction.typographyRules.recommendedPairings[0]?.heading || "Plus Jakarta Sans",
+    bodyFont: input.typography?.bodyFont || direction.typographyRules.recommendedPairings[0]?.body || "Inter",
+  };
+
+  const conceptualMetaphor = `${direction.name} craftsmanship expressed as ${normalizedArchetype.replace(/_/g, " ")} meeting a ${aesthetic.toLowerCase()} point of view.`;
+  const metaphors = [
+    "An engineered gesture that feels like a premium signal, not a generic badge.",
+    "A visual tension between clarity and motion, balancing confidence with approachability.",
+    `A ${direction.name.toLowerCase()} narrative shaped by ${direction.brandPromise.toLowerCase()}.`,
+  ];
+
+  const chainOfThought = [
+    {
+      stepNumber: 1,
+      stepName: "Semiotic deconstruction",
+      focus: `${brandName} in ${direction.name}`,
+      reasoning: `The identity should feel grounded in ${direction.brandPromise.toLowerCase()} while remaining distinct for ${audience.toLowerCase()}.`,
+      extractedMetaphors: metaphors,
+      geometryRules: [
+        "Use asymmetric balance and layered rhythm instead of symmetrical default shapes.",
+        "Let the form imply movement without becoming decorative or noisy.",
+      ],
+    },
+    {
+      stepNumber: 2,
+      stepName: "Spatial topology",
+      focus: "Structure and proportion",
+      reasoning: `Complexity should rise from ${complexity.replace(/_/g, " ")} logic, not from clutter. The mark should read crisply at app icon scale and in a full lockup.`,
+      extractedMetaphors: [`${direction.logoGeometryGuidance}`],
+      geometryRules: [
+        "Anchor the structure to a strong geometric grid.",
+        "Favor gold-ratio spacing and purposeful negative space over random ornament.",
+      ],
+    },
+    {
+      stepNumber: 3,
+      stepName: "Vector craft",
+      focus: "Path synthesis",
+      reasoning: `Combine a custom monogram, a subtle directional counterform, and layered gradients to create a premium yet technical presence for ${brandName}.`,
+      extractedMetaphors: ["Precision as emotion", "Loyalty expressed through motion", "Trust translated into tactile form"],
+      geometryRules: [
+        "Use smooth cubic curves and deliberate contrast between stroke weights.",
+        "Keep the mark scalable without reducing readability at small sizes.",
+      ],
+    },
+    {
+      stepNumber: 4,
+      stepName: "Studio rendering prompt",
+      focus: "Materiality and surface",
+      reasoning: `The studio brief should describe a refined ${direction.voice.style} finish with polished depth, subtle highlight edges, and controlled light falloff.`,
+      extractedMetaphors: ["A premium object, not a flat sticker."],
+      geometryRules: [
+        "Use micro-contrast lighting and tactile materials.",
+        "Avoid heavy noise, generic shadows, and stock-photo softness.",
+      ],
+    },
+    {
+      stepNumber: 5,
+      stepName: "Complexity audit",
+      focus: "Why this stands apart",
+      reasoning: `This concept feels bespoke because it translates business meaning into shape, rhythm, and typography rather than relying on a generic symbol library.`,
+      extractedMetaphors: ["Signal with substance", "Authority with warmth"],
+      geometryRules: [
+        "One core metaphor, a manageable number of shapes, and clear hierarchy for the brand system.",
+        "The result is more memorable because it is intentionally designed, not merely decorative.",
+      ],
+    },
+  ];
+
+  const refinedVectorPrompt = `Design a premium ${direction.name.toLowerCase()} logo for ${brandName}. ${direction.logoGeometryGuidance} Build a ${normalizedArchetype.replace(/_/g, " ")} system with layered gradients, clean geometry, and nuanced negative space. Palette: ${paletteColors.join(", ")}. Type: ${typography.headingFont} and ${typography.bodyFont}. Mission: ${mission}. Audience: ${audience}. Aesthetic: ${aesthetic}.`;
+  const refinedStudioPrompt = `Photorealistic studio render of the ${brandName} brand mark: premium ${direction.name.toLowerCase()} identity system, polished ${direction.photographyDirection.materials.toLowerCase()}, controlled directional lighting, crisp material reflections, macro texture, high-end editorial composition, minimal background, 8k, cinematic surfaces, elegant shadowing.`;
+  const svgPathBlueprint = `Anchor mark at center, negative-space counterform, golden-ratio spacing, layered gradients from ${paletteColors[0]} to ${paletteColors[1]}, accent highlight at ${paletteColors[2]}, wordmark in ${typography.headingFont} with tight tracking and a precise secondary line in ${typography.bodyFont}.`;
+  const visualComplexityAnalysis = `This concept qualifies as agency-grade because it balances strategic meaning, geometry, and market fit. The system does not rely on generic circles or simplistic badges; instead it uses deliberate asymmetry, layered contrast, and industry-aware symbolism to make ${brandName} stand out in ${direction.name.toLowerCase()}.`;
+
+  const generatedSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" width="100%" height="100%">
+    <defs>
+      <linearGradient id="brandGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${paletteColors[0]}" />
+        <stop offset="85%" stop-color="${paletteColors[1]}" />
+      </linearGradient>
+    </defs>
+    <rect x="12" y="18" width="88" height="88" rx="20" fill="url(#brandGlow)" />
+    <path d="M36 92 L52 38 L70 92" fill="none" stroke="${paletteColors[3]}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M46 58 H59" fill="none" stroke="${paletteColors[2]}" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="90" cy="38" r="9" fill="${paletteColors[2]}"/>
+    <text x="118" y="58" font-family="${typography.headingFont}, sans-serif" font-size="28" font-weight="800" fill="${paletteColors[4]}">${escapeXml(brandName)}</text>
+    <text x="118" y="81" font-family="${typography.bodyFont}, sans-serif" font-size="11" letter-spacing="3" fill="${paletteColors[1]}" text-transform="uppercase">${escapeXml(direction.name.toUpperCase())}</text>
+  </svg>`;
+
+  const suggestedArchetypes = direction.logoArchetypes.slice(0, 3).map((archetype) => ({
+    archetype,
+    name: archetype.replace(/_/g, " "),
+    rationale: `Best suited for ${direction.name.toLowerCase()} because it reinforces ${direction.brandPromise.toLowerCase()} and supports a premium, recognizable system.`,
+  }));
+
+  return {
+    brandName,
+    archetype: normalizedArchetype,
+    conceptualMetaphor,
+    chainOfThought,
+    refinedVectorPrompt,
+    refinedStudioPrompt,
+    svgPathBlueprint,
+    visualComplexityAnalysis,
+    generatedSvg,
+    suggestedArchetypes,
+  };
+}
+
 export interface ProceduralBrandRequest {
   brandName?: string;
   mission: string;

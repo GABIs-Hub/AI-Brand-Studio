@@ -101,4 +101,21 @@ describe("merged studio routes", () => {
       expect(svg).not.toMatch(/<script|onload=/i);
     } finally { execute.mockRestore(); warn.mockRestore(); }
   });
+
+  it("keeps the social image fallback available when the image engine is unavailable", async () => {
+    const execute = vi.spyOn(aiEngine, "executeImage").mockRejectedValue(new Error("provider unavailable"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      const res = { json: vi.fn() };
+      await handlers().get("/api/generate-social-image")!({
+        body: { prompt: "Editorial studio lighting", aspectRatio: "9:16" },
+      }, res);
+
+      const result = res.json.mock.calls[0][0];
+      expect(execute).toHaveBeenCalledWith("social_image", expect.objectContaining({ aspectRatio: "9:16" }));
+      expect(result.imageUrl).toMatch(/^data:image\/svg\+xml;base64,/);
+      const svg = Buffer.from(result.imageUrl.split(",")[1], "base64").toString();
+      expect(svg).toContain('viewBox="0 0 720 1280"');
+    } finally { execute.mockRestore(); warn.mockRestore(); }
+  });
 });

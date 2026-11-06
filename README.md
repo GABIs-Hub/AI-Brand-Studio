@@ -59,7 +59,7 @@ See `.env.example` for the complete annotated list:
 | --- | --- |
 | `npm run dev` | Dev server (Express + Vite middleware) with HMR |
 | `npm run build` | Vite client build + esbuild server bundle → `dist/` |
-| `npm start` | Run the production server (`node dist/server.cjs`) |
+| `npm start` | Run the production server (`node dist/server.js`) |
 | `npm run lint` | Typecheck (`tsc --noEmit`) |
 | `npm test` | Run the Vitest unit test suite |
 | `npm run db:migrate` | Apply `db/schema.sql` to Neon (idempotent, no psql needed) |
@@ -101,32 +101,48 @@ All AI endpoints are rate-limited and enforce a same-origin check. Generated ima
 
 ```
 src/
-├── server/                  # Express backend (bundled separately for prod)
-│   ├── index.ts             # App entry: routes, middleware, static hosting
-│   ├── aiGateway.ts         # Multi-provider text/image cascade + circuit breakers
-│   ├── auth.ts              # Auth.js config, Neon adapter, register endpoint,
-│   │                        #   AUTH_SECRET enforcement, verification tokens
-│   ├── mail.ts              # Transactional email (Resend REST + console fallback)
-│   ├── db.ts                # Neon client + brands CRUD
-│   ├── imageStore.ts        # Cloudflare R2 uploads
-│   └── proceduralBrands.ts  # Deterministic offline brand synthesis engine
-├── components/              # React UI (30+ components: tabs, modals, studios)
-├── lib/                     # Client libraries: authClient, share, evolution
-├── utils/                   # Pure, testable modules: colorEngine, sanitizeSvg,
-│                            #   brandAssetKit, imageExport, faviconUtils
-├── data/                    # Curated presets (popular brands, archetypes)
-├── App.tsx                  # App shell: auth, persistence, mode switching
-└── types.ts                 # Shared domain model (BrandBible, …)
+├── App.tsx                    # React app shell, persistence, and mode switching
+├── components/                # Feature screens, studios, tabs, and shared UI
+├── data/                      # Curated presets, fonts, and brand case studies
+├── db/                        # Shared Drizzle/Postgres schema definitions
+├── lib/                       # Client auth, sharing, evolution, and validation
+├── services/                  # Cross-feature export and presentation services
+├── server/
+│   ├── index.ts               # Express startup, middleware, and route mounting
+│   ├── routes/
+│   │   ├── core.ts            # Health, auth, brand, and image-storage routes
+│   │   ├── ai.ts              # AI route registrar; keeps endpoint order explicit
+│   │   └── ai/                # Endpoint handlers grouped by product capability
+│   │       ├── brand.ts       # Brand Bible generation
+│   │       ├── logos.ts       # Logo variations, refinement, and history
+│   │       ├── images.ts      # Logo renders and mockup generation
+│   │       ├── socialImage.ts # Social image generation
+│   │       ├── content.ts     # Chat, social copy, viral topics, director status
+│   │       ├── audit.ts       # Brand audits
+│   │       └── research.ts    # Brand case studies
+│   ├── ai/                    # Provider adapters, model registry, and AI engine
+│   ├── security/              # Origin policy and shared request/error handling
+│   ├── aiGateway.ts           # Provider fallback cascade and circuit breakers
+│   ├── aiDirector.ts          # Task routing and director status
+│   ├── industryContext.ts     # Niche-specific creative direction profiles
+│   ├── proceduralBrands.ts    # Deterministic, no-key brand synthesis
+│   ├── auth.ts                # Auth.js configuration and account endpoints
+│   ├── db.ts                  # Neon connection and brand persistence
+│   ├── imageStore.ts          # Cloudflare R2 uploads
+│   └── mail.ts                # Transactional email and local console fallback
+├── types/                     # Shared API and brand-domain types
+├── types.ts                   # Core Brand Bible and UI domain models
+└── utils/                     # Pure shared utilities, color, SVG, and export logic
 db/
-├── schema.sql               # Postgres schema (Auth.js tables + brands)
-├── migrate.ts               # Idempotent schema applier (+ FK drift self-heal)
-├── verify.ts                # Connection + table listing
-├── backup.ts                # Full logical backup → db/backups/*.json
-├── restore.ts               # Restore a backup (FK-safe, guarded)
-└── backups/                 # Generated backups (gitignored)
+├── schema.sql                 # Postgres schema (Auth.js tables + brands)
+├── migrate.ts                 # Idempotent schema applier (+ FK drift self-heal)
+├── verify.ts                  # Connection + table listing
+├── backup.ts                  # Full logical backup → db/backups/*.json
+├── restore.ts                 # Restore a backup (FK-safe, guarded)
+└── backups/                   # Generated backups (gitignored)
 ```
 
-The server is a single Express app that also serves the built client from `dist/` in production, so one deployable unit runs the whole product. Brand assets live in `public/` (favicon, social card).
+The API router is intentionally a thin composition layer: `server/routes/ai.ts` registers focused endpoint modules from `server/routes/ai/`, while provider selection and fallback behavior stay in the AI engine. This keeps HTTP concerns separate from model integration and the deterministic procedural engine. The server is a single Express app that also serves the built client from `dist/` in production, so one deployable unit runs the whole product. Brand assets live in `public/` (favicon, social card).
 
 ## Color engine
 
